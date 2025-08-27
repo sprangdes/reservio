@@ -1,0 +1,55 @@
+# Application Configuration
+spring:
+  application:
+    name: Reservio
+  
+  # Database Configuration - PostgreSQL
+  datasource:
+    url: jdbc:postgresql://localhost:5432/machi
+    username: machi
+    driver-class-name: org.postgresql.Driver
+    
+    # HikariCP Connection Pool Configuration
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 15
+      idle-timeout: 30000
+      pool-name: HikariPoolReservio
+      max-lifetime: 2000000
+      connection-timeout: 30000
+      auto-commit: true
+  
+  # JPA/Hibernate Configuration
+  jpa:
+    database: postgresql
+    show-sql: false
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  
+  # Spring Active Profile
+  profiles:
+    active: nosecurity
+
+# Server Configuration
+server:
+  servlet:
+    context-path: /reservio
+
+# LINE Bot Configuration
+line:
+  bot:
+    handler:
+      enabled: true
+      # LINE Server call this route to send messages to reservio
+      path: /callback
+    channel-token: RN+HYE/Y5wW7DwfJC5RmAhXM8Demhln7ha5bHSI6EoOUoCN1gDMPO2+SzSFTbp3y/GIFHv6oYiS9B12HQ9zOWN9i0ZFRZn6oJuYtaz39P9cKIpu2FM6w3bcUq+GFX366FHsKRRuhXVY7i0RuP8PrTAdB04t89/1O/w1cDnyilFU=
+    channel-secret: 31780dee1abd2ec7ab35262c13eaa44f
+    channel-token-supply-mode: fixed
+    connect-timeout: 60000
+    read-timeout: 60000
+    write-timeout: 60000
