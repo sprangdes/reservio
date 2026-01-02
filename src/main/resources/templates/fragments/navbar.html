@@ -1,27 +1,44 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
-<meta charset="UTF-8">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
-    <nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="#">Reservio</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#">首頁</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">服務項目</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">立即預約</a>
-                    </li>
-                </ul>
+
+<nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container">
+        <a class="navbar-brand fw-bold fs-3" th:href="@{/}">Reservio</a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <!-- 只有登入後才看得到的選單 -->
+                <li class="nav-item" sec:authorize="isAuthenticated()">
+                    <a class="nav-link" href="#">我的預約</a>
+                </li>
+            </ul>
+
+            <div class="navbar-nav ms-auto">
+                <!-- 情況 A：使用者已登入 -->
+                <div sec:authorize="isAuthenticated()" class="d-flex align-items-center">
+                    <span class="navbar-text me-3 text-white">
+                        <i class="bi bi-person-circle"></i> 你好，<strong sec:authentication="name">使用者</strong>！
+                    </span>
+                    <form th:action="@{/logout}" method="post" class="m-0">
+                        <button type="submit" class="btn btn-outline-light btn-sm px-3 rounded-pill">登出</button>
+                    </form>
+                </div>
+
+                <!-- 情況 B：使用者未登入 (訪客) -->
+                <div sec:authorize="isAnonymous()" class="d-flex align-items-center">
+                    <a th:href="@{/login}" class="btn btn-outline-light btn-sm me-2 px-3 rounded-pill">登入</a>
+                    <a th:href="@{/register}" class="btn btn-light btn-sm text-primary fw-bold px-3 rounded-pill shadow-sm">註冊</a>
+                </div>
             </div>
         </div>
-    </nav>
+    </div>
+</nav>
+
 </body>
 </html>

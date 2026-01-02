@@ -28,8 +28,7 @@ public class HomeController {
     }
 
     @GetMapping("/")
-    public String index(Model model) {
-        model.addAttribute("message", "歡迎來到 Reservio");
+    public String index() {
         return INDEX;
     }
 
@@ -66,13 +65,5 @@ public class HomeController {
     @GetMapping("/login")
     public String showLoginForm() {
         return LOGIN;
-    }
-
-    @PostMapping("/login")
-    public String processLogin(
-            @RequestParam("username") String username,
-            @RequestParam("password") String password,
-            Model model) {
-        return INDEX;
     }
 }
