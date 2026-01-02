@@ -17,7 +17,7 @@ public class HomeController {
 
     private static final Logger log = LoggerFactory.getLogger(HomeController.class);
 
-    private static final String INDEX = "index";
+    private static final String HOME = "home";
     private static final String REGISTER = "register";
     private static final String LOGIN = "login";
 
@@ -28,8 +28,8 @@ public class HomeController {
     }
 
     @GetMapping("/")
-    public String index() {
-        return INDEX;
+    public String home() {
+        return HOME;
     }
 
     @GetMapping("/register")
