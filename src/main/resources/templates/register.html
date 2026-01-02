@@ -21,18 +21,18 @@
                             <p class="mb-0 mt-2 opacity-75">加入 Reservio，開始您的智慧預約體驗</p>
                         </div>
                         <div class="card-body p-4">
-                            <form action="#" method="post">
+                            <form th:action="@{/register}" method="post">
                                 <div class="mb-3">
                                     <label for="username" class="form-label">使用者名稱</label>
-                                    <input type="text" class="form-control" id="username" placeholder="請輸入您的名稱" required>
+                                    <input type="text" class="form-control" id="username" name="username" placeholder="請輸入您的名稱" required>
                                 </div>
                                 <div class="mb-3">
                                     <label for="email" class="form-label">電子郵件</label>
-                                    <input type="email" class="form-control" id="email" placeholder="example@mail.com" required>
+                                    <input type="email" class="form-control" id="email" name="email" placeholder="example@mail.com" required>
                                 </div>
                                 <div class="mb-3">
                                     <label for="password" class="form-label">密碼</label>
-                                    <input type="password" class="form-control" id="password" placeholder="請設定您的密碼" required>
+                                    <input type="password" class="form-control" id="password" name="password" placeholder="請設定您的密碼" required>
                                 </div>
                                 <div class="d-grid mt-4">
                                     <button type="submit" class="btn btn-gradient btn-lg fw-bold shadow-sm">確認註冊</button>
