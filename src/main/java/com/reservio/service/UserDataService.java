@@ -25,7 +25,7 @@ public class UserDataService {
         }
         // 2. 檢查帳號是否已被註冊
         if (userDataRepo.existsByUsername(username)) {
-            throw new RuntimeException("此使用者名稱已被佔用");
+            throw new RuntimeException("此使用者名稱已被使用");
         }
 
         UserData user = UserData.builder()
