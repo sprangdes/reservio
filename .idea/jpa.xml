@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PersistenceUnitSettings">
+    <persistence-units>
+      <persistence-unit moduleName="reservio" name="reservio" framework="JPA" ormUnit="reservio:reservio" defaultDataSourceId="1e40e23f-0144-4ad1-8e87-0a07332c0c63" />
+    </persistence-units>
+  </component>
+</project>
