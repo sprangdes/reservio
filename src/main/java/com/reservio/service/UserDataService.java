@@ -2,6 +2,7 @@ package com.reservio.service;
 
 import com.reservio.entity.UserData;
 import com.reservio.repo.UserDataRepo;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -9,9 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserDataService {
 
     private final UserDataRepo userDataRepo;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserDataService(UserDataRepo userDataRepo) {
+    public UserDataService(UserDataRepo userDataRepo, PasswordEncoder passwordEncoder) {
         this.userDataRepo = userDataRepo;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -19,7 +22,7 @@ public class UserDataService {
         UserData user = UserData.builder()
                 .username(username)
                 .email(email)
-                .password(password)
+                .password(passwordEncoder.encode(password))
                 .build();
         return userDataRepo.save(user);
     }
