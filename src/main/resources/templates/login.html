@@ -17,11 +17,11 @@
                 <div class="col-md-5">
                     <div class="card shadow-sm border-0">
                         <!-- 使用與 Hero Section 一致的漸層標題 -->
-                        <div class="card-header hero-section text-white p-4 text-center">
+                        <div class="card-header bg-gradient text-white p-4 text-center">
                             <h4 class="mb-0 fw-bold">歡迎回來</h4>
                             <p class="mb-0 mt-2 opacity-75">登入以管理您的預約服務</p>
                         </div>
-                        
+
                         <div class="card-body p-4">
                             <!-- 顯示註冊成功的訊息 -->
                             <div th:if="${successMessage}" class="alert alert-success shadow-sm mb-4">
@@ -32,7 +32,7 @@
                             <div th:if="${param.error}" class="alert alert-danger shadow-sm">
                                 使用者名稱或密碼不正確，請再試一次。
                             </div>
-                            
+
                             <!-- 登出成功訊息提示 -->
                             <div th:if="${param.logout}" class="alert alert-success shadow-sm">
                                 您已成功登出。
@@ -52,7 +52,7 @@
                                 </div>
                             </form>
                         </div>
-                        
+
                         <div class="card-footer text-center py-3">
                             <small class="text-muted">還沒有帳號嗎？ <a th:href="@{/register}" class="text-primary text-decoration-none fw-bold">立即註冊</a></small>
                         </div>

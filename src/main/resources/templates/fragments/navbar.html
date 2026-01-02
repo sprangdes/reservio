@@ -3,7 +3,8 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
 
-<nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+<!-- 將預設類別改為 bg-gradient -->
+<nav th:fragment="navbar" th:class="'navbar navbar-expand-lg navbar-dark fixed-top ' + ${navbarClass ?: 'bg-gradient navbar-custom-shadow'}">
     <div class="container">
         <a class="navbar-brand fw-bold fs-3" th:href="@{/}">Reservio</a>
 
