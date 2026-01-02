@@ -21,14 +21,18 @@
                             <p class="mb-0 mt-2 opacity-75">加入 Reservio，開始您的智慧預約體驗</p>
                         </div>
                         <div class="card-body p-4">
+                            <!-- 顯示錯誤訊息 -->
+                            <div th:if="${errorMessage}" class="alert alert-danger shadow-sm mb-4">
+                                <span th:text="${errorMessage}"></span>
+                            </div>
                             <form th:action="@{/register}" method="post">
                                 <div class="mb-3">
                                     <label for="username" class="form-label">使用者名稱</label>
-                                    <input type="text" class="form-control" id="username" name="username" placeholder="請輸入您的名稱" required>
+                                    <input type="text" class="form-control" id="username" name="username" th:value="${username}" placeholder="請輸入您的名稱" required>
                                 </div>
                                 <div class="mb-3">
                                     <label for="email" class="form-label">電子郵件</label>
-                                    <input type="email" class="form-control" id="email" name="email" placeholder="example@mail.com" required>
+                                    <input type="email" class="form-control" id="email" name="email" th:value="${email}" placeholder="example@mail.com" required>
                                 </div>
                                 <div class="mb-3">
                                     <label for="password" class="form-label">密碼</label>
@@ -40,7 +44,7 @@
                             </form>
                         </div>
                         <div class="card-footer text-center py-3">
-                            <small class="text-muted">已經有帳號了？ <a href="#">立即登入</a></small>
+                            <small class="text-muted">已經有帳號了？ <a th:href="@{/login}" class="text-primary text-decoration-none fw-bold">立即登入</a></small>
                         </div>
                     </div>
                 </div>

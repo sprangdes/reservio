@@ -9,6 +9,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 public class HomeController {
@@ -32,17 +33,37 @@ public class HomeController {
         return "register";
     }
 
-    @PostMapping("register")
+    @PostMapping("/register")
     public String processRegistration(
             @RequestParam("username") String username,
             @RequestParam("email") String email,
             @RequestParam("password") String password,
+            RedirectAttributes redirectAttributes,
             Model model) {
+        try {
+            UserData user = userDataService.registerUser(username, email, password);
+            log.info("註冊: user=> {}, email=> {}", user.getUsername(), user.getEmail());
+            redirectAttributes.addFlashAttribute("successMessage", "註冊成功，歡迎您，" + user.getUsername() + "。請登入您的帳號。");
+            return "redirect:/login";
+        } catch (RuntimeException e) {
+            log.error("註冊失敗: {}", e.getMessage());
+            model.addAttribute("errorMessage", e.getMessage());
+            model.addAttribute("username", username);
+            model.addAttribute("email", email);
+            return "register";
+        }
+    }
 
-        UserData user = userDataService.registerUser(username, email, password);
-        log.info("收到註冊請求: username={}, email={}", user.getUsername(), user.getEmail());
+    @GetMapping("/login")
+    public String showLoginForm() {
+        return "login";
+    }
 
-        model.addAttribute("message", "註冊成功，歡迎你，" + user.getUsername());
+    @PostMapping("/login")
+    public String processLogin(
+            @RequestParam("username") String username,
+            @RequestParam("password") String password,
+            Model model) {
         return "index";
     }
 }

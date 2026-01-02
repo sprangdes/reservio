@@ -19,6 +19,15 @@ public class UserDataService {
 
     @Transactional
     public UserData registerUser(String username, String email, String password) {
+        // 1. 檢查 Email 是否已被註冊
+        if (userDataRepo.existsByEmail(email)) {
+            throw new RuntimeException("此電子郵件已被註冊");
+        }
+        // 2. 檢查帳號是否已被註冊
+        if (userDataRepo.existsByUsername(username)) {
+            throw new RuntimeException("此使用者名稱已被佔用");
+        }
+
         UserData user = UserData.builder()
                 .username(username)
                 .email(email)
