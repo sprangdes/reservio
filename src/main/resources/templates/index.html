@@ -11,49 +11,51 @@
 
     <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-    <header class="hero-section text-center">
-        <div class="container">
-            <h1 class="display-3 fw-bold mb-4" th:text="${message}">歡迎來到 Reservio</h1>
-            <p class="lead mb-5">最直覺、最快速的預約系統，讓管理預約不再是難事。</p>
-            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                <a th:href="@{/register}" class="btn btn-light btn-lg px-4 gap-3 fw-bold text-primary">開始使用</a>
-                <button type="button" class="btn btn-outline-light btn-lg px-4">了解更多</button>
+    <main>
+        <header class="hero-section text-center">
+            <div class="container">
+                <h1 class="display-3 fw-bold mb-4" th:text="${message}">歡迎來到 Reservio</h1>
+                <p class="lead mb-5">最直覺、最快速的預約系統，讓管理預約不再是難事。</p>
+                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                    <a th:href="@{/register}" class="btn btn-light btn-lg px-4 gap-3 fw-bold text-primary">開始使用</a>
+                    <button type="button" class="btn btn-outline-light btn-lg px-4">了解更多</button>
+                </div>
             </div>
-        </div>
-    </header>
+        </header>
 
-    <!-- 特色介紹區 -->
-    <section class="container my-5">
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="card h-100 feature-card p-4">
-                    <div class="card-body text-center">
-                        <div class="display-6 text-primary mb-3">📅</div>
-                        <h3 class="card-title h5 fw-bold">快速預約</h3>
-                        <p class="card-text text-muted">只需幾秒鐘，即可完成繁瑣的預約流程，提升工作效率。</p>
+        <!-- 特色介紹區 -->
+        <section class="container my-5">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card h-100 feature-card p-4">
+                        <div class="card-body text-center">
+                            <div class="display-6 text-primary mb-3">📅</div>
+                            <h3 class="card-title h5 fw-bold">快速預約</h3>
+                            <p class="card-text text-muted">只需幾秒鐘，即可完成繁瑣的預約流程，提升工作效率。</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 feature-card p-4">
+                        <div class="card-body text-center">
+                            <div class="display-6 text-success mb-3">🔔</div>
+                            <h3 class="card-title h5 fw-bold">自動通知</h3>
+                            <p class="card-text text-muted">系統自動發送提醒，降低爽約率，維持良好的服務品質。</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 feature-card p-4">
+                        <div class="card-body text-center">
+                            <div class="display-6 text-info mb-3">📊</div>
+                            <h3 class="card-title h5 fw-bold">數據分析</h3>
+                            <p class="card-text text-muted">掌握預約趨勢，透過報表優化您的業務資源分配。</p>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card h-100 feature-card p-4">
-                    <div class="card-body text-center">
-                        <div class="display-6 text-success mb-3">🔔</div>
-                        <h3 class="card-title h5 fw-bold">自動通知</h3>
-                        <p class="card-text text-muted">系統自動發送提醒，降低爽約率，維持良好的服務品質。</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card h-100 feature-card p-4">
-                    <div class="card-body text-center">
-                        <div class="display-6 text-info mb-3">📊</div>
-                        <h3 class="card-title h5 fw-bold">數據分析</h3>
-                        <p class="card-text text-muted">掌握預約趨勢，透過報表優化您的業務資源分配。</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+        </section>
+    </main>
 
     <div th:replace="~{fragments/footer :: footer}"></div>
 

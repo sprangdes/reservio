@@ -11,40 +11,42 @@
 
     <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-    <div class="container my-5">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card shadow-sm border-0">
-                    <div class="card-header hero-section text-white p-4 text-center">
-                        <h4 class="mb-0 fw-bold">建立您的使用者帳號</h4>
-                        <p class="mb-0 mt-2 opacity-75">加入 Reservio，開始您的智慧預約體驗</p>
-                    </div>
-                    <div class="card-body p-4">
-                        <form action="#" method="post">
-                            <div class="mb-3">
-                                <label for="username" class="form-label">使用者名稱</label>
-                                <input type="text" class="form-control" id="username" placeholder="請輸入您的名稱" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="email" class="form-label">電子郵件</label>
-                                <input type="email" class="form-control" id="email" placeholder="example@mail.com" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="password" class="form-label">密碼</label>
-                                <input type="password" class="form-control" id="password" placeholder="請設定您的密碼" required>
-                            </div>
-                            <div class="d-grid mt-4">
-                                <button type="submit" class="btn btn-gradient btn-lg fw-bold shadow-sm">確認註冊</button>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="card-footer text-center py-3">
-                        <small class="text-muted">已經有帳號了？ <a href="#">立即登入</a></small>
+    <main>
+        <div class="container my-5">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header hero-section text-white p-4 text-center">
+                            <h4 class="mb-0 fw-bold">建立您的使用者帳號</h4>
+                            <p class="mb-0 mt-2 opacity-75">加入 Reservio，開始您的智慧預約體驗</p>
+                        </div>
+                        <div class="card-body p-4">
+                            <form action="#" method="post">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">使用者名稱</label>
+                                    <input type="text" class="form-control" id="username" placeholder="請輸入您的名稱" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">電子郵件</label>
+                                    <input type="email" class="form-control" id="email" placeholder="example@mail.com" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">密碼</label>
+                                    <input type="password" class="form-control" id="password" placeholder="請設定您的密碼" required>
+                                </div>
+                                <div class="d-grid mt-4">
+                                    <button type="submit" class="btn btn-gradient btn-lg fw-bold shadow-sm">確認註冊</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="card-footer text-center py-3">
+                            <small class="text-muted">已經有帳號了？ <a href="#">立即登入</a></small>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
     <div th:replace="~{fragments/footer :: footer}"></div>
 
