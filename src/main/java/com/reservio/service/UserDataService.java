@@ -1,6 +1,7 @@
 package com.reservio.service;
 
 import com.reservio.entity.UserData;
+import com.reservio.exception.UserAlreadyExistsException;
 import com.reservio.repo.UserDataRepo;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,11 +22,11 @@ public class UserDataService {
     public UserData registerUser(String username, String email, String password) {
         // 1. 檢查 Email 是否已被註冊
         if (userDataRepo.existsByEmail(email)) {
-            throw new RuntimeException("此電子郵件已被註冊");
+            throw new UserAlreadyExistsException("此電子郵件已被註冊");
         }
         // 2. 檢查帳號是否已被註冊
         if (userDataRepo.existsByUsername(username)) {
-            throw new RuntimeException("此使用者名稱已被使用");
+            throw new UserAlreadyExistsException("此使用者名稱已被使用");
         }
 
         UserData user = UserData.builder()
