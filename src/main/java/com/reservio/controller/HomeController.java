@@ -1,5 +1,7 @@
 package com.reservio.controller;
 
+import com.reservio.entity.UserData;
+import com.reservio.service.UserDataService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -12,6 +14,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class HomeController {
 
     private static final Logger log = LoggerFactory.getLogger(HomeController.class);
+
+    private final UserDataService userDataService;
+
+    public HomeController(UserDataService userDataService) {
+        this.userDataService = userDataService;
+    }
 
     @GetMapping("/")
     public String index(Model model) {
@@ -31,9 +39,10 @@ public class HomeController {
             @RequestParam("password") String password,
             Model model) {
 
-        log.info("收到註冊請求: username={}, email={}", username, email);
+        UserData user = userDataService.registerUser(username, email, password);
+        log.info("收到註冊請求: username={}, email={}", user.getUsername(), user.getEmail());
 
-        model.addAttribute("message", "註冊成功，歡迎你，" + username);
+        model.addAttribute("message", "註冊成功，歡迎你，" + user.getUsername());
         return "index";
     }
 }
