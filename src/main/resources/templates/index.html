@@ -16,7 +16,7 @@
             <h1 class="display-3 fw-bold mb-4" th:text="${message}">歡迎來到 Reservio</h1>
             <p class="lead mb-5">最直覺、最快速的預約系統，讓管理預約不再是難事。</p>
             <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                <button type="button" class="btn btn-light btn-lg px-4 gap-3 fw-bold text-primary">開始使用</button>
+                <a th:href="@{/register}" class="btn btn-light btn-lg px-4 gap-3 fw-bold text-primary">開始使用</a>
                 <button type="button" class="btn btn-outline-light btn-lg px-4">了解更多</button>
             </div>
         </div>

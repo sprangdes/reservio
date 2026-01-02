@@ -12,4 +12,9 @@ public class HomeController {
         model.addAttribute("message", "歡迎來到 Reservio");
         return "index";
     }
+
+    @GetMapping("/register")
+    public String showRegistrationForm() {
+        return "register";
+    }
 }
