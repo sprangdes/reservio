@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Entity
 @Table(name = "user_data")
 @Data
@@ -26,4 +28,12 @@ public class UserData {
 
     @Column(nullable = false)
     private String password;
+
+    @OneToMany(
+            mappedBy = "user",
+            fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL,
+            orphanRemoval = false
+    )
+    private List<Reservation> reservations;
 }
