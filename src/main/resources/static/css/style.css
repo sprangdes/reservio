@@ -63,3 +63,13 @@ main {
     color: white;
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
+
+/* Flatpickr 樣式微調 - 讓選取的顏色與專案一致 */
+.flatpickr-day.selected {
+    background: #764ba2 !important;
+    border-color: #764ba2 !important;
+}
+.flatpickr-day.disabled {
+    color: #e9ecef !important;
+    cursor: not-allowed !important;
+}
