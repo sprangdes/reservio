@@ -23,56 +23,61 @@
                         <div class="card-body p-4 p-lg-5">
                             <form th:action="@{/reservation/new}" method="post">
                                 
-                                <!-- 標題 -->
+                                <!-- 步驟 1：選擇預約項目 -->
                                 <div class="mb-4">
-                                    <label for="title" class="form-label fw-bold">預約項目 / 標題</label>
-                                    <input type="text" class="form-control" id="title" name="title" placeholder="例如：美髮預約、商務會議" required>
-                                </div>
-
-                                <div class="row">
-                                    <!-- 日期 -->
-                                    <div class="col-md-6 mb-4">
-                                        <label for="reservationDate" class="form-label fw-bold">預約日期</label>
-                                        <input type="date" class="form-control" id="reservationDate" name="reservationDate" required>
+                                    <h6 class="text-primary fw-bold mb-3"><i class="bi bi-1-circle-fill me-1"></i> 選擇預約項目</h6>
+                                    <div class="mb-2">
+                                        <label for="title" class="form-label small fw-semibold">預約服務項目</label>
+                                        <select class="form-select form-select-sm" id="title" name="title" required>
+                                            <option value="" disabled selected>請選擇您要預約的項目...</option>
+                                            <option th:each="item : ${serviceItems}"
+                                                    th:value="${item}"
+                                                    th:text="${item}">項目名稱</option>
+                                        </select>
                                     </div>
-                                    <!-- 狀態（預設） -->
-                                    <div class="col-md-6 mb-4">
-                                        <label class="form-label fw-bold">預約狀態</label>
-                                        <input type="text" class="form-control bg-light" value="待確認 (PENDING)" readonly>
-                                        <input type="hidden" name="status" value="PENDING">
+                                    <div class="mb-3">
+                                        <label for="description" class="form-label small fw-semibold">項目內容描述 (選填)</label>
+                                        <textarea class="form-control form-control-sm" id="description" name="description" rows="2" placeholder="簡述您的預約需求..."></textarea>
                                     </div>
                                 </div>
 
-                                <div class="row">
-                                    <!-- 開始時間 -->
-                                    <div class="col-md-6 mb-4">
-                                        <label for="startTime" class="form-label fw-bold">開始時間</label>
-                                        <input type="time" class="form-control" id="startTime" name="startTime" required>
-                                    </div>
-                                    <!-- 結束時間 -->
-                                    <div class="col-md-6 mb-4">
-                                        <label for="endTime" class="form-label fw-bold">結束時間</label>
-                                        <input type="time" class="form-control" id="endTime" name="endTime" required>
-                                    </div>
-                                </div>
-
-                                <!-- 描述 -->
+                                <!-- 步驟 2：選擇預約日期 -->
                                 <div class="mb-4">
-                                    <label for="description" class="form-label fw-bold">詳細描述</label>
-                                    <textarea class="form-control" id="description" name="description" rows="3" placeholder="請輸入預約相關的詳細內容..."></textarea>
+                                    <h6 class="text-primary fw-bold mb-3"><i class="bi bi-2-circle-fill me-1"></i> 選擇預約日期</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <input type="date" class="form-control form-control-sm" id="reservationDate" name="reservationDate" required>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <!-- 備註 -->
+                                <!-- 步驟 3：選擇預約時間 -->
                                 <div class="mb-4">
-                                    <label for="remark" class="form-label fw-bold">備註 (選填)</label>
-                                    <input type="text" class="form-control" id="remark" name="remark" placeholder="是否有特殊要求？">
+                                    <h6 class="text-primary fw-bold mb-3"><i class="bi bi-3-circle-fill me-1"></i> 選擇預約時間</h6>
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
+                                            <label for="startTime" class="form-label small fw-semibold">開始時間</label>
+                                            <input type="time" class="form-control form-control-sm" id="startTime" name="startTime" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="endTime" class="form-label small fw-semibold">結束時間</label>
+                                            <input type="time" class="form-control form-control-sm" id="endTime" name="endTime" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 步驟 4：其他備註 -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary fw-bold mb-3"><i class="bi bi-4-circle-fill me-1"></i> 其他備註 (選填)</h6>
+                                    <input type="text" class="form-control form-control-sm" id="remark" name="remark" placeholder="是否有其他特殊要求？">
+                                    <input type="hidden" name="status" value="PENDING">
                                 </div>
 
                                 <hr class="my-4 opacity-25">
 
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <a th:href="@{/}" class="text-muted text-decoration-none"><i class="bi bi-arrow-left"></i> 返回</a>
-                                    <button type="submit" class="btn btn-gradient btn-lg px-5 fw-bold shadow-sm">送出預約</button>
+                                    <a th:href="@{/}" class="text-muted small text-decoration-none"><i class="bi bi-arrow-left"></i> 返回</a>
+                                    <button type="submit" class="btn btn-gradient px-4 fw-bold shadow-sm">送出預約</button>
                                 </div>
                             </form>
                         </div>

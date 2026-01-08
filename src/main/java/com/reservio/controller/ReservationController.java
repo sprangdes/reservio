@@ -6,6 +6,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Controller
 public class ReservationController {
 
@@ -13,6 +16,14 @@ public class ReservationController {
 
     @GetMapping("/reservation/new")
     public String showReservationForm(Model model) {
+
+        List<String> serviceItems = Arrays.asList(
+                "精油 SPA 按摩(全身)",
+                "精油 SPA 按摩(半身)",
+                "臉部保養"
+        );
+
+        model.addAttribute("serviceItems", serviceItems);
         return "reservation-form";
     }
 
