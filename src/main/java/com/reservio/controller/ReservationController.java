@@ -38,10 +38,6 @@ public class ReservationController {
         // 從資料庫取得所有服務項目
         List<ServiceItem> serviceItems = serviceItemService.getServiceItems();
 
-        // 計算日期範圍 (今天 ~ 三個月後)
-        LocalDate minDate = LocalDate.now();
-        LocalDate maxDate = minDate.plusMonths(3);
-
         // 不開放預約日期 yyyy-MM-dd
         List<String> disabledDates = reservationTimeService.getDisabledDates();
 
@@ -50,8 +46,6 @@ public class ReservationController {
 
         model.addAttribute("serviceItems", serviceItems);
         model.addAttribute("disabledDates", disabledDates);
-        model.addAttribute("minDate", minDate);
-        model.addAttribute("maxDate", maxDate);
         model.addAttribute("timeSlots", timeSlots);
         return "reservation-form";
     }
