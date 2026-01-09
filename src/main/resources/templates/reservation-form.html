@@ -64,7 +64,7 @@
                                                 <!-- 初始狀態加上 disabled -->
                                                 <select class="form-select form-select-sm" id="startTime" name="startTime" required disabled>
                                                     <option value="" disabled selected>請先選擇日期..</option>
-                                                    <option th:each="slot : ${allTimeSlots}" th:value="${slot}" th:text="${slot}"></option>
+                                                    <option th:each="slot : ${timeSlots}" th:value="${slot}" th:text="${slot}"></option>
                                                 </select>
                                                 <input type="hidden" id="endTime" name="endTime">
                                             </div>
