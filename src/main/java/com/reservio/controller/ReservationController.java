@@ -8,7 +8,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 
 @Controller
@@ -40,12 +44,20 @@ public class ReservationController {
         // 不開放預約日期 yyyy-MM-dd
         List<String> disabledDates = reservationTimeService.getDisabledDates();
 
-        // 產生可以預約的時間
-        List<String> timeSlots = reservationTimeService.getTimeSlots();
-
         model.addAttribute(SERVICE_ITEMS, serviceItems);
         model.addAttribute(DISABLED_DATES, disabledDates);
-        model.addAttribute(TIME_SLOTS, timeSlots);
         return RESERVATION_FORM;
+    }
+
+    @GetMapping("reservation/slots")
+    @ResponseBody
+    public List<String> getTimeSlotsForDate(@RequestParam("date") String dateStr) {
+        try {
+            LocalDate date = LocalDate.parse(dateStr);
+            return reservationTimeService.getTimeSlotsForDate(date);
+        } catch (Exception e) {
+            log.error("解析日期失敗: {}", dateStr);
+            return Collections.emptyList();
+        }
     }
 }

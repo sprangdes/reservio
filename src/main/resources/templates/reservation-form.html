@@ -64,7 +64,6 @@
                                                 <!-- 初始狀態加上 disabled -->
                                                 <select class="form-select form-select-sm" id="startTime" name="startTime" required disabled>
                                                     <option value="" disabled selected>請先選擇日期..</option>
-                                                    <option th:each="slot : ${timeSlots}" th:value="${slot}" th:text="${slot}"></option>
                                                 </select>
                                                 <input type="hidden" id="endTime" name="endTime">
                                             </div>
@@ -120,17 +119,33 @@
             // 核心控制邏輯：當日期改變時觸發
             onChange: function(selectedDates, dateStr) {
                 if (dateStr) {
-                    // 1. 解除時間選單的禁用狀態
-                    startSelect.disabled = false;
-                    // 2. 清空舊的時間選擇，強迫重新選取以確保邏輯正確
-                    startSelect.value = "";
-                    endTimeHidden.value = "";
-                    // 3. 移除 Bootstrap 的禁用樣式（如果有的話）
-                    startSelect.classList.remove('bg-light');
+                    fetch(`/reservation/slots?date=${dateStr}`)
+                        .then(response => response.json())
+                        .then(slots => {
+                            startSelect.innerHTML = '<option value="" disabled selected>請選擇時段...</option>';
+
+                            if (slots.length > 0) {
+                                slots.forEach(slot => {
+                                    const option = document.createElement('option');
+                                    option.value = slot;
+                                    option.innerText = slot;
+                                    startSelect.appendChild(option);
+                                });
+                                startSelect.disabled = false;
+                                startSelect.classList.remove('bg-light');
+                            } else {
+                                startSelect.innerHTML = '<option value="" disabled selected>該日無可用時段</option>';
+                                startSelect.disabled = true;
+                            }
+                            endTimeHidden.value = "";
+                        })
+                        .catch(error => {
+                            console.error('Error fetching slots:', error);
+                            startSelect.innerHTML = '<option value="" disabled selected>載入失敗</option>';
+                        });
                 } else {
-                    // 如果日期被清空，重新禁用時間選單
                     startSelect.disabled = true;
-                    startSelect.value = "";
+                    startSelect.innerHTML = '<option value="" disabled selected>請先選擇日期..</option>';
                     startSelect.classList.add('bg-light');
                 }
             }
