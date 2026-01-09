@@ -20,6 +20,12 @@ public class HomeController {
     private static final String HOME = "home";
     private static final String REGISTER = "register";
     private static final String LOGIN = "login";
+    private static final String REDIRECT_LOGIN = "redirect:/login";
+
+    private static final String SUCCESS_MESSAGE = "successMessage";
+    private static final String ERROR_MESSAGE = "errorMessage";
+    private static final String USERNAME = "username";
+    private static final String EMAIL = "email";
 
     private final UserDataService userDataService;
 
@@ -47,17 +53,17 @@ public class HomeController {
         try {
             UserData user = userDataService.registerUser(username, email, password);
             log.info("註冊: user=> {}, email=> {}", user.getUsername(), user.getEmail());
-            redirectAttributes.addFlashAttribute("successMessage", "註冊成功，歡迎您，" + user.getUsername() + "。請登入您的帳號。");
-            return "redirect:/login";
+            redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, "註冊成功，歡迎您，" + user.getUsername() + "。請登入您的帳號。");
+            return REDIRECT_LOGIN;
         } catch (UserAlreadyExistsException e) {
             log.error("註冊失敗: {}", e.getMessage());
-            model.addAttribute("errorMessage", e.getMessage());
-            model.addAttribute("username", username);
-            model.addAttribute("email", email);
+            model.addAttribute(ERROR_MESSAGE, e.getMessage());
+            model.addAttribute(USERNAME, username);
+            model.addAttribute(EMAIL, email);
             return REGISTER;
         } catch (Exception e) {
             log.error("註冊發生預料之外的錯誤", e);
-            model.addAttribute("errorMessage", "系統繁忙，請稍後再試");
+            model.addAttribute(ERROR_MESSAGE, "系統繁忙，請稍後再試");
             return REGISTER;
         }
     }
