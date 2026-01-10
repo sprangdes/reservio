@@ -24,7 +24,6 @@ public class ReservationController {
 
     private static final String SERVICE_ITEMS = "serviceItems";
     private static final String DISABLED_DATES = "disabledDates";
-    private static final String TIME_SLOTS = "timeSlots";
 
     private final ServiceItemService serviceItemService;
     private final ReservationTimeService reservationTimeService;
@@ -49,7 +48,7 @@ public class ReservationController {
         return RESERVATION_FORM;
     }
 
-    @GetMapping("reservation/slots")
+    @GetMapping("/reservation/slots")
     @ResponseBody
     public List<String> getTimeSlotsForDate(@RequestParam("date") String dateStr) {
         try {
