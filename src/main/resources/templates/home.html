@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="zh-TW">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -98,22 +100,19 @@
     <script th:inline="javascript">
         document.addEventListener('DOMContentLoaded', function () {
             // 獲取 Thymeleaf 傳遞的訊息變數
-            const successMsg = /*[[${successMessage}]]*/ null;
-            const errorMsg = /*[[${errorMessage}]]*/ null;
+            const successMsg = /*[[${successMessage}]]*/ "";
+            const errorMsg = /*[[${errorMessage}]]*/ "";
 
-            // 如果有成功訊息，顯示成功 Toast
-            if (successMsg) {
-                const successToast = document.getElementById('successToast');
-                const toast = new bootstrap.Toast(successToast);
-                toast.show();
-            }
+            const showToast = (id) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    new bootstrap.Toast(el).show();
+                }
+            };
 
-            // 如果有失敗訊息，顯示失敗 Toast
-            if (errorMsg) {
-                const errorToast = document.getElementById('errorToast');
-                const toast = new bootstrap.Toast(errorToast);
-                toast.show();
-            }
+            // 根據訊息是否存在來決定是否顯示
+            successMsg && showToast('successToast');
+            errorMsg && showToast('errorToast');
         });
     </script>
 </body>
