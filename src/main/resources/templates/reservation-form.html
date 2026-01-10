@@ -29,7 +29,7 @@
                                 <div class="mb-4">
                                     <h6 class="text-primary fw-bold mb-3"><i class="bi bi-1-circle-fill me-1"></i> 選擇預約項目</h6>
                                     <div class="mb-2">
-                                        <select class="form-select form-select-sm" id="title" name="title" required>
+                                        <select class="form-select form-select-sm" id="title" name="title" aria-label="預約服務項目" required>
                                             <option value="" disabled selected>請選擇您要預約的項目...</option>
                                             <option th:each="item : ${serviceItems}"
                                                     th:value="${item.name}"
@@ -44,7 +44,7 @@
                                     <h6 class="text-primary fw-bold mb-3"><i class="bi bi-2-circle-fill me-1"></i> 選擇預約日期</h6>
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <input type="text" class="form-control form-control-sm bg-white" id="reservationDate" name="reservationDate" placeholder="請選擇日期.." required>
+                                            <input type="text" class="form-control form-control-sm bg-white" id="reservationDate" name="reservationDate" aria-label="預約日期" placeholder="請選擇日期.." required>
                                         </div>
                                     </div>
                                 </div>
@@ -55,7 +55,7 @@
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <!-- 初始狀態加上 disabled -->
-                                                <select class="form-select form-select-sm" id="startTime" name="startTime" required disabled>
+                                                <select class="form-select form-select-sm" id="startTime" name="startTime" aria-label="預約時間" required disabled>
                                                     <option value="" disabled selected>請先選擇日期..</option>
                                                 </select>
                                                 <input type="hidden" id="endTime" name="endTime">
@@ -66,7 +66,7 @@
                                     <!-- 步驟 4：其他備註 -->
                                     <div class="mb-4">
                                         <h6 class="text-primary fw-bold mb-3"><i class="bi bi-4-circle-fill me-1"></i> 其他備註 (選填)</h6>
-                                        <textarea class="form-control form-control-sm" id="description" name="description" rows="2" placeholder="是否有其他特殊要求？"></textarea>
+                                        <textarea class="form-control form-control-sm" id="description" name="description" aria-label="其他備註" rows="2" placeholder="是否有其他特殊要求？"></textarea>
                                         <input type="hidden" name="status" value="PENDING">
                                     </div>
 
@@ -91,6 +91,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh-tw.js"></script>
 
     <script th:inline="javascript">
+        /* global flatpickr */
         const startSelect = document.getElementById('startTime');
         const endTimeHidden = document.getElementById('endTime');
         const titleSelect = document.getElementById('title');
