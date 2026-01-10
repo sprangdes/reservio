@@ -95,5 +95,26 @@
     <div th:replace="~{fragments/footer :: footer}"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', function () {
+            // 獲取 Thymeleaf 傳遞的訊息變數
+            const successMsg = /*[[${successMessage}]]*/ null;
+            const errorMsg = /*[[${errorMessage}]]*/ null;
+
+            // 如果有成功訊息，顯示成功 Toast
+            if (successMsg) {
+                const successToast = document.getElementById('successToast');
+                const toast = new bootstrap.Toast(successToast);
+                toast.show();
+            }
+
+            // 如果有失敗訊息，顯示失敗 Toast
+            if (errorMsg) {
+                const errorToast = document.getElementById('errorToast');
+                const toast = new bootstrap.Toast(errorToast);
+                toast.show();
+            }
+        });
+    </script>
 </body>
 </html>

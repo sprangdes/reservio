@@ -4,42 +4,68 @@
 <body>
 
 <!-- 將預設類別改為 bg-gradient -->
-<nav th:fragment="navbar" th:class="'navbar navbar-expand-lg navbar-dark fixed-top ' + ${navbarClass ?: 'bg-gradient navbar-custom-shadow'}">
-    <div class="container">
-        <a class="navbar-brand fw-bold fs-3" th:href="@{/}">Reservio</a>
+<div th:fragment="navbar">
+    <nav th:class="'navbar navbar-expand-lg navbar-dark fixed-top ' + ${navbarClass ?: 'bg-gradient navbar-custom-shadow'}">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-3" th:href="@{/}">Reservio</a>
 
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
 
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <!-- 只有登入後才看得到的選單 -->
-                <li class="nav-item" sec:authorize="isAuthenticated()">
-                    <a class="nav-link" href="#">我的預約</a>
-                </li>
-            </ul>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <!-- 只有登入後才看得到的選單 -->
+                    <li class="nav-item" sec:authorize="isAuthenticated()">
+                        <a class="nav-link" href="#">我的預約</a>
+                    </li>
+                </ul>
 
-            <div class="navbar-nav ms-auto">
-                <!-- 情況 A：使用者已登入 -->
-                <div sec:authorize="isAuthenticated()" class="d-flex align-items-center">
+                <div class="navbar-nav ms-auto">
+                    <!-- 情況 A：使用者已登入 -->
+                    <div sec:authorize="isAuthenticated()" class="d-flex align-items-center">
                     <span class="navbar-text me-3 text-white">
                         <i class="bi bi-person-circle"></i> 你好，<strong sec:authentication="name">使用者</strong>！
                     </span>
-                    <form th:action="@{/logout}" method="post" class="m-0">
-                        <button type="submit" class="btn btn-outline-light btn-sm px-3 rounded-pill">登出</button>
-                    </form>
-                </div>
+                        <form th:action="@{/logout}" method="post" class="m-0">
+                            <button type="submit" class="btn btn-outline-light btn-sm px-3 rounded-pill">登出</button>
+                        </form>
+                    </div>
 
-                <!-- 情況 B：使用者未登入 (訪客) -->
-                <div sec:authorize="isAnonymous()" class="d-flex align-items-center">
-                    <a th:href="@{/login}" class="btn btn-outline-light btn-sm me-2 px-3 rounded-pill">登入</a>
-                    <a th:href="@{/register}" class="btn btn-light btn-sm text-primary fw-bold px-3 rounded-pill shadow-sm">註冊</a>
+                    <!-- 情況 B：使用者未登入 (訪客) -->
+                    <div sec:authorize="isAnonymous()" class="d-flex align-items-center">
+                        <a th:href="@{/login}" class="btn btn-outline-light btn-sm me-2 px-3 rounded-pill">登入</a>
+                        <a th:href="@{/register}" class="btn btn-light btn-sm text-primary fw-bold px-3 rounded-pill shadow-sm">註冊</a>
+                    </div>
                 </div>
             </div>
         </div>
+    </nav>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <!-- 成功通知 -->
+        <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    <span th:text="${successMessage}">預約成功！</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+
+        <!-- 失敗通知 -->
+        <div id="errorToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <span th:text="${errorMessage}">預約失敗...</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
     </div>
-</nav>
+</div>
 
 </body>
 </html>

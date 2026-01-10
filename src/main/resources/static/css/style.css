@@ -73,3 +73,18 @@ main {
     color: #e9ecef !important;
     cursor: not-allowed !important;
 }
+
+/* 強制 Toast Container 位於最上層且在右下角 */
+.toast-container.position-fixed {
+    top: auto !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    left: auto !important;
+    z-index: 2000 !important;
+}
+
+/* 讓 Toast 看起來更精緻一點 */
+.toast {
+    backdrop-filter: blur(5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2) !important;
+}
