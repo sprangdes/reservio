@@ -2,7 +2,10 @@ package com.reservio.service;
 
 import com.reservio.entity.UserData;
 import com.reservio.exception.UserAlreadyExistsException;
+import com.reservio.exception.UserNotFoundException;
 import com.reservio.repo.UserDataRepo;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,5 +38,22 @@ public class UserDataService {
                 .password(passwordEncoder.encode(password))
                 .build();
         return userDataRepo.save(user);
+    }
+
+    public UserData getCurrentUser() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String username;
+
+        if (principal instanceof UserDetails userDetails) {
+            username = userDetails.getUsername();
+        } else {
+            username = principal.toString();
+        }
+
+        UserData user = userDataRepo.findByUsername(username);
+        if (user == null) {
+            throw new UserNotFoundException("找不到當前登入的使用者: " + username);
+        }
+        return user;
     }
 }

@@ -1,15 +1,16 @@
 package com.reservio.controller;
 
+import com.reservio.entity.Reservation;
 import com.reservio.entity.ServiceItem;
+import com.reservio.service.ReservationService;
 import com.reservio.service.ReservationTimeService;
 import com.reservio.service.ServiceItemService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
 import java.util.Collections;
@@ -27,12 +28,15 @@ public class ReservationController {
 
     private final ServiceItemService serviceItemService;
     private final ReservationTimeService reservationTimeService;
+    private final ReservationService reservationService;
 
     public ReservationController(
             ServiceItemService serviceItemService,
-            ReservationTimeService reservationTimeService) {
+            ReservationTimeService reservationTimeService,
+            ReservationService reservationService) {
         this.serviceItemService = serviceItemService;
         this.reservationTimeService = reservationTimeService;
+        this.reservationService = reservationService;
     }
 
     @GetMapping("/reservation/new")
@@ -58,5 +62,16 @@ public class ReservationController {
             log.error("解析日期失敗: {}", dateStr);
             return Collections.emptyList();
         }
+    }
+
+    @PostMapping("/reservation/new")
+    public String sendReservation(@ModelAttribute Reservation reservation, RedirectAttributes redirectAttributes) {
+        try {
+            reservationService.saveReservation(reservation);
+            redirectAttributes.addFlashAttribute("successMessage", "預約成功");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "預約失敗" + e.getMessage());
+        }
+        return "redirect:/";
     }
 }
