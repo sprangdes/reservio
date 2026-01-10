@@ -149,8 +149,8 @@
             const selectedOption = titleSelect.options[titleSelect.selectedIndex];
             const startTime = startSelect.value;
 
-            if (selectedOption && selectedOption.getAttribute('data-duration') && startTime) {
-                const duration = parseInt(selectedOption.getAttribute('data-duration'));
+            if (selectedOption && selectedOption.dataset.duration && startTime) {
+                const duration = Number.parseInt(selectedOption.dataset.duration);
                 const [hours, minutes] = startTime.split(':').map(Number);
 
                 const date = new Date();
@@ -158,9 +158,7 @@
 
                 const endHours = String(date.getHours()).padStart(2, '0');
                 const endMinutes = String(date.getMinutes()).padStart(2, '0');
-                const finalTime = `${endHours}:${endMinutes}`;
-
-                endTimeHidden.value = finalTime;
+                endTimeHidden.value = `${endHours}:${endMinutes}`;
             } else {
                 endTimeHidden.value = "";
             }
