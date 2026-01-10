@@ -91,15 +91,16 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh-tw.js"></script>
 
     <script th:inline="javascript">
-        const disableDates = /*[[${disabledDates}]]*/ [];
-
-        const today = new Date();
-        const minDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString().split('T')[0];
-        const maxDate = new Date(today.getFullYear(), today.getMonth() + 3, today.getDate()).toISOString().split('T')[0];
-
         const startSelect = document.getElementById('startTime');
         const endTimeHidden = document.getElementById('endTime');
         const titleSelect = document.getElementById('title');
+        const disableDates = /*[[${disabledDates}]]*/ [];
+
+        const today = new Date();
+        const minDate = today.toISOString().split('T')[0];
+        const threeMonthsLater = new Date();
+        threeMonthsLater.setMonth(today.getMonth() + 3);
+        const maxDate = threeMonthsLater.toISOString().split('T')[0];
 
         // 提取日期改變時的處理邏輯
         function handleDateChange(selectedDates, dateStr) {
@@ -112,7 +113,7 @@
                             slots.forEach(slot => {
                                 const option = document.createElement('option');
                                 option.value = slot;
-                                option.textContent = slot; // 順便建議用 textContent 取代 innerText
+                                option.textContent = slot;
                                 startSelect.appendChild(option);
                             });
                             startSelect.disabled = false;
@@ -142,7 +143,7 @@
             maxDate: maxDate,
             disable: disableDates,
             disableMobile: "true",
-            onChange: handleDateChange // 直接引用函數名稱
+            onChange: handleDateChange
         });
 
         // 自動計算結束時間的邏輯 calculateEndTime
