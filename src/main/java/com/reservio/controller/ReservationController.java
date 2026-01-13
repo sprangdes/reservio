@@ -56,10 +56,12 @@ public class ReservationController {
 
     @GetMapping("/reservation/slots")
     @ResponseBody
-    public List<TimeSlotDto> getTimeSlotsForDate(@RequestParam("date") String dateStr) {
+    public List<TimeSlotDto> getTimeSlotsForDate(
+            @RequestParam("date") String dateStr,
+            @RequestParam("duration") int duration) {
         try {
             LocalDate date = LocalDate.parse(dateStr);
-            return reservationTimeService.getTimeSlotsForDate(date);
+            return reservationTimeService.getTimeSlotsForDate(date, duration);
         } catch (Exception e) {
             log.error("解析日期失敗: {}", dateStr);
             return Collections.emptyList();

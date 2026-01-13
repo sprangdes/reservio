@@ -42,43 +42,49 @@ public class ReservationTimeService {
         return slots;
     }
 
-    public List<TimeSlotDto> getTimeSlotsForDate(LocalDate date) {
+    public List<TimeSlotDto> getTimeSlotsForDate(LocalDate date, int durationMinutes) {
         List<String> allSlots;
+
+        int interval;
 
         // 1. 取得該日原始的所有時段
         Optional<DateAvailableHours> dateHoursOpt = dateAvailableHoursRepo.findByDate(date);
         if (dateHoursOpt.isPresent()) {
             DateAvailableHours dateHours = dateHoursOpt.get();
             if (dateHours.isClosed()) return Collections.emptyList();
-            allSlots = generateSlots(dateHours.getStartTime(), dateHours.getEndTime(), dateHours.getSlotInterval());
+            interval = dateHours.getSlotInterval();
+            allSlots = generateSlots(dateHours.getStartTime(), dateHours.getEndTime(), interval);
         } else {
             DefaultAvailableHours defaultHours = defaultAvailableHoursRepo.findByShopId(1L).orElse(null);
             if (defaultHours == null) return Collections.emptyList();
-            allSlots = generateSlots(defaultHours.getStartTime(), defaultHours.getEndTime(), defaultHours.getSlotInterval());
+            interval = defaultHours.getSlotInterval();
+            allSlots = generateSlots(defaultHours.getStartTime(), defaultHours.getEndTime(), interval);
         }
 
         // 2. 獲取當天所有有效的預約
         List<Reservation> existingReservations = reservationRepo.findAllByReservationDateAndStatusNot(date, CANCELLED);
-
-        // 3. 獲取現在時間（用於過濾今日已過去的時段）
         LocalTime now = LocalTime.now();
         boolean isToday = date.equals(LocalDate.now());
 
-        // 4. 轉換為 DTO 並標記可用性
+        // 3. 檢查每個時段是否能容納該時長的服務
         return allSlots.stream()
                 .map(slotTime -> {
-                    LocalTime time = LocalTime.parse(slotTime);
+                    LocalTime slotStartTime = LocalTime.parse(slotTime);
+                    LocalTime slotEndTime = slotStartTime.plusMinutes(durationMinutes);
 
-                    // 檢查是否為過去時間
-                    boolean isPast = isToday && !time.isAfter(now);
-                    // 檢查是否被現有預約佔用
-                    boolean isOccupied = existingReservations.stream().anyMatch(res -> {
-                        LocalTime start = res.getStartTime();
-                        LocalTime end = res.getEndTime();
-                        return !time.isBefore(start) && time.isBefore(end);
+                    // A. 檢查是否為過去的時間
+                    boolean isPast = isToday && !slotStartTime.isAfter(now);
+                    // B. 檢查這段「連續區間」是否與任何現有預約重疊
+                    boolean isConflict = existingReservations.stream().anyMatch(res -> {
+                        // 兩個時間區間 [s1, e1) 與 [s2, e2) 重疊的條件是：s1 < e2 且 s2 < e1
+                        return slotStartTime.isBefore(res.getEndTime()) && res.getStartTime().isBefore(slotEndTime);
                     });
 
-                    return new TimeSlotDto(slotTime, !isPast && !isOccupied);
+                    // C. 檢查是否超出當天的營業結束時間（假設 allSlots 的最後一個是結束點
+                    LocalTime lastPossibleTime = LocalTime.parse(allSlots.get(allSlots.size() -1));
+                    boolean isOutOfBounds = slotEndTime.isAfter(lastPossibleTime);
+
+                    return new TimeSlotDto(slotTime, !isPast && !isConflict && !isOutOfBounds);
                 })
                 .collect(Collectors.toList());
     }

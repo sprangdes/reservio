@@ -95,6 +95,7 @@
         const startSelect = document.getElementById('startTime');
         const endTimeHidden = document.getElementById('endTime');
         const titleSelect = document.getElementById('title');
+        const reservationDateInput = document.getElementById('reservationDate');
         const disableDates = /*[[${disabledDates}]]*/ [];
 
         const today = new Date();
@@ -103,43 +104,68 @@
         threeMonthsLater.setMonth(today.getMonth() + 3);
         const maxDate = threeMonthsLater.toISOString().split('T')[0];
 
-        // 提取日期改變時的處理邏輯
+        /**
+         * 統一向後端請求可用時段的函數
+         * 會根據目前選取的「日期」與「服務時長」來過濾時段
+         */
+        function updateAvailableSlots() {
+            const dateStr = reservationDateInput.value;
+            const selectedOption = titleSelect.options[titleSelect.selectedIndex];
+
+            // 只有日期和服務項目都選了，才去後端撈資料
+            if (!dateStr || !selectedOption || !selectedOption.dataset.duration) {
+                return;
+            }
+
+            const duration = selectedOption.dataset.duration;
+
+            // 將 duration 帶入 API 請求
+            fetch(`/reservation/slots?date=${dateStr}&duration=${duration}`)
+                .then(response => response.json())
+                .then(slots => {
+                    startSelect.innerHTML = '<option value="" disabled selected>請選擇時段...</option>';
+                    if (slots && slots.length > 0) {
+                        slots.forEach(slot => {
+                            const option = document.createElement('option');
+                            option.value = slot.time;
+                            // 顯示邏輯：若不可選，提示時段不足或已被預約
+                            option.textContent = slot.available ? slot.time : `${slot.time} (時段不足或已被預約)`;
+                            if (!slot.available) {
+                                option.disabled = true;
+                            }
+                            startSelect.appendChild(option);
+                        });
+                        startSelect.disabled = false;
+                        startSelect.classList.remove('bg-light');
+                    } else {
+                        startSelect.innerHTML = '<option value="" disabled selected>該日無可用時段</option>';
+                        startSelect.disabled = true;
+                        startSelect.classList.add('bg-light');
+                    }
+                    // 重新整理時段後，重設結束時間
+                    calculateEndTime();
+                })
+                .catch(error => {
+                    console.error('Error fetching slots:', error);
+                    startSelect.innerHTML = '<option value="" disabled selected>載入失敗</option>';
+                });
+        }
+
+        /**
+         * 當 Flatpickr 選取日期改變時的回呼
+         */
         function handleDateChange(selectedDates, dateStr) {
             if (dateStr) {
-                fetch(`/reservation/slots?date=${dateStr}`)
-                    .then(response => response.json())
-                    .then(slots => {
-                        startSelect.innerHTML = '<option value="" disabled selected>請選擇時段...</option>';
-                        if (slots.length > 0) {
-                            slots.forEach(slot => {
-                                const option = document.createElement('option');
-                                option.value = slot.time;
-                                option.textContent = slot.available ? slot.time : `${slot.time} (不可預約)`;
-                                if (!slot.available) {
-                                    option.disabled = true;
-                                }
-                                startSelect.appendChild(option);
-                            });
-                            startSelect.disabled = false;
-                            startSelect.classList.remove('bg-light');
-                        } else {
-                            startSelect.innerHTML = '<option value="" disabled selected>該日無可用時段</option>';
-                            startSelect.disabled = true;
-                        }
-                        endTimeHidden.value = "";
-                    })
-                    .catch(error => {
-                        console.error('Error fetching slots:', error);
-                        startSelect.innerHTML = '<option value="" disabled selected>載入失敗</option>';
-                    });
+                updateAvailableSlots();
             } else {
                 startSelect.disabled = true;
                 startSelect.innerHTML = '<option value="" disabled selected>請先選擇日期..</option>';
                 startSelect.classList.add('bg-light');
+                endTimeHidden.value = "";
             }
         }
 
-        // 初始化 Flatpickr
+        // 初始化 Flatpickr 日曆
         flatpickr("#reservationDate", {
             locale: "zh_tw",
             dateFormat: "Y-m-d",
@@ -150,13 +176,15 @@
             onChange: handleDateChange
         });
 
-        // 自動計算結束時間的邏輯 calculateEndTime
+        /**
+         * 自動計算並填入隱藏的結束時間欄位
+         */
         function calculateEndTime() {
             const selectedOption = titleSelect.options[titleSelect.selectedIndex];
             const startTime = startSelect.value;
 
             if (selectedOption && selectedOption.dataset.duration && startTime) {
-                const duration = Number.parseInt(selectedOption.dataset.duration);
+                const duration = Number.parseInt(selectedOption.dataset.duration, 10);
                 const [hours, minutes] = startTime.split(':').map(Number);
 
                 const date = new Date();
@@ -170,8 +198,11 @@
             }
         }
 
-        // 綁定事件監聽器
-        titleSelect.addEventListener('change', calculateEndTime);
+        // 監聽事件：切換服務項目或開始時間時，觸發更新
+        titleSelect.addEventListener('change', () => {
+            updateAvailableSlots(); // 項目改變時，重新計算該項目適用的可用時段
+        });
+        
         startSelect.addEventListener('change', calculateEndTime);
     </script>
 </body>
