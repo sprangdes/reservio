@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class TimeSlotDto {
+public class TimeSlotDTO {
     private String time;
     private boolean available;
 }

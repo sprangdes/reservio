@@ -11,7 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import com.reservio.dto.TimeSlotDto;
+import com.reservio.dto.TimeSlotDTO;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
@@ -56,7 +56,7 @@ public class ReservationController {
 
     @GetMapping("/reservation/slots")
     @ResponseBody
-    public List<TimeSlotDto> getTimeSlotsForDate(
+    public List<TimeSlotDTO> getTimeSlotsForDate(
             @RequestParam("date") String dateStr,
             @RequestParam("duration") int duration) {
         try {

@@ -1,6 +1,6 @@
 package com.reservio.service;
 
-import com.reservio.dto.TimeSlotDto;
+import com.reservio.dto.TimeSlotDTO;
 import com.reservio.entity.DateAvailableHours;
 import com.reservio.entity.DefaultAvailableHours;
 import com.reservio.entity.Reservation;
@@ -42,7 +42,7 @@ public class ReservationTimeService {
         return slots;
     }
 
-    public List<TimeSlotDto> getTimeSlotsForDate(LocalDate date, int durationMinutes) {
+    public List<TimeSlotDTO> getTimeSlotsForDate(LocalDate date, int durationMinutes) {
         List<String> allSlots;
 
         int interval;
@@ -79,7 +79,7 @@ public class ReservationTimeService {
                         slotStartTime.isBefore(res.getEndTime()) && res.getStartTime().isBefore(slotEndTime)
                     );
 
-                    return new TimeSlotDto(slotTime, !isPast && !isConflict);
+                    return new TimeSlotDTO(slotTime, !isPast && !isConflict);
                 })
                 .collect(Collectors.toList());
     }
