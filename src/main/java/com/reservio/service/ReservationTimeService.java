@@ -75,16 +75,11 @@ public class ReservationTimeService {
                     // A. 檢查是否為過去的時間
                     boolean isPast = isToday && !slotStartTime.isAfter(now);
                     // B. 檢查這段「連續區間」是否與任何現有預約重疊
-                    boolean isConflict = existingReservations.stream().anyMatch(res -> {
-                        // 兩個時間區間 [s1, e1) 與 [s2, e2) 重疊的條件是：s1 < e2 且 s2 < e1
-                        return slotStartTime.isBefore(res.getEndTime()) && res.getStartTime().isBefore(slotEndTime);
-                    });
+                    boolean isConflict = existingReservations.stream().anyMatch(res ->
+                        slotStartTime.isBefore(res.getEndTime()) && res.getStartTime().isBefore(slotEndTime)
+                    );
 
-                    // C. 檢查是否超出當天的營業結束時間（假設 allSlots 的最後一個是結束點
-                    LocalTime lastPossibleTime = LocalTime.parse(allSlots.get(allSlots.size() -1));
-                    boolean isOutOfBounds = slotEndTime.isAfter(lastPossibleTime);
-
-                    return new TimeSlotDto(slotTime, !isPast && !isConflict && !isOutOfBounds);
+                    return new TimeSlotDto(slotTime, !isPast && !isConflict);
                 })
                 .collect(Collectors.toList());
     }
