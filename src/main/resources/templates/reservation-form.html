@@ -113,8 +113,11 @@
                         if (slots.length > 0) {
                             slots.forEach(slot => {
                                 const option = document.createElement('option');
-                                option.value = slot;
-                                option.textContent = slot;
+                                option.value = slot.time;
+                                option.textContent = slot.available ? slot.time : `${slot.time} (不可預約)`;
+                                if (!slot.available) {
+                                    option.disabled = true;
+                                }
                                 startSelect.appendChild(option);
                             });
                             startSelect.disabled = false;
