@@ -4,7 +4,6 @@ import com.reservio.dto.TimeSlotDto;
 import com.reservio.entity.DateAvailableHours;
 import com.reservio.entity.DefaultAvailableHours;
 import com.reservio.entity.Reservation;
-import com.reservio.enums.ReservationStatus;
 import com.reservio.repo.DateAvailableHoursRepo;
 import com.reservio.repo.DefaultAvailableHoursRepo;
 import com.reservio.repo.ReservationRepo;
@@ -14,6 +13,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.reservio.enums.ReservationStatus.CANCELLED;
 
 @Service
 public class ReservationTimeService {
@@ -56,11 +57,8 @@ public class ReservationTimeService {
             allSlots = generateSlots(defaultHours.getStartTime(), defaultHours.getEndTime(), defaultHours.getSlotInterval());
         }
 
-        // 2. 獲取已預約的時段
-        List<Reservation> existingReservations = reservationRepo.findAllByReservationDateAndStatusNot(date, ReservationStatus.CANCELLED);
-        Set<String> takenSlots = existingReservations.stream()
-                .map(res -> res.getStartTime().toString())
-                .collect(Collectors.toSet());
+        // 2. 獲取當天所有有效的預約
+        List<Reservation> existingReservations = reservationRepo.findAllByReservationDateAndStatusNot(date, CANCELLED);
 
         // 3. 獲取現在時間（用於過濾今日已過去的時段）
         LocalTime now = LocalTime.now();
@@ -70,9 +68,17 @@ public class ReservationTimeService {
         return allSlots.stream()
                 .map(slotTime -> {
                     LocalTime time = LocalTime.parse(slotTime);
+
+                    // 檢查是否為過去時間
                     boolean isPast = isToday && !time.isAfter(now);
-                    boolean isTaken = takenSlots.contains(slotTime);
-                    return new TimeSlotDto(slotTime, !isPast && !isTaken);
+                    // 檢查是否被現有預約佔用
+                    boolean isOccupied = existingReservations.stream().anyMatch(res -> {
+                        LocalTime start = res.getStartTime();
+                        LocalTime end = res.getEndTime();
+                        return !time.isBefore(start) && time.isBefore(end);
+                    });
+
+                    return new TimeSlotDto(slotTime, !isPast && !isOccupied);
                 })
                 .collect(Collectors.toList());
     }
