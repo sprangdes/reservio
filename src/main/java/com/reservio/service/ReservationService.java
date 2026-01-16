@@ -2,11 +2,17 @@ package com.reservio.service;
 
 import com.reservio.entity.Reservation;
 import com.reservio.entity.UserData;
+import com.reservio.enums.ReservationStatus;
 import com.reservio.exception.UserNotFoundException;
 import com.reservio.repo.ReservationRepo;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Locale;
+
+import static com.reservio.enums.ReservationStatus.CANCELLED;
+import static com.reservio.enums.ReservationStatus.PENDING;
 
 @Service
 public class ReservationService {
@@ -32,5 +38,19 @@ public class ReservationService {
         reservation.setDeletedFlag(false);
 
         reservationRepo.save(reservation);
+    }
+
+    public long countTodayReservations() {
+        UserData user = userDataService.getCurrentUser();
+        return reservationRepo.countByUserAndReservationDateAndStatusNot(
+                user,
+                LocalDate.now(),
+                CANCELLED
+        );
+    }
+
+    public long countPendingReservations() {
+        UserData user = userDataService.getCurrentUser();
+        return reservationRepo.countByUserAndStatus(user, PENDING);
     }
 }

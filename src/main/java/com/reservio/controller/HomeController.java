@@ -2,9 +2,12 @@ package com.reservio.controller;
 
 import com.reservio.entity.UserData;
 import com.reservio.exception.UserAlreadyExistsException;
+import com.reservio.service.ReservationService;
 import com.reservio.service.UserDataService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,15 +29,29 @@ public class HomeController {
     private static final String ERROR_MESSAGE = "errorMessage";
     private static final String USERNAME = "username";
     private static final String EMAIL = "email";
+    private static final String PASSWORD = "password";
+    private static final String TODAY_COUNT = "todayCount";
+    private static final String PENDING_COUNT = "pendingCount";
+    private static final String ANONYMOUS_USER = "anonymousUser";
 
     private final UserDataService userDataService;
+    private final ReservationService reservationService;
 
-    public HomeController(UserDataService userDataService) {
+    public HomeController(
+            UserDataService userDataService,
+            ReservationService reservationService) {
         this.userDataService = userDataService;
+        this.reservationService = reservationService;
     }
 
     @GetMapping("/")
-    public String home() {
+    public String home(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals(ANONYMOUS_USER)) {
+            model.addAttribute(TODAY_COUNT, reservationService.countTodayReservations());
+            model.addAttribute(PENDING_COUNT, reservationService.countPendingReservations());
+        }
         return HOME;
     }
 
@@ -45,9 +62,9 @@ public class HomeController {
 
     @PostMapping("/register")
     public String processRegistration(
-            @RequestParam("username") String username,
-            @RequestParam("email") String email,
-            @RequestParam("password") String password,
+            @RequestParam(USERNAME) String username,
+            @RequestParam(EMAIL) String email,
+            @RequestParam(PASSWORD) String password,
             RedirectAttributes redirectAttributes,
             Model model) {
         try {
