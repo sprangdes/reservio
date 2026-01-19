@@ -29,6 +29,9 @@ public class UserData {
     @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false)
+    private String role;
+
     @OneToMany(
             mappedBy = "user",
             fetch = FetchType.LAZY,

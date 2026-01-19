@@ -22,8 +22,10 @@ public class HomeController {
 
     private static final String HOME = "home";
     private static final String REGISTER = "register";
+    private static final String REGISTER_BUSINESS = "register-business";
     private static final String LOGIN = "login";
     private static final String REDIRECT_LOGIN = "redirect:/login";
+    private static final String REDIRECT_REGISTER_BUSINESS = "redirect:/register/business";
 
     private static final String SUCCESS_MESSAGE = "successMessage";
     private static final String ERROR_MESSAGE = "errorMessage";
@@ -60,13 +62,27 @@ public class HomeController {
         return REGISTER;
     }
 
+    @GetMapping("/register/business")
+    public String showBusinessRegistrationForm() {
+        return REGISTER_BUSINESS;
+    }
+
     @PostMapping("/register")
     public String processRegistration(
             @RequestParam(USERNAME) String username,
             @RequestParam(EMAIL) String email,
             @RequestParam(PASSWORD) String password,
+            @RequestParam(name = "isBusiness", required = false, defaultValue = "false") boolean isBusiness,
             RedirectAttributes redirectAttributes,
             Model model) {
+
+        if (isBusiness) {
+            log.info("{}欲註冊為商家，轉導至商家註冊頁面", username);
+            redirectAttributes.addFlashAttribute(USERNAME, username);
+            redirectAttributes.addFlashAttribute(EMAIL, email);
+            return REDIRECT_REGISTER_BUSINESS;
+        }
+
         try {
             UserData user = userDataService.registerUser(username, email, password);
             log.info("註冊: user=> {}, email=> {}", user.getUsername(), user.getEmail());

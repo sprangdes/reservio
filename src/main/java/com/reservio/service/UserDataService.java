@@ -10,6 +10,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.reservio.enums.Role.ROLE_USER;
+
 @Service
 public class UserDataService {
 
@@ -36,8 +38,14 @@ public class UserDataService {
                 .username(username)
                 .email(email)
                 .password(passwordEncoder.encode(password))
+                .role(ROLE_USER.name())
                 .build();
         return userDataRepo.save(user);
+    }
+
+    @Transactional
+    public void registerBusinessUser(String username, String email, String password) {
+
     }
 
     public UserData getCurrentUser() {
