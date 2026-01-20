@@ -30,7 +30,7 @@ public final class SystemConstants {
     public static final String DATE = "date";
     public static final String DURATION = "duration";
 
-    // 錯誤訊息
+    // 通知錯誤訊息
     public static final String DEFAULT_ERROR_MSG = "系統繁忙，請稍後再試";
     public static final String REGISTER_SUCCESS_MSG = "註冊成功。歡迎您，%s。請登入您的帳號。";
     public static final String BUSINESS_REGISTER_SUCCESS_MSG = "商家帳號註冊成功。歡迎您，%s。請登入您的帳號。";
