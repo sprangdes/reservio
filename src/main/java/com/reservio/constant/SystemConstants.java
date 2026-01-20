@@ -27,4 +27,13 @@ public final class SystemConstants {
     // 預約相關屬性
     public static final String SERVICE_ITEMS = "serviceItems";
     public static final String DISABLED_DATES = "disabledDates";
+    public static final String DATE = "date";
+    public static final String DURATION = "duration";
+
+    // 錯誤訊息
+    public static final String DEFAULT_ERROR_MSG = "系統繁忙，請稍後再試";
+    public static final String REGISTER_SUCCESS_MSG = "註冊成功。歡迎您，%s。請登入您的帳號。";
+    public static final String BUSINESS_REGISTER_SUCCESS_MSG = "商家帳號註冊成功。歡迎您，%s。請登入您的帳號。";
+    public static final String RESERVATION_SUCCESS_MSG = "預約成功";
+    public static final String RESERVATION_ERROR_MSG = "預約失敗：";
 }

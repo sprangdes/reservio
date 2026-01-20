@@ -73,18 +73,15 @@ public class HomeController {
 
         try {
             UserData user = userDataService.registerUser(username, email, password);
-            log.info("註冊: user=> {}, email=> {}", user.getUsername(), user.getEmail());
-            redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, "註冊成功，歡迎您，" + user.getUsername() + "。請登入您的帳號。");
+            redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, String.format(REGISTER_SUCCESS_MSG, user.getUsername()));
             return REDIRECT_LOGIN;
         } catch (UserAlreadyExistsException e) {
-            log.error("註冊失敗: {}", e.getMessage());
             model.addAttribute(ERROR_MESSAGE, e.getMessage());
             model.addAttribute(USERNAME, username);
             model.addAttribute(EMAIL, email);
             return REGISTER;
         } catch (Exception e) {
-            log.error("註冊發生預料之外的錯誤", e);
-            model.addAttribute(ERROR_MESSAGE, "系統繁忙，請稍後再試");
+            model.addAttribute(ERROR_MESSAGE, DEFAULT_ERROR_MSG);
             return REGISTER;
         }
     }
@@ -101,17 +98,15 @@ public class HomeController {
             RedirectAttributes redirectAttributes) {
         try {
             UserData user = userDataService.registerBusinessUser(username, email, password, businessName, category, phone, address);
-            log.info("註冊商家: user=> {}, businessName=> {}", user.getUsername(), user.getBusinessData().getName());
-            redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, "商家帳號註冊成功！歡迎您，" + user.getBusinessData().getName() + "。請使用管理員帳號登入。");
+            redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, String.format(BUSINESS_REGISTER_SUCCESS_MSG, user.getBusinessData().getName()));
             return REDIRECT_LOGIN;
         } catch (UserAlreadyExistsException e) {
-            log.error("商家註冊失敗: {}", e.getMessage());
             redirectAttributes.addFlashAttribute(ERROR_MESSAGE, e.getMessage());
             redirectAttributes.addFlashAttribute(USERNAME, username);
             redirectAttributes.addFlashAttribute(EMAIL, email);
             return REDIRECT_REGISTER;
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute(ERROR_MESSAGE, "系統繁忙，請稍後再試");
+            redirectAttributes.addFlashAttribute(ERROR_MESSAGE, DEFAULT_ERROR_MSG);
             redirectAttributes.addFlashAttribute(USERNAME, username);
             redirectAttributes.addFlashAttribute(EMAIL, email);
             return REDIRECT_REGISTER;

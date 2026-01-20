@@ -55,24 +55,25 @@ public class ReservationController {
     @GetMapping("/reservation/slots")
     @ResponseBody
     public List<TimeSlotDTO> getTimeSlotsForDate(
-            @RequestParam("date") String dateStr,
-            @RequestParam("duration") int duration) {
+            @RequestParam(DATE) String dateStr,
+            @RequestParam(DURATION) int duration) {
         try {
             LocalDate date = LocalDate.parse(dateStr);
             return reservationTimeService.getTimeSlotsForDate(date, duration);
         } catch (Exception e) {
-            log.error("解析日期失敗: {}", dateStr);
             return Collections.emptyList();
         }
     }
 
     @PostMapping("/reservation/new")
-    public String sendReservation(@ModelAttribute Reservation reservation, RedirectAttributes redirectAttributes) {
+    public String sendReservation(
+            @ModelAttribute Reservation reservation,
+            RedirectAttributes redirectAttributes) {
         try {
             reservationService.saveReservation(reservation);
-            redirectAttributes.addFlashAttribute("successMessage", "預約成功");
+            redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, RESERVATION_SUCCESS_MSG);
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "預約失敗" + e.getMessage());
+            redirectAttributes.addFlashAttribute(ERROR_MESSAGE, RESERVATION_ERROR_MSG + e.getMessage());
         }
         return REDIRECT_HOME;
     }
