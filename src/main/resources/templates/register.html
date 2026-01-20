@@ -38,6 +38,13 @@
                                     <label for="password" class="form-label">密碼</label>
                                     <input type="password" class="form-control" id="password" name="password" placeholder="請設定您的密碼" required>
                                 </div>
+                                <div class="mb-3">
+                                    <label for="confirmPassword" class="form-label">確認密碼</label>
+                                    <input type="password" class="form-control" id="confirmPassword" placeholder="請再次輸入密碼" required>
+                                    <div id="passwordError" class="text-danger small mt-1" style="display: none;">
+                                        <i class="bi bi-exclamation-circle"></i> 兩次輸入的密碼不一致
+                                    </div>
+                                </div>
                                 <div class="mb-3 form-check">
                                     <input type="checkbox" class="form-check-input" id="isBusiness" name="isBusiness">
                                     <label class="form-check-label" for="isBusiness">我要成為商家 </label>
@@ -57,6 +64,29 @@
     </main>
 
     <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script>
+        document.querySelector('form').addEventListener('submit', function (e) {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const errorDiv = document.getElementById('passwordError');
+
+            if (password !== confirmPassword) {
+                e.preventDefault(); // 阻止表單提交
+                errorDiv.style.display = 'block';
+                document.getElementById('confirmPassword').classList.add('is-invalid');
+            } else {
+                errorDiv.style.display = 'none';
+                document.getElementById('confirmPassword').classList.remove('is-invalid');
+            }
+        });
+
+        // 當使用者重新輸入時，移除錯誤狀態
+        document.getElementById('confirmPassword').addEventListener('input', function() {
+            this.classList.remove('is-invalid');
+            document.getElementById('passwordError').style.display = 'none';
+        });
+    </script>
 
 </body>
 </html>
