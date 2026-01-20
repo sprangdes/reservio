@@ -29,28 +29,58 @@
 
                 <!-- 情況 B：已登入使用者看到的是個人預約概況 -->
                 <div sec:authorize="isAuthenticated()">
-                    <h1 class="display-4 fw-bold mb-3">
-                        你好，<span sec:authentication="name" class="text-warning">使用者</span>！
-                    </h1>
-                    <p class="lead mb-4">歡迎回來，今天想處理哪些預約服務呢？</p>
+                    <!-- B-1: 商家看到畫面 -->
+                    <div th:if="${user.role == 'ROLE_BUSINESS'}">
+                        <h1 class="display-4 fw-bold mb-3">
+                            店長 <span th:text="${user.businessData.name}" class="text-warning">商家名稱</span>，你好！
+                        </h1>
+                        <p class="lead mb-4">歡迎回來，這是您今日的營運概況。</p>
+                        
+                        <div class="row justify-content-center mt-4">
+                            <div class="col-md-10">
+                                <div class="card bg-white bg-opacity-10 border-0 shadow-lg text-white p-4" style="backdrop-filter: blur(10px);">
+                                    <div class="row align-items-center">
+                                        <div class="col-sm-4 border-end border-white border-opacity-25">
+                                            <h5 class="small text-uppercase opacity-75">今日新預約</h5>
+                                            <p class="h2 mb-0" th:text="${todayCount ?: 0}">0</p>
+                                        </div>
+                                        <div class="col-sm-4 border-end border-white border-opacity-25">
+                                            <h5 class="small text-uppercase opacity-75">待處理確認</h5>
+                                            <p class="h2 mb-0" th:text="${pendingCount ?: 0}">0</p>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <div class="d-grid gap-2">
+                                                <a href="#" class="btn btn-warning fw-bold shadow-sm">管理服務項目</a>
+                                                <a href="#" class="btn btn-light fw-bold shadow-sm">查看所有預約</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- B-2: 一般客戶看到畫面 -->
+                    <div th:if="${user.role == 'ROLE_USER'}">
+                        <h1 class="display-4 fw-bold mb-3">
+                            你好，<span sec:authentication="name" class="text-warning">使用者</span>！
+                        </h1>
+                        <p class="lead mb-4">歡迎回來，今天想預約哪些服務呢？</p>
                     
-                    <!-- 快速功能區 -->
-                    <div class="row justify-content-center mt-4">
-                        <div class="col-md-8">
-                            <div class="card bg-white bg-opacity-10 border-0 shadow-lg text-white p-4" style="backdrop-filter: blur(10px);">
-                                <div class="row align-items-center">
-                                    <div class="col-sm-4 border-end border-white border-opacity-25">
-                                        <h5 class="small text-uppercase opacity-75">今日預約</h5>
-                                        <p class="h2 mb-0" th:text="${todayCount ?: 0}">0</p>
-                                    </div>
-                                    <div class="col-sm-4 border-end border-white border-opacity-25">
-                                        <h5 class="small text-uppercase opacity-75">待處理事項</h5>
-                                        <p class="h2 mb-0" th:text="${pendingCount ?: 0}">0</p>
-                                    </div>
-                                    <div class="col-sm-4">
-                                        <a th:href="@{/reservation/new}" class="btn btn-light fw-bold px-4">
-                                            <i class="bi bi-plus-lg"></i> 新增預約
-                                        </a>
+                        <!-- 快速功能區 -->
+                        <div class="row justify-content-center mt-4">
+                            <div class="col-md-8">
+                                <div class="card bg-white bg-opacity-10 border-0 shadow-lg text-white p-4" style="backdrop-filter: blur(10px);">
+                                    <div class="row align-items-center">
+                                        <div class="col-sm-6 border-end border-white border-opacity-25">
+                                            <h5 class="small text-uppercase opacity-75">我的進行中預約</h5>
+                                            <p class="h2 mb-0" th:text="${todayCount ?: 0}">0</p>
+                                        </div>
+                                        <div class="col-sm-6 text-center">
+                                            <a th:href="@{/reservation/new}" class="btn btn-light fw-bold px-4 shadow-sm">
+                                                <i class="bi bi-calendar-plus me-1"></i> 立即預約
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -60,8 +90,8 @@
             </div>
         </header>
 
-        <!-- 特色介紹區 (可以選擇只給訪客看，或者全體可見) -->
-        <section class="container my-5">
+        <!-- 特色介紹區 (只給訪客看) -->
+        <section class="container my-5" sec:authorize="isAnonymous()">
             <div class="row g-4">
                 <div class="col-md-4">
                     <div class="card h-100 feature-card p-4">

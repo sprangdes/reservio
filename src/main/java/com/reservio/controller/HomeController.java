@@ -28,6 +28,7 @@ public class HomeController {
     private static final String REDIRECT_REGISTER = "redirect:/register";
     private static final String REDIRECT_REGISTER_BUSINESS = "redirect:/register/business";
 
+    private static final String USER = "user";
     private static final String SUCCESS_MESSAGE = "successMessage";
     private static final String ERROR_MESSAGE = "errorMessage";
     private static final String USERNAME = "username";
@@ -57,6 +58,7 @@ public class HomeController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
         if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals(ANONYMOUS_USER)) {
+            model.addAttribute(USER, userDataService.getCurrentUser());
             model.addAttribute(TODAY_COUNT, reservationService.countTodayReservations());
             model.addAttribute(PENDING_COUNT, reservationService.countPendingReservations());
         }
