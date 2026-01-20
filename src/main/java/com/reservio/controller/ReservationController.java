@@ -59,8 +59,10 @@ public class ReservationController {
             @RequestParam(DURATION) int duration) {
         try {
             LocalDate date = LocalDate.parse(dateStr);
+            log.debug("查詢可用時段: date={}, duration={}min", dateStr, duration);
             return reservationTimeService.getTimeSlotsForDate(date, duration);
         } catch (Exception e) {
+            log.error("查詢可用時段失敗, 日期格式錯誤: date={}, error={}", dateStr, e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -71,8 +73,12 @@ public class ReservationController {
             RedirectAttributes redirectAttributes) {
         try {
             reservationService.saveReservation(reservation);
+            log.info("預約送出成功: user={}, item={}, date={}, time={}",
+                    reservation.getUser().getUsername(), reservation.getTitle(),
+                    reservation.getReservationDate(), reservation.getStartTime());
             redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, RESERVATION_SUCCESS_MSG);
         } catch (Exception e) {
+            log.error("預約送出失敗: reservationData={}, error={}", reservation, e.getMessage(), e);
             redirectAttributes.addFlashAttribute(ERROR_MESSAGE, RESERVATION_ERROR_MSG + e.getMessage());
         }
         return REDIRECT_HOME;

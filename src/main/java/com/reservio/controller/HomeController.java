@@ -65,6 +65,7 @@ public class HomeController {
             Model model) {
 
         if (isBusiness) {
+            log.info("使用者 [{}] 嘗試註冊為商家，正在導向商家資料填寫頁面", username);
             redirectAttributes.addFlashAttribute(USERNAME, username);
             redirectAttributes.addFlashAttribute(EMAIL, email);
             redirectAttributes.addFlashAttribute(PASSWORD, password);
@@ -73,14 +74,17 @@ public class HomeController {
 
         try {
             UserData user = userDataService.registerUser(username, email, password);
+            log.info("一般使用者註冊成功: username={}, email={}", user.getUsername(), user.getEmail());
             redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, String.format(REGISTER_SUCCESS_MSG, user.getUsername()));
             return REDIRECT_LOGIN;
         } catch (UserAlreadyExistsException e) {
+            log.warn("註冊失敗 (帳號已存在): username={}, email={}, reason={}", username, email, e.getMessage());
             model.addAttribute(ERROR_MESSAGE, e.getMessage());
             model.addAttribute(USERNAME, username);
             model.addAttribute(EMAIL, email);
             return REGISTER;
         } catch (Exception e) {
+            log.error("註冊發生非預期錯誤: username={}, email={}", username, email, e);
             model.addAttribute(ERROR_MESSAGE, DEFAULT_ERROR_MSG);
             return REGISTER;
         }
@@ -98,14 +102,17 @@ public class HomeController {
             RedirectAttributes redirectAttributes) {
         try {
             UserData user = userDataService.registerBusinessUser(username, email, password, businessName, category, phone, address);
+            log.info("商家註冊成功: username={}, businessName={}, category={}", user.getUsername(), businessName, category);
             redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, String.format(BUSINESS_REGISTER_SUCCESS_MSG, user.getBusinessData().getName()));
             return REDIRECT_LOGIN;
         } catch (UserAlreadyExistsException e) {
+            log.warn("商家註冊失敗 (帳號已存在): username={}, email={}, reason={}", username, email, e.getMessage());
             redirectAttributes.addFlashAttribute(ERROR_MESSAGE, e.getMessage());
             redirectAttributes.addFlashAttribute(USERNAME, username);
             redirectAttributes.addFlashAttribute(EMAIL, email);
             return REDIRECT_REGISTER;
         } catch (Exception e) {
+            log.error("商家註冊發生非預期錯誤: username={}, businessName={}", username, businessName, e);
             redirectAttributes.addFlashAttribute(ERROR_MESSAGE, DEFAULT_ERROR_MSG);
             redirectAttributes.addFlashAttribute(USERNAME, username);
             redirectAttributes.addFlashAttribute(EMAIL, email);
