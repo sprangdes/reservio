@@ -32,6 +32,9 @@ public class UserData {
     @Column(nullable = false)
     private String role;
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private BusinessData businessData;
+
     @OneToMany(
             mappedBy = "user",
             fetch = FetchType.LAZY,

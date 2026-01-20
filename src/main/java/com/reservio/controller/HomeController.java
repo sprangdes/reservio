@@ -25,6 +25,7 @@ public class HomeController {
     private static final String REGISTER_BUSINESS = "register-business";
     private static final String LOGIN = "login";
     private static final String REDIRECT_LOGIN = "redirect:/login";
+    private static final String REDIRECT_REGISTER = "redirect:/register";
     private static final String REDIRECT_REGISTER_BUSINESS = "redirect:/register/business";
 
     private static final String SUCCESS_MESSAGE = "successMessage";
@@ -35,6 +36,11 @@ public class HomeController {
     private static final String TODAY_COUNT = "todayCount";
     private static final String PENDING_COUNT = "pendingCount";
     private static final String ANONYMOUS_USER = "anonymousUser";
+    private static final String IS_BUSINESS = "isBusiness";
+    private static final String BUSINESS_NAME = "businessName";
+    private static final String CATEGORY = "category";
+    private static final String PHONE = "phone";
+    private static final String ADDRESS = "address";
 
     private final UserDataService userDataService;
     private final ReservationService reservationService;
@@ -72,7 +78,7 @@ public class HomeController {
             @RequestParam(USERNAME) String username,
             @RequestParam(EMAIL) String email,
             @RequestParam(PASSWORD) String password,
-            @RequestParam(name = "isBusiness", required = false, defaultValue = "false") boolean isBusiness,
+            @RequestParam(name = IS_BUSINESS, required = false, defaultValue = "false") boolean isBusiness,
             RedirectAttributes redirectAttributes,
             Model model) {
 
@@ -98,6 +104,35 @@ public class HomeController {
             log.error("註冊發生預料之外的錯誤", e);
             model.addAttribute(ERROR_MESSAGE, "系統繁忙，請稍後再試");
             return REGISTER;
+        }
+    }
+
+    @PostMapping("/register/business")
+    public String processBusinessRegistration(
+            @RequestParam(USERNAME) String username,
+            @RequestParam(EMAIL) String email,
+            @RequestParam(PASSWORD) String password,
+            @RequestParam(BUSINESS_NAME) String businessName,
+            @RequestParam(CATEGORY) String category,
+            @RequestParam(PHONE) String phone,
+            @RequestParam(ADDRESS) String address,
+            RedirectAttributes redirectAttributes) {
+        try {
+            UserData user = userDataService.registerBusinessUser(username, email, password, businessName, category, phone, address);
+            log.info("註冊商家: user=> {}, businessName=> {}", user.getUsername(), user.getBusinessData().getName());
+            redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, "商家帳號註冊成功！歡迎您，" + user.getBusinessData().getName() + "。請使用管理員帳號登入。");
+            return REDIRECT_LOGIN;
+        } catch (UserAlreadyExistsException e) {
+            log.error("商家註冊失敗: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute(ERROR_MESSAGE, e.getMessage());
+            redirectAttributes.addFlashAttribute(USERNAME, username);
+            redirectAttributes.addFlashAttribute(EMAIL, email);
+            return REDIRECT_REGISTER;
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute(ERROR_MESSAGE, "系統繁忙，請稍後再試");
+            redirectAttributes.addFlashAttribute(USERNAME, username);
+            redirectAttributes.addFlashAttribute(EMAIL, email);
+            return REDIRECT_REGISTER;
         }
     }
 

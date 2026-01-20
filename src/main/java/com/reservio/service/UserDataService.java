@@ -1,5 +1,6 @@
 package com.reservio.service;
 
+import com.reservio.entity.BusinessData;
 import com.reservio.entity.UserData;
 import com.reservio.exception.UserAlreadyExistsException;
 import com.reservio.exception.UserNotFoundException;
@@ -10,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.reservio.enums.Role.ROLE_BUSINESS;
 import static com.reservio.enums.Role.ROLE_USER;
 
 @Service
@@ -24,15 +26,11 @@ public class UserDataService {
     }
 
     @Transactional
-    public UserData registerUser(String username, String email, String password) {
-        // 1. 檢查 Email 是否已被註冊
-        if (userDataRepo.existsByEmail(email)) {
-            throw new UserAlreadyExistsException("此電子郵件已被註冊");
-        }
-        // 2. 檢查帳號是否已被註冊
-        if (userDataRepo.existsByUsername(username)) {
-            throw new UserAlreadyExistsException("此使用者名稱已被使用");
-        }
+    public UserData registerUser(
+            String username,
+            String email,
+            String password) {
+        accountExistCheck(username, email);
 
         UserData user = UserData.builder()
                 .username(username)
@@ -44,8 +42,33 @@ public class UserDataService {
     }
 
     @Transactional
-    public void registerBusinessUser(String username, String email, String password) {
+    public UserData registerBusinessUser(
+            String username,
+            String email,
+            String password,
+            String businessName,
+            String category,
+            String phone,
+            String address) {
+        accountExistCheck(username, email);
 
+        UserData user = UserData.builder()
+                .username(username)
+                .email(email)
+                .password(passwordEncoder.encode(password))
+                .role(ROLE_BUSINESS.name())
+                .build();
+
+        BusinessData businessData = BusinessData.builder()
+                .name(businessName)
+                .category(category)
+                .phone(phone)
+                .address(address)
+                .user(user)
+                .build();
+
+        user.setBusinessData(businessData);
+        return userDataRepo.save(user);
     }
 
     public UserData getCurrentUser() {
@@ -63,5 +86,15 @@ public class UserDataService {
             throw new UserNotFoundException("找不到當前登入的使用者: " + username);
         }
         return user;
+    }
+
+    private void accountExistCheck(String username, String email) {
+        if (userDataRepo.existsByEmail(email)) {
+            throw new UserAlreadyExistsException("此電子郵件已被註冊");
+        }
+
+        if (userDataRepo.existsByUsername(username)) {
+            throw new UserAlreadyExistsException("此使用者名稱已被使用");
+        }
     }
 }
