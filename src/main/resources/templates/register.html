@@ -71,13 +71,13 @@
             const confirmPassword = document.getElementById('confirmPassword').value;
             const errorDiv = document.getElementById('passwordError');
 
-            if (password !== confirmPassword) {
+            if (password === confirmPassword) {
+                errorDiv.style.display = 'none';
+                document.getElementById('confirmPassword').classList.remove('is-invalid');
+            } else {
                 e.preventDefault(); // 阻止表單提交
                 errorDiv.style.display = 'block';
                 document.getElementById('confirmPassword').classList.add('is-invalid');
-            } else {
-                errorDiv.style.display = 'none';
-                document.getElementById('confirmPassword').classList.remove('is-invalid');
             }
         });
 
