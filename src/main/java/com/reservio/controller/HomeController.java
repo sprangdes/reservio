@@ -77,9 +77,9 @@ public class HomeController {
             Model model) {
 
         if (isBusiness) {
-            log.info("{}欲註冊為商家，轉導至商家註冊頁面", username);
             redirectAttributes.addFlashAttribute(USERNAME, username);
             redirectAttributes.addFlashAttribute(EMAIL, email);
+            redirectAttributes.addFlashAttribute(PASSWORD, password);
             return REDIRECT_REGISTER_BUSINESS;
         }
 

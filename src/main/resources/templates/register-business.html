@@ -30,19 +30,16 @@
 
                         <form th:action="@{/register/business}" method="post">
                             <h5 class="fw-bold mb-3 border-bottom pb-2">管理員資訊</h5>
+                            <input type="hidden" name="password" th:value="${password}">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="username" class="form-label">管理員名稱</label>
+                                    <label for="username" class="form-label">名稱</label>
                                     <input type="text" class="form-control" id="username" name="username" th:value="${username}" placeholder="登入帳號" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="email" class="form-label">電子郵件</label>
                                     <input type="email" class="form-control" id="email" name="email" th:value="${email}" placeholder="聯絡用 Email" required>
                                 </div>
-                            </div>
-                            <div class="mb-4">
-                                <label for="password" class="form-label">設定管理密碼</label>
-                                <input type="password" class="form-control" id="password" name="password" placeholder="請設定強固的密碼" required>
                             </div>
 
                             <h5 class="fw-bold mb-3 border-bottom pb-2">商家基本資料</h5>
