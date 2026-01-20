@@ -1,3 +1,4 @@
+/* global flatpickr */
 /**
 * 初始化預約表單邏輯
 * @param {string[]} disableDates 不可選取的日期清單
@@ -21,7 +22,7 @@ function initReservationForm(disableDates) {
         const dateStr = reservationDateInput.value;
         const selectedOption = titleSelect.options[titleSelect.selectedIndex];
 
-        if (!dateStr || !selectedOption || !selectedOption.dataset.duration) {
+        if (!dateStr || !selectedOption?.dataset?.duration) {
             return;
         }
 
@@ -64,8 +65,8 @@ function initReservationForm(disableDates) {
         const selectedOption = titleSelect.options[titleSelect.selectedIndex];
         const startTime = startSelect.value;
 
-        if (selectedOption && selectedOption.dataset.duration && startTime) {
-            const duration = parseInt(selectedOption.dataset.duration, 10);
+        if (selectedOption?.dataset?.duration && startTime) {
+            const duration = Number.parseInt(selectedOption.dataset.duration, 10);
             const [hours, minutes] = startTime.split(':').map(Number);
             const date = new Date();
             date.setHours(hours, minutes + duration, 0);
@@ -85,7 +86,7 @@ function initReservationForm(disableDates) {
         maxDate: maxDate,
         disable: disableDates,
         disableMobile: "true",
-        onChange: function(selectedDates, dateStr) {
+        "onChange": (_, dateStr) => {
             if (dateStr) {
                 updateAvailableSlots();
             } else {
