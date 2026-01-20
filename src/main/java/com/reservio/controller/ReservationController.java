@@ -24,6 +24,7 @@ public class ReservationController {
     private static final Logger log = LoggerFactory.getLogger(ReservationController.class);
 
     private static final String RESERVATION_FORM = "reservation-form";
+    private static final String REDIRECT_HOME = "redirect:/";
 
     private static final String SERVICE_ITEMS = "serviceItems";
     private static final String DISABLED_DATES = "disabledDates";
@@ -76,6 +77,6 @@ public class ReservationController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "預約失敗" + e.getMessage());
         }
-        return "redirect:/";
+        return REDIRECT_HOME;
     }
 }
