@@ -18,16 +18,13 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 
+import static com.reservio.constant.SystemConstants.*;
+import static com.reservio.constant.UrlConstants.*;
+
 @Controller
 public class ReservationController {
 
     private static final Logger log = LoggerFactory.getLogger(ReservationController.class);
-
-    private static final String RESERVATION_FORM = "reservation-form";
-    private static final String REDIRECT_HOME = "redirect:/";
-
-    private static final String SERVICE_ITEMS = "serviceItems";
-    private static final String DISABLED_DATES = "disabledDates";
 
     private final ServiceItemService serviceItemService;
     private final ReservationTimeService reservationTimeService;

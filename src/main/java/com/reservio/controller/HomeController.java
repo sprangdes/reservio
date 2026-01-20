@@ -15,33 +15,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import static com.reservio.constant.SystemConstants.*;
+import static com.reservio.constant.UrlConstants.*;
+
 @Controller
 public class HomeController {
 
     private static final Logger log = LoggerFactory.getLogger(HomeController.class);
-
-    private static final String HOME = "home";
-    private static final String REGISTER = "register";
-    private static final String REGISTER_BUSINESS = "register-business";
-    private static final String LOGIN = "login";
-    private static final String REDIRECT_LOGIN = "redirect:/login";
-    private static final String REDIRECT_REGISTER = "redirect:/register";
-    private static final String REDIRECT_REGISTER_BUSINESS = "redirect:/register/business";
-
-    private static final String USER = "user";
-    private static final String SUCCESS_MESSAGE = "successMessage";
-    private static final String ERROR_MESSAGE = "errorMessage";
-    private static final String USERNAME = "username";
-    private static final String EMAIL = "email";
-    private static final String PASSWORD = "password";
-    private static final String TODAY_COUNT = "todayCount";
-    private static final String PENDING_COUNT = "pendingCount";
-    private static final String ANONYMOUS_USER = "anonymousUser";
-    private static final String IS_BUSINESS = "isBusiness";
-    private static final String BUSINESS_NAME = "businessName";
-    private static final String CATEGORY = "category";
-    private static final String PHONE = "phone";
-    private static final String ADDRESS = "address";
 
     private final UserDataService userDataService;
     private final ReservationService reservationService;
