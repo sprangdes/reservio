@@ -127,23 +127,12 @@
     <div th:replace="~{fragments/footer :: footer}"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{js/home.js}"></script>
     <script th:inline="javascript">
-        document.addEventListener('DOMContentLoaded', function () {
-            // 獲取 Thymeleaf 傳遞的訊息變數
-            const successMsg = /*[[${successMessage}]]*/ "";
-            const errorMsg = /*[[${errorMessage}]]*/ "";
-
-            const showToast = (id) => {
-                const el = document.getElementById(id);
-                if (el) {
-                    new bootstrap.Toast(el).show();
-                }
-            };
-
-            // 根據訊息是否存在來決定是否顯示
-            successMsg && showToast('successToast');
-            errorMsg && showToast('errorToast');
-        });
+        initHomeToasts(
+            /*[[${successMessage}]]*/ "",
+            /*[[${errorMessage}]]*/ ""
+        );
     </script>
 </body>
 </html>
