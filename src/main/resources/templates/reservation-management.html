@@ -51,14 +51,20 @@
                                     </span>
                                 </td>
                                 <td class="text-center pe-4">
-                                    <div class="btn-group">
-                                        <button class="btn btn-sm btn-outline-success px-3">
-                                            <i class="bi bi-check-lg"></i> 確認
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger px-3">
-                                            <i class="bi bi-x-lg"></i> 取消
-                                        </button>
+                                    <div th:if="${res.status.name() == 'PENDING'}" class="btn-group">
+                                        <form th:action="@{/reservation/update-status}" method="post" class="d-inline">
+                                            <input type="hidden" name="id" th:value="${res.id}">
+                                            <button type="submit" name="action" value="confirm" class="btn btn-sm btn-outline-success px-3">
+                                                <i class="bi bi-check-lg"></i> 確認
+                                            </button>
+                                            <button type="submit" name="action" value="cancel" class="btn btn-sm btn-outline-danger px-3">
+                                                <i class="bi bi-x-lg"></i> 取消
+                                            </button>
+                                        </form>
                                     </div>
+                                    <small th:unless="${res.status.name() == 'PENDING'}" class="text-muted">
+                                        無可用操作
+                                    </small>
                                 </td>
                             </tr>
                             <!-- 無資料時顯示 -->

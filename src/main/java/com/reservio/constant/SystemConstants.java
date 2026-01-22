@@ -23,6 +23,9 @@ public final class SystemConstants {
     public static final String CATEGORY = "category";
     public static final String PHONE = "phone";
     public static final String ADDRESS = "address";
+    public static final String ID = "id";
+    public static final String ACTION = "action";
+    public static final String CONFIRM = "confirm";
 
     // 預約相關屬性
     public static final String SERVICE_ITEMS = "serviceItems";
@@ -36,4 +39,7 @@ public final class SystemConstants {
     public static final String BUSINESS_REGISTER_SUCCESS_MSG = "商家帳號註冊成功。歡迎您，%s。請登入您的帳號。";
     public static final String RESERVATION_SUCCESS_MSG = "預約成功";
     public static final String RESERVATION_ERROR_MSG = "預約失敗：";
+    public static final String RESERVATION_CONFIRMED = "預約已確認";
+    public static final String RESERVATION_CANCELLED = "預約已取消";
+    public static final String RESERVATION_STATUS_UPDATE_ERROR_MSG = "更新失敗：";
 }

@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import static com.reservio.constant.SystemConstants.*;
-import static com.reservio.constant.UrlConstants.*;
+import static com.reservio.constant.URLConstants.*;
 
 @Controller
 public class HomeController {
