@@ -27,33 +27,33 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th class="ps-4">時間</th>
-                                <th>客戶名稱</th>
-                                <th>服務項目</th>
-                                <th>預約狀態</th>
-                                <th class="text-center pe-4">操作管理</th>
+                                <th class="ps-4 text-start" style="width: 15%">時間</th>
+                                <th class="text-start" style="width: 20%">客戶名稱</th>
+                                <th class="text-start" style="width: 25%">服務項目</th>
+                                <th class="text-center" style="width: 15%">預約狀態</th>
+                                <th class="text-center pe-4" style="width: 25%">操作管理</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr th:each="res : ${reservations}">
-                                <td class="ps-4 fw-bold text-primary" th:text="${res.startTime}">09:00</td>
-                                <td th:text="${res.user.username}">客戶名稱</td>
-                                <td>
+                                <td class="ps-4 text-start fw-bold text-primary" th:text="${res.startTime}">09:00</td>
+                                <td class="text-start" th:text="${res.user.username}">客戶名稱</td>
+                                <td class="text-start">
                                     <span class="text-dark" th:text="${res.title}">項目</span>
                                 </td>
-                                <td>
-                                    <!-- 狀態標籤美化 -->
+                                <td class="text-center">
+                                    <!-- 狀態標籤置中 -->
                                     <span th:if="${res.status.name() == 'PENDING'}" class="badge rounded-pill bg-warning text-dark px-3">
                                         <i class="bi bi-hourglass-split me-1"></i> 待確認
                                     </span>
                                     <span th:if="${res.status.name() == 'CONFIRMED'}" class="badge rounded-pill bg-success px-3">
-                                        <i class="bi bi-check-circle me-1"></i> 已核准
+                                        <i class="bi bi-check-circle me-1"></i> 已確認
                                     </span>
                                 </td>
                                 <td class="text-center pe-4">
                                     <div class="btn-group">
                                         <button class="btn btn-sm btn-outline-success px-3">
-                                            <i class="bi bi-check-lg"></i> 核准
+                                            <i class="bi bi-check-lg"></i> 確認
                                         </button>
                                         <button class="btn btn-sm btn-outline-danger px-3">
                                             <i class="bi bi-x-lg"></i> 取消
