@@ -48,7 +48,7 @@ public class ReservationController {
 
     @GetMapping("/reservation/new")
     public String showReservationForm(Model model) {
-        model.addAttribute("businesses", businessDataService.getAllBusinesses());
+        model.addAttribute(BUSINESS, businessDataService.getAllBusinesses());
 
         List<String> disabledDates = reservationTimeService.getDisabledDates();
         model.addAttribute(DISABLED_DATES, disabledDates);
@@ -86,7 +86,7 @@ public class ReservationController {
     @GetMapping("reservation/today/manage")
     public String showTodayManagementPage(Model model) {
         log.info("店長進入今日預約管理頁面");
-        model.addAttribute("reservations", reservationService.getTodayReservations());
+        model.addAttribute(RESERVATIONS, reservationService.getTodayReservations());
         return RESERVATION_MANAGEMENT;
     }
 
@@ -97,7 +97,7 @@ public class ReservationController {
             return REDIRECT_HOME;
         }
         log.info("店長進入服務項目管理頁面: {}", currentUser.getBusinessData().getName());
-        model.addAttribute("services", serviceItemService.getServicesByBusinessId(currentUser.getBusinessData().getId()));
+        model.addAttribute(SERVICES, serviceItemService.getServicesByBusinessId(currentUser.getBusinessData().getId()));
         return SERVICE_MANAGEMENT;
     }
 

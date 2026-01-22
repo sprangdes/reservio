@@ -33,6 +33,9 @@ public final class SystemConstants {
     public static final String DISABLED_DATES = "disabledDates";
     public static final String DATE = "date";
     public static final String DURATION = "duration";
+    public static final String BUSINESS = "business";
+    public static final String RESERVATIONS = "reservations";
+    public static final String SERVICES = "services";
 
     // 通知錯誤訊息
     public static final String DEFAULT_ERROR_MSG = "系統繁忙，請稍後再試";
