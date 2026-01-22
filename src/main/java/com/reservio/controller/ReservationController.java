@@ -2,11 +2,9 @@ package com.reservio.controller;
 
 import com.reservio.entity.Reservation;
 import com.reservio.entity.ServiceItem;
+import com.reservio.entity.UserData;
 import com.reservio.enums.ReservationStatus;
-import com.reservio.service.BusinessDataService;
-import com.reservio.service.ReservationService;
-import com.reservio.service.ReservationTimeService;
-import com.reservio.service.ServiceItemService;
+import com.reservio.service.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -34,16 +32,18 @@ public class ReservationController {
     private final ReservationTimeService reservationTimeService;
     private final ReservationService reservationService;
     private final BusinessDataService businessDataService;
+    private final UserDataService userDataService;
 
     public ReservationController(
             ServiceItemService serviceItemService,
             ReservationTimeService reservationTimeService,
             ReservationService reservationService,
-            BusinessDataService businessDataService) {
+            BusinessDataService businessDataService, UserDataService userDataService) {
         this.serviceItemService = serviceItemService;
         this.reservationTimeService = reservationTimeService;
         this.reservationService = reservationService;
         this.businessDataService = businessDataService;
+        this.userDataService = userDataService;
     }
 
     @GetMapping("/reservation/new")
@@ -88,6 +88,33 @@ public class ReservationController {
         log.info("店長進入今日預約管理頁面");
         model.addAttribute("reservations", reservationService.getTodayReservations());
         return RESERVATION_MANAGEMENT;
+    }
+
+    @GetMapping("/service/manage")
+    public String showServiceManagementPage(Model model) {
+        UserData currentUser = userDataService.getCurrentUser();
+        if (currentUser.getBusinessData() == null) {
+            return REDIRECT_HOME;
+        }
+        log.info("店長進入服務項目管理頁面: {}", currentUser.getBusinessData().getName());
+        model.addAttribute("services", serviceItemService.getServicesByBusinessId(currentUser.getBusinessData().getId()));
+        return SERVICE_MANAGEMENT;
+    }
+
+    @PostMapping("/service/add")
+    public String addServiceItem(
+            @RequestParam(SERVICE_NAME) String name,
+            @RequestParam(DURATION) Integer duration,
+            RedirectAttributes redirectAttributes) {
+        try {
+            UserData currentUser = userDataService.getCurrentUser();
+            serviceItemService.saveServiceItem(currentUser.getBusinessData(), name, duration);
+            redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, SERVICE_ITEM_ADD_SUCCESS_MSG);
+        } catch (Exception e) {
+            log.error("新增服務項目失敗: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute(ERROR_MESSAGE, SERVICE_ITEM_ADD_ERROR_MSG + e.getMessage());
+        }
+        return REDIRECT_SERVICE_MANAGEMENT;
     }
 
     @PostMapping("/reservation/update-status")

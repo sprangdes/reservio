@@ -29,6 +29,7 @@ public final class SystemConstants {
 
     // 預約相關屬性
     public static final String SERVICE_ITEMS = "serviceItems";
+    public static final String SERVICE_NAME = "name";
     public static final String DISABLED_DATES = "disabledDates";
     public static final String DATE = "date";
     public static final String DURATION = "duration";
@@ -42,4 +43,6 @@ public final class SystemConstants {
     public static final String RESERVATION_CONFIRMED = "預約已確認";
     public static final String RESERVATION_CANCELLED = "預約已取消";
     public static final String RESERVATION_STATUS_UPDATE_ERROR_MSG = "更新失敗：";
+    public static final String SERVICE_ITEM_ADD_SUCCESS_MSG = "服務項目新增成功";
+    public static final String SERVICE_ITEM_ADD_ERROR_MSG = "新增失敗: ";
 }
