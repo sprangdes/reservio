@@ -13,7 +13,7 @@ public final class URLConstants {
     public static final String LOGIN = "login";
     public static final String RESERVATION_FORM = "reservation-form";
     public static final String RESERVATION_MANAGEMENT = "reservation-management";
-    public static final String SERVICE_MANAGEMENT = "service-management"; // 新增服務管理頁面
+    public static final String SERVICE_MANAGEMENT = "service-management";
 
     // 重導向路徑 (Redirects)
     public static final String REDIRECT_HOME = "redirect:/";
