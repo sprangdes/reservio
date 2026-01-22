@@ -16,9 +16,10 @@ function initReservationForm(disableDates) {
     businessSelect.addEventListener('change', function() {
         const businessId = this.value;
         
-        // 1. 先重置並禁用後續欄位
+        // 1. 鎖定選單並顯示「讀取中」狀態，但不立即清空內容，避免選單閃爍（高度塌陷）
         titleSelect.disabled = true;
-        titleSelect.innerHTML = '<option value="" disabled selected>載入中...</option>';
+        titleSelect.options[0].text = "正在讀取服務...";
+
         startSelect.disabled = true;
         startSelect.innerHTML = '<option value="" disabled selected>請先選擇項目..</option>';
         endTimeHidden.value = "";
@@ -27,30 +28,35 @@ function initReservationForm(disableDates) {
         fetch(`/reservation/business/${businessId}/services`)
             .then(res => res.json())
             .then(services => {
-                console.log('收到服務項目清單:', services); // 建議加入此行檢查 console 輸出
-                titleSelect.innerHTML = '<option value="" disabled selected>請選擇項目...</option>';
+                // 建立 DocumentFragment 減少 DOM 渲染次數
+                const fragment = document.createDocumentFragment();
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = "";
+                defaultOpt.disabled = true;
+                defaultOpt.selected = true;
+                defaultOpt.textContent = services.length > 0 ? "請選擇項目..." : "該店家目前無提供服務";
+                fragment.appendChild(defaultOpt);
                 
-                // 確保屬性名稱與後端 Entity 一致 (s.name, s.duration)
                 /** @var { {name:string, duration:number} } s */
                 for (const s of services) {
                     const opt = document.createElement('option');
-                    // 這裡建議 value 使用 s.name (因為目前的後端接收 title 字串)，
-                    // 但確保 textContent 顯示正確
-                    opt.value = s.name; 
+                    opt.value = s.name;
                     opt.dataset.duration = s.duration.toString();
                     opt.textContent = `${s.name} (${s.duration} 分鐘)`;
-                    titleSelect.appendChild(opt);
+                    fragment.appendChild(opt);
                 }
                 
-                if (services && services.length > 0) {
+                // 3. 在所有選項準備好後，一次性更新 DOM，大幅減少閃爍感
+                titleSelect.innerHTML = '';
+                titleSelect.appendChild(fragment);
+                
+                if (services.length > 0) {
                     titleSelect.disabled = false;
-                } else {
-                    titleSelect.innerHTML = '<option value="" disabled selected>該店家目前無提供服務</option>';
                 }
             })
             .catch(err => {
                 console.error('無法取得服務項目:', err);
-                titleSelect.innerHTML = '<option value="" disabled selected>載入失敗</option>';
+                titleSelect.options[0].text = "載入失敗，請重試";
             });
     });
 
