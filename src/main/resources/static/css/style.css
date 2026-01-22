@@ -89,3 +89,23 @@ main {
     backdrop-filter: blur(5px);
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2) !important;
 }
+
+/* 表格樣式微調 */
+.table thead th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f8f9fa;
+}
+
+.table tbody tr {
+    transition: background-color 0.2s;
+}
+
+.table tbody td {
+    padding-top: 15px;
+    padding-bottom: 15px;
+}
