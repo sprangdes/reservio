@@ -2,6 +2,7 @@ package com.reservio.controller;
 
 import com.reservio.entity.Reservation;
 import com.reservio.entity.ServiceItem;
+import com.reservio.service.BusinessDataService;
 import com.reservio.service.ReservationService;
 import com.reservio.service.ReservationTimeService;
 import com.reservio.service.ServiceItemService;
@@ -29,27 +30,32 @@ public class ReservationController {
     private final ServiceItemService serviceItemService;
     private final ReservationTimeService reservationTimeService;
     private final ReservationService reservationService;
+    private final BusinessDataService businessDataService;
 
     public ReservationController(
             ServiceItemService serviceItemService,
             ReservationTimeService reservationTimeService,
-            ReservationService reservationService) {
+            ReservationService reservationService,
+            BusinessDataService businessDataService) {
         this.serviceItemService = serviceItemService;
         this.reservationTimeService = reservationTimeService;
         this.reservationService = reservationService;
+        this.businessDataService = businessDataService;
     }
 
     @GetMapping("/reservation/new")
     public String showReservationForm(Model model) {
-        // 從資料庫取得所有服務項目
-        List<ServiceItem> serviceItems = serviceItemService.getServiceItems();
+        model.addAttribute("businesses", businessDataService.getAllBusinesses());
 
-        // 不開放預約日期 yyyy-MM-dd
         List<String> disabledDates = reservationTimeService.getDisabledDates();
-
-        model.addAttribute(SERVICE_ITEMS, serviceItems);
         model.addAttribute(DISABLED_DATES, disabledDates);
         return RESERVATION_FORM;
+    }
+
+    @GetMapping("/reservation/business/{businessId}/services")
+    @ResponseBody
+    public List<ServiceItem> getBusinessServices(@PathVariable Long businessId) {
+        return serviceItemService.getServicesByBusinessId(businessId);
     }
 
     @GetMapping("/reservation/slots")
@@ -67,7 +73,6 @@ public class ReservationController {
         }
     }
 
-    // TODO: 店家home的"今日新預約"功能，預約還沒有和店家綁定，之後Reservation要增加和店家的關聯，註冊頁面要可以選擇店家
     @GetMapping("/reservation/today")
     @ResponseBody
     public List<Reservation> getTodayReservations() {

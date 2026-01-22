@@ -15,7 +15,7 @@ public class ServiceItemService {
         this.serviceItemRepo = serviceItemRepo;
     }
 
-    public List<ServiceItem> getServiceItems() {
-        return serviceItemRepo.findAll();
+    public List<ServiceItem> getServicesByBusinessId(Long businessId) {
+        return serviceItemRepo.findAllByBusinessId(businessId);
     }
 }

@@ -24,17 +24,22 @@
                         </div>
                         <div class="card-body p-4 p-lg-5">
                             <form th:action="@{/reservation/new}" method="post">
-                                
+
+                                <!-- 步驟 0：選擇店家 -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary fw-bold mb-3"><i class="bi bi-shop me-1"></i> 選擇預約店家</h6>
+                                    <select class="form-select form-select-sm" id="businessId" name="business.id" aria-label="服務店家" required>
+                                        <option value="" disabled selected>請選擇店家...</option>
+                                        <option th:each="b : ${businesses}" th:value="${b.id}" th:text="${b.name}">店家名稱</option>
+                                    </select>
+                                </div>
+
                                 <!-- 步驟 1：選擇預約項目 -->
                                 <div class="mb-4">
                                     <h6 class="text-primary fw-bold mb-3"><i class="bi bi-1-circle-fill me-1"></i> 選擇預約項目</h6>
                                     <div class="mb-2">
-                                        <select class="form-select form-select-sm" id="title" name="title" aria-label="預約服務項目" required>
-                                            <option value="" disabled selected>請選擇您要預約的項目...</option>
-                                            <option th:each="item : ${serviceItems}"
-                                                    th:value="${item.name}"
-                                                    th:data-duration="${item.duration}"
-                                                    th:text="${item.name + ' (' + item.duration + ' 分鐘)'}">項目名稱</option>
+                                        <select class="form-select form-select-sm" id="title" name="title" aria-label="服務項目" required disabled>
+                                            <option value="" disabled selected>請先選擇店家..</option>
                                         </select>
                                     </div>
                                 </div>

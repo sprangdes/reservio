@@ -8,6 +8,51 @@ function initReservationForm(disableDates) {
     const endTimeHidden = document.getElementById('endTime');
     const titleSelect = document.getElementById('title');
     const reservationDateInput = document.getElementById('reservationDate');
+    const businessSelect = document.getElementById('businessId');
+
+    /**
+     * 當切換店家時，載入該店家的服務項目清單 (List<ServiceItem>)
+     */
+    businessSelect.addEventListener('change', function() {
+        const businessId = this.value;
+        
+        // 1. 先重置並禁用後續欄位
+        titleSelect.disabled = true;
+        titleSelect.innerHTML = '<option value="" disabled selected>載入中...</option>';
+        startSelect.disabled = true;
+        startSelect.innerHTML = '<option value="" disabled selected>請先選擇項目..</option>';
+        endTimeHidden.value = "";
+
+        // 2. 向後端請求該店家的服務清單
+        fetch(`/reservation/business/${businessId}/services`)
+            .then(res => res.json())
+            .then(services => {
+                console.log('收到服務項目清單:', services); // 建議加入此行檢查 console 輸出
+                titleSelect.innerHTML = '<option value="" disabled selected>請選擇項目...</option>';
+                
+                // 確保屬性名稱與後端 Entity 一致 (s.name, s.duration)
+                /** @var { {name:string, duration:number} } s */
+                for (const s of services) {
+                    const opt = document.createElement('option');
+                    // 這裡建議 value 使用 s.name (因為目前的後端接收 title 字串)，
+                    // 但確保 textContent 顯示正確
+                    opt.value = s.name; 
+                    opt.dataset.duration = s.duration.toString();
+                    opt.textContent = `${s.name} (${s.duration} 分鐘)`;
+                    titleSelect.appendChild(opt);
+                }
+                
+                if (services && services.length > 0) {
+                    titleSelect.disabled = false;
+                } else {
+                    titleSelect.innerHTML = '<option value="" disabled selected>該店家目前無提供服務</option>';
+                }
+            })
+            .catch(err => {
+                console.error('無法取得服務項目:', err);
+                titleSelect.innerHTML = '<option value="" disabled selected>載入失敗</option>';
+            });
+    });
 
     const today = new Date();
     const minDate = today.toISOString().split('T')[0];

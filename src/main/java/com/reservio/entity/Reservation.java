@@ -27,6 +27,10 @@ public class Reservation {
     @JoinColumn(name = "user_id", nullable = false)
     private UserData user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "business_id", nullable = false)
+    private BusinessData business;
+
     @Column(name = "reservation_date", nullable = false)
     private LocalDate reservationDate;
 

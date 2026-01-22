@@ -1,5 +1,6 @@
 package com.reservio.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,6 +36,7 @@ public class UserData {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private BusinessData businessData;
 
+    @JsonIgnore
     @OneToMany(
             mappedBy = "user",
             fetch = FetchType.LAZY,

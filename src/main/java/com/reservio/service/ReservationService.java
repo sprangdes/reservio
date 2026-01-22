@@ -1,5 +1,6 @@
 package com.reservio.service;
 
+import com.reservio.entity.BusinessData;
 import com.reservio.entity.Reservation;
 import com.reservio.entity.UserData;
 import com.reservio.exception.UserNotFoundException;
@@ -41,11 +42,13 @@ public class ReservationService {
 
     public long countTodayReservations() {
         UserData user = userDataService.getCurrentUser();
-        return reservationRepo.countByUserAndReservationDateAndStatusNot(
-                user,
-                LocalDate.now(),
-                CANCELLED
-        );
+        BusinessData businessData = user.getBusinessData();
+        LocalDate now = LocalDate.now();
+        // 商家看店內的預約數，客戶看自己的預約數
+        if (businessData != null) {
+            return reservationRepo.countByBusinessAndReservationDateAndStatusNot(businessData, now, CANCELLED);
+        }
+        return reservationRepo.countByUserAndReservationDateAndStatusNot(user, now, CANCELLED);
     }
 
     public long countPendingReservations() {
@@ -54,6 +57,13 @@ public class ReservationService {
     }
 
     public List<Reservation> getTodayReservations() {
-        return reservationRepo.findAllByReservationDate(LocalDate.now());
+        UserData currentUser = userDataService.getCurrentUser();
+        BusinessData businessData = currentUser.getBusinessData();
+        LocalDate now = LocalDate.now();
+        // 如果是商家登入，只查詢該店家的預約
+        if (businessData != null) {
+            return reservationRepo.findAllByBusinessAndReservationDate(businessData, now);
+        }
+        return List.of();
     }
 }

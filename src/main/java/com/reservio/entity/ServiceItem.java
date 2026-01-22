@@ -1,5 +1,6 @@
 package com.reservio.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,5 +23,10 @@ public class ServiceItem {
     private String name;
 
     @Column(nullable = false)
-    private int duration;
+    private Integer duration;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "business_id", nullable = false)
+    private BusinessData business;
 }

@@ -1,5 +1,6 @@
 package com.reservio.repo;
 
+import com.reservio.entity.BusinessData;
 import com.reservio.entity.Reservation;
 import com.reservio.entity.UserData;
 import com.reservio.enums.ReservationStatus;
@@ -13,11 +14,11 @@ import java.util.List;
 public interface ReservationRepo extends JpaRepository<Reservation, Long> {
     List<Reservation> findAllByReservationDateAndStatusNot(LocalDate date, ReservationStatus status);
 
-    // 計算特定使用者在特定日期的有效預約數
+    List<Reservation> findAllByBusinessAndReservationDate(BusinessData businessData, LocalDate now);
+
     long countByUserAndReservationDateAndStatusNot(UserData user, LocalDate date, ReservationStatus status);
 
-    // 計算特定使用者的特定狀態預約數
     long countByUserAndStatus(UserData user, ReservationStatus status);
 
-    List<Reservation> findAllByReservationDate(LocalDate date);
+    long countByBusinessAndReservationDateAndStatusNot(BusinessData businessData, LocalDate now, ReservationStatus reservationStatus);
 }
