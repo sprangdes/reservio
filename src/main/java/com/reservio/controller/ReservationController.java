@@ -67,6 +67,21 @@ public class ReservationController {
         }
     }
 
+    // TODO: 店家home的"今日新預約"功能，預約還沒有和店家綁定，之後Reservation要增加和店家的關聯，註冊頁面要可以選擇店家
+    @GetMapping("/reservation/today")
+    @ResponseBody
+    public List<Reservation> getTodayReservations() {
+        log.debug("店家請求取得今日預約清單");
+        return reservationService.getTodayReservations();
+    }
+
+    @GetMapping("reservation/today/manage")
+    public String showTodayManagementPage(Model model) {
+        log.info("店長進入今日預約管理頁面");
+        model.addAttribute("reservations", reservationService.getTodayReservations());
+        return RESERVATION_MANAGEMENT;
+    }
+
     @PostMapping("/reservation/new")
     public String sendReservation(
             @ModelAttribute Reservation reservation,

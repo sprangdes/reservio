@@ -12,6 +12,7 @@ public final class UrlConstants {
     public static final String REGISTER_BUSINESS = "register-business";
     public static final String LOGIN = "login";
     public static final String RESERVATION_FORM = "reservation-form";
+    public static final String RESERVATION_MANAGEMENT = "reservation-management";
 
     // 重導向路徑 (Redirects)
     public static final String REDIRECT_HOME = "redirect:/";

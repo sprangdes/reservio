@@ -18,4 +18,6 @@ public interface ReservationRepo extends JpaRepository<Reservation, Long> {
 
     // 計算特定使用者的特定狀態預約數
     long countByUserAndStatus(UserData user, ReservationStatus status);
+
+    List<Reservation> findAllByReservationDate(LocalDate date);
 }
