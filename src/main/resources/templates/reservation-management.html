@@ -27,11 +27,12 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th class="ps-4 text-start" style="width: 15%">時間</th>
-                                <th class="text-start" style="width: 20%">客戶名稱</th>
-                                <th class="text-start" style="width: 25%">服務項目</th>
-                                <th class="text-center" style="width: 15%">預約狀態</th>
-                                <th class="text-center pe-4" style="width: 25%">操作管理</th>
+                                <th class="ps-4 text-start" style="width: 12%">時間</th>
+                                <th class="text-start" style="width: 15%">客戶名稱</th>
+                                <th class="text-start" style="width: 18%">服務項目</th>
+                                <th class="text-start" style="width: 25%">客戶備註</th> <!-- 新增欄位 -->
+                                <th class="text-center" style="width: 12%">預約狀態</th>
+                                <th class="text-center pe-4" style="width: 18%">操作管理</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -40,6 +41,9 @@
                                 <td class="text-start" th:text="${res.user.username}">客戶名稱</td>
                                 <td class="text-start">
                                     <span class="text-dark" th:text="${res.title}">項目</span>
+                                </td>
+                                <td class="text-start">
+                                    <samll class="text-muted" th:text="${res.remark ?: '無備註'}"></samll>
                                 </td>
                                 <td class="text-center">
                                     <!-- 狀態標籤置中 -->
@@ -78,7 +82,7 @@
                     </table>
                 </div>
             </div>
-            
+
             <div class="card-footer bg-white py-3 border-top-0 ps-4">
                 <a th:href="@{/}" class="btn btn-light btn-sm text-primary fw-bold">
                     <i class="bi bi-arrow-left me-1"></i> 返回儀表板
