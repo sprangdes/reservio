@@ -16,8 +16,6 @@ public final class SystemConstants {
     public static final String TODAY_COUNT = "todayCount";
     public static final String PENDING_COUNT = "pendingCount";
     public static final String ANONYMOUS_USER = "anonymousUser";
-    
-    // 註冊相關參數
     public static final String IS_BUSINESS = "isBusiness";
     public static final String BUSINESS_NAME = "businessName";
     public static final String CATEGORY = "category";
@@ -26,8 +24,6 @@ public final class SystemConstants {
     public static final String ID = "id";
     public static final String ACTION = "action";
     public static final String CONFIRM = "confirm";
-
-    // 預約相關屬性
     public static final String SERVICE_ITEMS = "serviceItems";
     public static final String SERVICE_NAME = "name";
     public static final String DISABLED_DATES = "disabledDates";
@@ -37,15 +33,15 @@ public final class SystemConstants {
     public static final String RESERVATIONS = "reservations";
     public static final String SERVICES = "services";
 
-    // 通知錯誤訊息
+    // 通知訊息
     public static final String DEFAULT_ERROR_MSG = "系統繁忙，請稍後再試";
     public static final String REGISTER_SUCCESS_MSG = "註冊成功。歡迎您，%s。請登入您的帳號。";
     public static final String BUSINESS_REGISTER_SUCCESS_MSG = "商家帳號註冊成功。歡迎您，%s。請登入您的帳號。";
     public static final String RESERVATION_SUCCESS_MSG = "預約成功";
-    public static final String RESERVATION_ERROR_MSG = "預約失敗：";
+    public static final String RESERVATION_ERROR_MSG = "預約失敗";
     public static final String RESERVATION_CONFIRMED = "預約已確認";
     public static final String RESERVATION_CANCELLED = "預約已取消";
-    public static final String RESERVATION_STATUS_UPDATE_ERROR_MSG = "更新失敗：";
+    public static final String RESERVATION_STATUS_UPDATE_ERROR_MSG = "更新失敗";
     public static final String SERVICE_ITEM_ADD_SUCCESS_MSG = "服務項目新增成功";
-    public static final String SERVICE_ITEM_ADD_ERROR_MSG = "新增失敗: ";
+    public static final String SERVICE_ITEM_ADD_ERROR_MSG = "服務項目新增失敗";
 }

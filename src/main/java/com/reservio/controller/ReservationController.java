@@ -112,7 +112,7 @@ public class ReservationController {
             redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, SERVICE_ITEM_ADD_SUCCESS_MSG);
         } catch (Exception e) {
             log.error("新增服務項目失敗: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute(ERROR_MESSAGE, SERVICE_ITEM_ADD_ERROR_MSG + e.getMessage());
+            redirectAttributes.addFlashAttribute(ERROR_MESSAGE, SERVICE_ITEM_ADD_ERROR_MSG);
         }
         return REDIRECT_SERVICE_MANAGEMENT;
     }
@@ -131,7 +131,7 @@ public class ReservationController {
             log.info("預約狀態變更成功: id={}, action={}, newStatus={}", id, action, status);
         } catch (Exception e) {
             log.error("更新預約狀態失敗: id={}, error={}", id, e.getMessage());
-            redirectAttributes.addFlashAttribute(ERROR_MESSAGE, RESERVATION_STATUS_UPDATE_ERROR_MSG + e.getMessage());
+            redirectAttributes.addFlashAttribute(ERROR_MESSAGE, RESERVATION_STATUS_UPDATE_ERROR_MSG);
         }
         return REDIRECT_RESERVATION_MANAGEMENT;
     }
@@ -148,7 +148,7 @@ public class ReservationController {
             redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, RESERVATION_SUCCESS_MSG);
         } catch (Exception e) {
             log.error("預約送出失敗: reservationData={}, error={}", reservation, e.getMessage(), e);
-            redirectAttributes.addFlashAttribute(ERROR_MESSAGE, RESERVATION_ERROR_MSG + e.getMessage());
+            redirectAttributes.addFlashAttribute(ERROR_MESSAGE, RESERVATION_ERROR_MSG);
         }
         return REDIRECT_HOME;
     }
