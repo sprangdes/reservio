@@ -97,6 +97,13 @@ public class ReservationController {
         return RESERVATION_ALL_MANAGEMENT;
     }
 
+    @GetMapping("/reservation/pending/manage")
+    public String showPendingManagementPage(Model model) {
+        log.info("店長進入待處理預約管理頁面");
+        model.addAttribute(RESERVATIONS, reservationService.getPendingReservationsForBusiness());
+        return RESERVATION_PENDING_MANAGEMENT;
+    }
+
     @GetMapping("/service/manage")
     public String showServiceManagementPage(Model model) {
         UserData currentUser = userDataService.getCurrentUser();
@@ -142,9 +149,11 @@ public class ReservationController {
             redirectAttributes.addFlashAttribute(ERROR_MESSAGE, RESERVATION_STATUS_UPDATE_ERROR_MSG);
         }
 
-        // 根據來源頁面導回
         if ("/reservation/manage".equals(redirectTo)) {
             return REDIRECT_RESERVATION_ALL_MANAGEMENT;
+        }
+        if ("/reservation/pending/manage".equals(redirectTo)) {
+            return REDIRECT_RESERVATION_PENDING_MANAGEMENT;
         }
         return REDIRECT_RESERVATION_MANAGEMENT;
     }

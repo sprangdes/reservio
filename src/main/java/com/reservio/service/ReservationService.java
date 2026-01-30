@@ -85,6 +85,15 @@ public class ReservationService {
         return reservationRepo.findAllByBusiness(businessData);
     }
 
+    public List<Reservation> getPendingReservationsForBusiness() {
+        UserData currentUser = userDataService.getCurrentUser();
+        BusinessData businessData = currentUser.getBusinessData();
+        if (businessData == null) {
+            return List.of();
+        }
+        return reservationRepo.findAllByBusinessAndStatus(businessData, PENDING);
+    }
+
     /**
      * 取得今日預約清單
      * @return 今日預約清單

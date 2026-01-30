@@ -46,10 +46,10 @@
                                             <h5 class="small text-uppercase opacity-75">今日預約</h5>
                                             <p class="h2 mb-0" th:text="${todayCount ?: 0}">0</p>
                                         </a>
-                                        <div class="col-sm-4 border-end border-white border-opacity-25">
+                                        <a th:href="@{/reservation/pending/manage}" class="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link">
                                             <h5 class="small text-uppercase opacity-75">待處理預約</h5>
                                             <p class="h2 mb-0" th:text="${pendingCount ?: 0}">0</p>
-                                        </div>
+                                        </a>
                                         <div class="col-sm-4">
                                             <div class="d-grid gap-2">
                                                 <a th:href="@{/service/manage}" class="btn btn-warning fw-bold shadow-sm">管理服務項目</a>
