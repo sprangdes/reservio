@@ -90,6 +90,13 @@ public class ReservationController {
         return RESERVATION_MANAGEMENT;
     }
 
+    @GetMapping("/reservation/manage")
+    public String showAllReservationManagementPage(Model model) {
+        log.info("店長進入全部預約管理頁面");
+        model.addAttribute(RESERVATIONS, reservationService.getAllReservationsForBusiness());
+        return RESERVATION_ALL_MANAGEMENT;
+    }
+
     @GetMapping("/service/manage")
     public String showServiceManagementPage(Model model) {
         UserData currentUser = userDataService.getCurrentUser();
@@ -121,6 +128,7 @@ public class ReservationController {
     public String updateStatus(
             @RequestParam(ID) Long id,
             @RequestParam(ACTION) String action,
+            @RequestParam(name = REDIRECT_TO, required = false) String redirectTo,
             RedirectAttributes redirectAttributes) {
         try {
             ReservationStatus status = CONFIRM.equals(action) ? CONFIRMED : CANCELLED;
@@ -130,8 +138,13 @@ public class ReservationController {
             redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, msg);
             log.info("預約狀態變更成功: id={}, action={}, newStatus={}", id, action, status);
         } catch (Exception e) {
-            log.error("更新預約狀態失敗: id={}, error={}", id, e.getMessage());
+            log.error("更新預約狀態失敗: id={}, error={}", id, e.getMessage(), e);
             redirectAttributes.addFlashAttribute(ERROR_MESSAGE, RESERVATION_STATUS_UPDATE_ERROR_MSG);
+        }
+
+        // 根據來源頁面導回
+        if ("/reservation/manage".equals(redirectTo)) {
+            return REDIRECT_RESERVATION_ALL_MANAGEMENT;
         }
         return REDIRECT_RESERVATION_MANAGEMENT;
     }

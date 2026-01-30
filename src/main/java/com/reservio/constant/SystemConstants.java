@@ -32,6 +32,7 @@ public final class SystemConstants {
     public static final String BUSINESSES = "businesses";
     public static final String RESERVATIONS = "reservations";
     public static final String SERVICES = "services";
+    public static final String REDIRECT_TO = "redirectTo";
 
     // 通知訊息
     public static final String DEFAULT_ERROR_MSG = "系統繁忙，請稍後再試";

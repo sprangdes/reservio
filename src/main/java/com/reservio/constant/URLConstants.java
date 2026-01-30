@@ -13,6 +13,7 @@ public final class URLConstants {
     public static final String LOGIN = "login";
     public static final String RESERVATION_FORM = "reservation-form";
     public static final String RESERVATION_MANAGEMENT = "reservation-management";
+    public static final String RESERVATION_ALL_MANAGEMENT = "reservation-all-management";
     public static final String SERVICE_MANAGEMENT = "service-management";
 
     // 重導向路徑 (Redirects)
@@ -22,4 +23,5 @@ public final class URLConstants {
     public static final String REDIRECT_REGISTER_BUSINESS = "redirect:/register/business";
     public static final String REDIRECT_RESERVATION_MANAGEMENT = "redirect:/reservation/today/manage";
     public static final String REDIRECT_SERVICE_MANAGEMENT = "redirect:/service/manage";
+    public static final String REDIRECT_RESERVATION_ALL_MANAGEMENT = "redirect:/reservation/manage";
 }
