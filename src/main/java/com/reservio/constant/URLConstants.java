@@ -7,17 +7,17 @@ public final class URLConstants {
     private URLConstants() {}
 
     // 頁面模板名稱 (View Names)
-    public static final String HOME = "home";
-    public static final String REGISTER = "register";
-    public static final String REGISTER_BUSINESS = "register-business";
-    public static final String LOGIN = "login";
-    public static final String RESERVATION_FORM = "reservation-form";
-    public static final String RESERVATION_MANAGEMENT = "reservation-management";
-    public static final String RESERVATION_ALL_MANAGEMENT = "reservation-all-management";
-    public static final String RESERVATION_PENDING_MANAGEMENT = "reservation-pending-management";
-    public static final String SERVICE_MANAGEMENT = "service-management";
+    public static final String HOME = "home/index";
+    public static final String LOGIN = "auth/login";
+    public static final String REGISTER = "auth/register";
+    public static final String REGISTER_BUSINESS = "auth/register-business";
+    public static final String RESERVATION_FORM = "reservation/new";
+    public static final String RESERVATION_MANAGEMENT = "reservation/manage-today";
+    public static final String RESERVATION_ALL_MANAGEMENT = "reservation/manage-all";
+    public static final String RESERVATION_PENDING_MANAGEMENT = "reservation/manage-pending";
+    public static final String SERVICE_MANAGEMENT = "business/service-management";
 
-    // 重導向路徑 (Redirects)
+    // 重導向路徑 (Redirects) - URL，不依賴模板資料夾，維持不變
     public static final String REDIRECT_HOME = "redirect:/";
     public static final String REDIRECT_LOGIN = "redirect:/login";
     public static final String REDIRECT_REGISTER = "redirect:/register";
