@@ -16,6 +16,7 @@ public final class URLConstants {
     public static final String RESERVATION_ALL_MANAGEMENT = "reservation/manage-all";
     public static final String RESERVATION_PENDING_MANAGEMENT = "reservation/manage-pending";
     public static final String SERVICE_MANAGEMENT = "business/service-management";
+    public static final String MY_RESERVATIONS = "reservation/my";
 
     // 重導向路徑 (Redirects) - URL，不依賴模板資料夾，維持不變
     public static final String REDIRECT_HOME = "redirect:/";

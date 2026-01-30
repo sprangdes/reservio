@@ -29,6 +29,11 @@ public class ReservationService {
         this.userDataService = userDataService;
     }
 
+    public List<Reservation> getMyReservations() {
+        UserData user = userDataService.getCurrentUser();
+        return reservationRepo.findAllByUserAndStatusNotOrderByReservationDateDescStartTimeDesc(user, CANCELLED);
+    }
+
     /**
      * 儲存預約
      * @param reservation 預約資料

@@ -46,6 +46,13 @@ public class ReservationController {
         this.userDataService = userDataService;
     }
 
+    @GetMapping("/my/reservations")
+    public String showMyReservationsPage(Model model) {
+        log.info("使用者進入我的預約頁面");
+        model.addAttribute(RESERVATIONS, reservationService.getMyReservations());
+        return MY_RESERVATIONS;
+    }
+
     @GetMapping("/reservation/new")
     public String showReservationForm(Model model) {
         model.addAttribute(BUSINESSES, businessDataService.getAllBusinesses());
