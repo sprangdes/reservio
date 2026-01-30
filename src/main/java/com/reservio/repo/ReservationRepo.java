@@ -19,17 +19,11 @@ public interface ReservationRepo extends JpaRepository<Reservation, Long> {
 
     List<Reservation> findAllByBusiness(BusinessData businessData);
 
-    List<Reservation> findAllByBusinessAndStatus(BusinessData businessData, ReservationStatus status);
-
     List<Reservation> findAllByUserAndStatusNotOrderByReservationDateDescStartTimeDesc(UserData user, ReservationStatus status);
 
     long countByUserAndReservationDateAndStatusNot(UserData user, LocalDate date, ReservationStatus status);
 
-    long countByUserAndStatus(UserData user, ReservationStatus status);
-
     long countByBusinessAndReservationDateAndStatusNot(BusinessData businessData, LocalDate now, ReservationStatus reservationStatus);
-
-    long countByBusinessAndStatus(BusinessData businessData, ReservationStatus status);
 
     Optional<Reservation> findByIdAndUser(Long id, UserData user);
 
