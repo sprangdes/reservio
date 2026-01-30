@@ -13,8 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static com.reservio.enums.ReservationStatus.CANCELLED;
-import static com.reservio.enums.ReservationStatus.PENDING;
+import static com.reservio.enums.ReservationStatus.*;
 
 @Service
 public class ReservationService {
@@ -76,7 +75,7 @@ public class ReservationService {
         BusinessData businessData = user.getBusinessData();
 
         if (businessData != null) {
-            return reservationRepo.countByBusinessAndStatus(businessData, PENDING);
+            return reservationRepo.countByBusinessAndStatusIn(businessData, List.of(PENDING, CANCEL_REQUESTED));
         }
         return reservationRepo.countByUserAndStatus(user, PENDING);
     }
@@ -87,7 +86,7 @@ public class ReservationService {
         if (businessData == null) {
             return List.of();
         }
-        return reservationRepo.findAllByBusiness(businessData);
+        return reservationRepo.findAllByBusinessAndStatusIn(businessData, List.of(PENDING, CANCEL_REQUESTED));
     }
 
     public List<Reservation> getPendingReservationsForBusiness() {
@@ -115,23 +114,85 @@ public class ReservationService {
     }
 
     /**
+     * 客戶取消預約：
+     * - 若為 PENDING：直接取消(CANCELLED)
+     * - 若為 CONFIRMED：改為取消確認中(CANCEL_REQUESTED) 並記錄 cancelReason
+     */
+    @Transactional
+    public void customerCancel(Long reservationId, String cancelReason) {
+        UserData currentUser = userDataService.getCurrentUser();
+        Reservation reservation = reservationRepo.findByIdAndUser(reservationId, currentUser)
+                .orElseThrow(() -> new IllegalArgumentException("找不到您的預約或無權限操作: " + reservationId));
+
+        ReservationStatus currentStatus = reservation.getStatus();
+
+        if (currentStatus == PENDING) {
+            reservation.setStatus(CANCELLED);
+            reservation.setCancelledAt(LocalDateTime.now());
+            reservation.setCancelReason(null);
+        } else if (currentStatus == CONFIRMED) {
+            reservation.setStatus(CANCEL_REQUESTED);
+            reservation.setCancelReason(cancelReason.trim());
+        } else {
+            throw new IllegalStateException("此預約狀態不可取消: " + currentStatus);
+        }
+
+        reservation.setUpdatedAt(LocalDateTime.now());
+        reservation.setUpdatedBy(currentUser.getUsername());
+        reservationRepo.save(reservation);
+    }
+
+    /**
      * 更新預約狀態
      * @param id 預約ID
      * @param newStatus 欲變更的新狀態
      */
-    @Transactional
     public void updateReservationStatus(Long id, ReservationStatus newStatus) {
+        UserData actor = userDataService.getCurrentUser();
+
         Reservation reservation = reservationRepo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("找不到該筆預約資料: " + id));
 
         reservation.setStatus(newStatus);
         reservation.setUpdatedAt(LocalDateTime.now());
-        reservation.setUpdatedBy("SYSTEM"); // 後續可改為當前登入者
+        reservation.setUpdatedBy(actor.getUsername());
 
         if (newStatus == CANCELLED) {
             reservation.setCancelledAt(LocalDateTime.now());
         }
 
+        reservationRepo.save(reservation);
+    }
+
+    /**
+     * 店家處理「取消確認中」：
+     * - approve=true  -> CANCELLED
+     * - approve=false -> CONFIRMED (駁回取消)
+     */
+    @Transactional
+    public void handleCancelRequestForBusiness(Long reservationId, boolean approve) {
+        UserData actor = userDataService.getCurrentUser();
+        BusinessData businessData = actor.getBusinessData();
+        if (businessData == null) {
+            throw new IllegalStateException("非店家帳號無法處理取消申請");
+        }
+
+        Reservation reservation = reservationRepo.findByIdAndBusiness(reservationId, businessData)
+                .orElseThrow(() -> new IllegalArgumentException("找不到該店家的預約或無權限操作: " + reservationId));
+
+        if (reservation.getStatus() != CANCEL_REQUESTED) {
+            throw new IllegalStateException("此預約目前不是取消確認中，無法處理: " + reservation.getStatus());
+        }
+
+        if (approve) {
+            reservation.setStatus(CANCELLED);
+            reservation.setCancelledAt(LocalDateTime.now());
+        } else {
+            reservation.setStatus(CONFIRMED);
+        }
+
+        reservation.setUpdatedAt(LocalDateTime.now());
+        reservation.setUpdatedBy(actor.getUsername());
         reservationRepo.save(reservation);
     }
 }

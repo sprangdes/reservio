@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ReservationRepo extends JpaRepository<Reservation, Long> {
@@ -29,4 +30,12 @@ public interface ReservationRepo extends JpaRepository<Reservation, Long> {
     long countByBusinessAndReservationDateAndStatusNot(BusinessData businessData, LocalDate now, ReservationStatus reservationStatus);
 
     long countByBusinessAndStatus(BusinessData businessData, ReservationStatus status);
+
+    Optional<Reservation> findByIdAndUser(Long id, UserData user);
+
+    Optional<Reservation> findByIdAndBusiness(Long id, BusinessData businessData);
+
+    List<Reservation> findAllByBusinessAndStatusIn(BusinessData businessData, List<ReservationStatus> statuses);
+
+    long countByBusinessAndStatusIn(BusinessData businessData, List<ReservationStatus> statuses);
 }

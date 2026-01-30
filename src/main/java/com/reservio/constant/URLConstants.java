@@ -27,4 +27,5 @@ public final class URLConstants {
     public static final String REDIRECT_SERVICE_MANAGEMENT = "redirect:/service/manage";
     public static final String REDIRECT_RESERVATION_ALL_MANAGEMENT = "redirect:/reservation/manage";
     public static final String REDIRECT_RESERVATION_PENDING_MANAGEMENT = "redirect:/reservation/pending/manage";
+    public static final String REDIRECT_MY_RESERVATIONS = "redirect:/my/reservations";
 }

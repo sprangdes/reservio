@@ -47,6 +47,12 @@
                         </td>
                         <td class="text-start">
                             <small class="text-muted text-break" th:text="${res.remark ?: '無備註'}"></small>
+                            <div th:if="${res.status.name() == 'CANCEL_REQUESTED'}" class="mt-1">
+                                <small class="text-danger text-break">
+                                    <i class="bi bi-exclamation-circle me-1"></i>
+                                    取消原因：<span th:text="${res.cancelReason}">原因</span>
+                                </small>
+                            </div>
                         </td>
                         <td class="text-center">
                             <span th:if="${res.status.name() == 'PENDING'}" class="badge rounded-pill bg-warning text-dark px-3">
@@ -54,6 +60,9 @@
                             </span>
                             <span th:if="${res.status.name() == 'CONFIRMED'}" class="badge rounded-pill bg-success px-3">
                                 <i class="bi bi-check-circle me-1"></i> 已確認
+                            </span>
+                            <span th:if="${res.status.name() == 'CANCEL_REQUESTED'}" class="badge rounded-pill bg-secondary px-3">
+                                <i class="bi bi-exclamation-circle me-1"></i> 取消確認中
                             </span>
                             <span th:if="${res.status.name() == 'CANCELLED'}" class="badge rounded-pill bg-secondary px-3">
                                 <i class="bi bi-x-circle me-1"></i> 已取消
@@ -63,6 +72,7 @@
                             </span>
                         </td>
                         <td class="text-center pe-4">
+                            <!-- PENDING：原本的確認/取消 -->
                             <div th:if="${res.status.name() == 'PENDING'}" class="btn-group">
                                 <form th:action="@{/reservation/update-status}" method="post" class="d-inline">
                                     <input type="hidden" name="id" th:value="${res.id}">
@@ -75,7 +85,22 @@
                                     </button>
                                 </form>
                             </div>
-                            <small th:unless="${res.status.name() == 'PENDING'}" class="text-muted">
+
+                            <!-- CANCEL_REQUESTED：確認取消 / 駁回 -->
+                            <div th:if="${res.status.name() == 'CANCEL_REQUESTED'}" class="btn-group">
+                                <form th:action="@{/reservation/update-status}" method="post" class="d-inline">
+                                    <input type="hidden" name="id" th:value="${res.id}">
+                                    <input type="hidden" name="redirectTo" value="/reservation/manage">
+                                    <button type="submit" name="action" value="approveCancel" class="btn btn-sm btn-outline-danger px-3">
+                                        <i class="bi bi-x-circle me-1"></i> 確認取消
+                                    </button>
+                                    <button type="submit" name="action" value="rejectCancel" class="btn btn-sm btn-outline-secondary px-3">
+                                        <i class="bi bi-arrow-counterclockwise me-1"></i> 駁回
+                                    </button>
+                                </form>
+                            </div>
+
+                            <small th:if="${res.status.name() != 'PENDING' && res.status.name() != 'CANCEL_REQUESTED'}" class="text-muted">
                                 無可用操作
                             </small>
                         </td>

@@ -45,27 +45,53 @@
                         <td class="text-start"><span class="text-dark" th:text="${res.title}">項目</span></td>
                         <td class="text-start">
                             <small class="text-muted text-break" th:text="${res.remark ?: '無備註'}"></small>
-                        </td>
+
+                                <div th:if="${res.status.name() == 'CANCEL_REQUESTED'}" class="mt-1">
+                                    <small class="text-danger text-break">
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                        取消原因：<span th:text="${res.cancelReason}">原因</span>
+                                    </small>
+                                </div>
+                            </td>
                         <td class="text-center">
-                            <span class="badge rounded-pill bg-warning text-dark px-3">
-                                <i class="bi bi-hourglass-split me-1"></i> 待確認
-                            </span>
-                        </td>
-                        <td class="text-center pe-4">
-                            <div class="btn-group">
-                                <form th:action="@{/reservation/update-status}" method="post" class="d-inline">
-                                    <input type="hidden" name="id" th:value="${res.id}">
-                                    <input type="hidden" name="redirectTo" value="/reservation/pending/manage">
-                                    <button type="submit" name="action" value="confirm" class="btn btn-sm btn-outline-success px-3">
-                                        <i class="bi bi-check-lg"></i> 確認
-                                    </button>
-                                    <button type="submit" name="action" value="cancel" class="btn btn-sm btn-outline-danger px-3">
-                                        <i class="bi bi-x-lg"></i> 取消
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
+                                <span th:if="${res.status.name() == 'PENDING'}" class="badge rounded-pill bg-warning text-dark px-3">
+                                    <i class="bi bi-hourglass-split me-1"></i> 待確認
+                                </span>
+                                <span th:if="${res.status.name() == 'CANCEL_REQUESTED'}" class="badge rounded-pill bg-secondary px-3">
+                                    <i class="bi bi-exclamation-circle me-1"></i> 取消確認中
+                                </span>
+                            </td>
+
+                            <td class="text-center pe-4">
+                                <!-- PENDING：確認/取消 -->
+                                <div th:if="${res.status.name() == 'PENDING'}" class="btn-group">
+                                    <form th:action="@{/reservation/update-status}" method="post" class="d-inline">
+                                        <input type="hidden" name="id" th:value="${res.id}">
+                                        <input type="hidden" name="redirectTo" value="/reservation/pending/manage">
+                                        <button type="submit" name="action" value="confirm" class="btn btn-sm btn-outline-success px-3">
+                                            <i class="bi bi-check-lg"></i> 確認
+                                        </button>
+                                        <button type="submit" name="action" value="cancel" class="btn btn-sm btn-outline-danger px-3">
+                                            <i class="bi bi-x-lg"></i> 取消
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <!-- CANCEL_REQUESTED：確認取消/駁回 -->
+                                <div th:if="${res.status.name() == 'CANCEL_REQUESTED'}" class="btn-group">
+                                    <form th:action="@{/reservation/update-status}" method="post" class="d-inline">
+                                        <input type="hidden" name="id" th:value="${res.id}">
+                                        <input type="hidden" name="redirectTo" value="/reservation/pending/manage">
+                                        <button type="submit" name="action" value="approveCancel" class="btn btn-sm btn-outline-danger px-3">
+                                            <i class="bi bi-x-circle me-1"></i> 確認取消
+                                        </button>
+                                        <button type="submit" name="action" value="rejectCancel" class="btn btn-sm btn-outline-secondary px-3">
+                                            <i class="bi bi-arrow-counterclockwise me-1"></i> 駁回
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
 
                     <tr th:if="${#lists.isEmpty(reservations)}">
                         <td colspan="7" class="text-center text-muted py-5">

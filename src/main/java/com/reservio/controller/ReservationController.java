@@ -145,14 +145,23 @@ public class ReservationController {
             @RequestParam(name = REDIRECT_TO, required = false) String redirectTo,
             RedirectAttributes redirectAttributes) {
         try {
-            ReservationStatus status = CONFIRM.equals(action) ? CONFIRMED : CANCELLED;
-            reservationService.updateReservationStatus(id, status);
+            if (APPROVE_CANCEL.equals(action)) {
+                reservationService.handleCancelRequestForBusiness(id, true);
+                redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, CANCEL_CONFIRMED_MSG);
+            } else if (REJECT_CANCEL.equals(action)) {
+                reservationService.handleCancelRequestForBusiness(id, false);
+                redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, CANCEL_REJECTED_MSG);
+            } else {
+                ReservationStatus status = CONFIRM.equals(action) ? CONFIRMED : CANCELLED;
+                reservationService.updateReservationStatus(id, status);
 
-            String msg = status == CONFIRMED ? RESERVATION_CONFIRMED : RESERVATION_CANCELLED;
-            redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, msg);
-            log.info("預約狀態變更成功: id={}, action={}, newStatus={}", id, action, status);
+                String msg = status == CONFIRMED ? RESERVATION_CONFIRMED : RESERVATION_CANCELLED;
+                redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, msg);
+            }
+
+            log.info("店家更新預約狀態成功: id={}, action={}", id, action);
         } catch (Exception e) {
-            log.error("更新預約狀態失敗: id={}, error={}", id, e.getMessage(), e);
+            log.error("店家更新預約狀態失敗: id={}, action={}, error={}", id, action, e.getMessage(), e);
             redirectAttributes.addFlashAttribute(ERROR_MESSAGE, RESERVATION_STATUS_UPDATE_ERROR_MSG);
         }
 
@@ -180,5 +189,21 @@ public class ReservationController {
             redirectAttributes.addFlashAttribute(ERROR_MESSAGE, RESERVATION_ERROR_MSG);
         }
         return REDIRECT_HOME;
+    }
+
+    @PostMapping("/my/reservations/cancel")
+    public String cancelMyReservation(
+            @RequestParam(ID) Long id,
+            @RequestParam(name = CANCEL_REASON, required = false) String cancelReason,
+            RedirectAttributes redirectAttributes) {
+        try {
+            reservationService.customerCancel(id, cancelReason);
+            redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, CANCEL_RESERVATION_SUCCESS_MSG);
+            log.info("客戶取消預約成功: id={}", id);
+        } catch (Exception e) {
+            log.warn("客戶取消預約失敗: id={}, reason={}", id, e.getMessage());
+            redirectAttributes.addFlashAttribute(ERROR_MESSAGE, CANCEL_RESERVATION_ERROR_MSG);
+        }
+        return REDIRECT_MY_RESERVATIONS;
     }
 }

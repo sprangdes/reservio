@@ -33,6 +33,9 @@ public final class SystemConstants {
     public static final String RESERVATIONS = "reservations";
     public static final String SERVICES = "services";
     public static final String REDIRECT_TO = "redirectTo";
+    public static final String CANCEL_REASON = "cancelReason";
+    public static final String APPROVE_CANCEL = "approveCancel";
+    public static final String REJECT_CANCEL = "rejectCancel";
 
     // 通知訊息
     public static final String DEFAULT_ERROR_MSG = "系統繁忙，請稍後再試";
@@ -45,4 +48,8 @@ public final class SystemConstants {
     public static final String RESERVATION_STATUS_UPDATE_ERROR_MSG = "更新失敗";
     public static final String SERVICE_ITEM_ADD_SUCCESS_MSG = "服務項目新增成功";
     public static final String SERVICE_ITEM_ADD_ERROR_MSG = "服務項目新增失敗";
+    public static final String CANCEL_RESERVATION_SUCCESS_MSG = "已送出取消申請/取消成功";
+    public static final String CANCEL_RESERVATION_ERROR_MSG = "取消失敗";
+    public static final String CANCEL_CONFIRMED_MSG = "已確認取消";
+    public static final String CANCEL_REJECTED_MSG = "已駁回取消申請";
 }
