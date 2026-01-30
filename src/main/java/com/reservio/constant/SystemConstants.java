@@ -29,7 +29,7 @@ public final class SystemConstants {
     public static final String DISABLED_DATES = "disabledDates";
     public static final String DATE = "date";
     public static final String DURATION = "duration";
-    public static final String BUSINESS = "business";
+    public static final String BUSINESSES = "businesses";
     public static final String RESERVATIONS = "reservations";
     public static final String SERVICES = "services";
 

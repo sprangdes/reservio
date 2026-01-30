@@ -48,7 +48,7 @@ public class ReservationController {
 
     @GetMapping("/reservation/new")
     public String showReservationForm(Model model) {
-        model.addAttribute(BUSINESS, businessDataService.getAllBusinesses());
+        model.addAttribute(BUSINESSES, businessDataService.getAllBusinesses());
 
         List<String> disabledDates = reservationTimeService.getDisabledDates();
         model.addAttribute(DISABLED_DATES, disabledDates);
