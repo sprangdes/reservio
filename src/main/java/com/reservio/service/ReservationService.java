@@ -28,14 +28,26 @@ public class ReservationService {
         this.userDataService = userDataService;
     }
 
+    /**
+     * 取得「目前登入的客戶」的預約清單（預設不含已取消）。
+     * 用於「我的預約」畫面。
+     *
+     * @return 我的預約清單（依日期/開始時間由新到舊）
+     */
     public List<Reservation> getMyReservations() {
         UserData user = userDataService.getCurrentUser();
         return reservationRepo.findAllByUserAndStatusNotOrderByReservationDateDescStartTimeDesc(user, CANCELLED);
     }
 
     /**
-     * 儲存預約
-     * @param reservation 預約資料
+     * 建立一筆新的預約（客戶端送出預約表單）。
+     * 會自動補上：
+     * - user（目前登入者）
+     * - createdAt/createdBy
+     * - deletedFlag
+     *
+     * @param reservation 預約資料（由表單綁定）
+     * @throws UserNotFoundException 當找不到當前登入使用者時
      */
     public void saveReservation(Reservation reservation) {
         UserData user = userDataService.getCurrentUser();
@@ -51,36 +63,58 @@ public class ReservationService {
     }
 
     /**
-     * 取得今日預約數量
+     * 取得「今日預約數量」。
+     * - 店家：計算該店家今日預約（排除 CANCELLED）
+     * - 客戶：計算該客戶今日預約（排除 CANCELLED）
+     *
      * @return 今日預約數量
      */
     public long countTodayReservations() {
         UserData user = userDataService.getCurrentUser();
         BusinessData businessData = user.getBusinessData();
-        LocalDate now = LocalDate.now();
-        // 商家看店內的預約數，客戶看自己的預約數
         if (businessData != null) {
-            return reservationRepo.countByBusinessAndReservationDateAndStatusNot(businessData, now, CANCELLED);
+            return reservationRepo.countByBusinessAndReservationDateAndStatusNot(businessData, LocalDate.now(), CANCELLED);
         }
-        return reservationRepo.countByUserAndReservationDateAndStatusNot(user, now, CANCELLED);
+        return reservationRepo.countByUserAndReservationDateAndStatusNot(user, LocalDate.now(), CANCELLED);
     }
 
     /**
-     * 取得今日待處理預約數量
-     * 一般客戶：以 user + status 查
-     * 店家：以 business + status 查（店家「待確認」的核心）
+     * 取得「待處理預約數量」。
+     * 計算該店家的「待處理」= PENDING + CANCEL_REQUESTED
+     *
+     * @return 待處理預約數量
      */
     public long countPendingReservations() {
         UserData user = userDataService.getCurrentUser();
         BusinessData businessData = user.getBusinessData();
-
-        if (businessData != null) {
-            return reservationRepo.countByBusinessAndStatusIn(businessData, List.of(PENDING, CANCEL_REQUESTED));
+        if (businessData == null) {
+            throw new UserNotFoundException("非店家帳號");
         }
-        return reservationRepo.countByUserAndStatus(user, PENDING);
+        return reservationRepo.countByBusinessAndStatusIn(businessData, List.of(PENDING, CANCEL_REQUESTED));
     }
 
+    /**
+     * 取得店家的「全部預約」清單。
+     * 若當前登入者不是店家帳號，回傳空清單。
+     *
+     * @return 店家全部預約清單
+     */
     public List<Reservation> getAllReservationsForBusiness() {
+        UserData currentUser = userDataService.getCurrentUser();
+        BusinessData businessData = currentUser.getBusinessData();
+        if (businessData == null) {
+            return List.of();
+        }
+        return reservationRepo.findAllByBusiness(businessData);
+    }
+
+    /**
+     * 取得店家的「待處理」預約清單（PENDING + CANCEL_REQUESTED）。
+     * 若當前登入者不是店家帳號，回傳空清單。
+     *
+     * @return 店家待處理預約清單
+     */
+    public List<Reservation> getPendingReservationsForBusiness() {
         UserData currentUser = userDataService.getCurrentUser();
         BusinessData businessData = currentUser.getBusinessData();
         if (businessData == null) {
@@ -89,34 +123,30 @@ public class ReservationService {
         return reservationRepo.findAllByBusinessAndStatusIn(businessData, List.of(PENDING, CANCEL_REQUESTED));
     }
 
-    public List<Reservation> getPendingReservationsForBusiness() {
-        UserData currentUser = userDataService.getCurrentUser();
-        BusinessData businessData = currentUser.getBusinessData();
-        if (businessData == null) {
-            return List.of();
-        }
-        return reservationRepo.findAllByBusinessAndStatus(businessData, PENDING);
-    }
-
     /**
-     * 取得今日預約清單
+     * 取得店家「今日預約清單」。
+     * 僅店家帳號可取得；非店家回空清單。
+     *
      * @return 今日預約清單
      */
     public List<Reservation> getTodayReservations() {
         UserData currentUser = userDataService.getCurrentUser();
         BusinessData businessData = currentUser.getBusinessData();
-        LocalDate now = LocalDate.now();
-        // 如果是商家登入，只查詢該店家的預約
-        if (businessData != null) {
-            return reservationRepo.findAllByBusinessAndReservationDate(businessData, now);
+        if (businessData == null) {
+            return List.of();
         }
-        return List.of();
+        return reservationRepo.findAllByBusinessAndReservationDate(businessData, LocalDate.now());
     }
 
     /**
-     * 客戶取消預約：
-     * - 若為 PENDING：直接取消(CANCELLED)
-     * - 若為 CONFIRMED：改為取消確認中(CANCEL_REQUESTED) 並記錄 cancelReason
+     * 客戶取消預約。
+     * 規則：
+     * - 若目前狀態為 PENDING：可直接取消，狀態 -> CANCELLED（立即生效）
+     * - 若目前狀態為 CONFIRMED：送出取消原因，狀態 -> CANCEL_REQUESTED（待店家確認）
+     * - 其他狀態不可取消
+     *
+     * @param reservationId 預約ID
+     * @param cancelReason  取消原因（CONFIRMED 時必填；PENDING 時可為 null）
      */
     @Transactional
     public void customerCancel(Long reservationId, String cancelReason) {
@@ -143,8 +173,11 @@ public class ReservationService {
     }
 
     /**
-     * 更新預約狀態
-     * @param id 預約ID
+     * 更新預約狀態（店家後台操作使用）。
+     * 此方法會自動寫入 updatedAt/updatedBy。
+     * 若 newStatus = CANCELLED，會寫入 cancelledAt。
+     *
+     * @param id        預約ID
      * @param newStatus 欲變更的新狀態
      */
     public void updateReservationStatus(Long id, ReservationStatus newStatus) {
@@ -165,9 +198,13 @@ public class ReservationService {
     }
 
     /**
-     * 店家處理「取消確認中」：
-     * - approve=true  -> CANCELLED
-     * - approve=false -> CONFIRMED (駁回取消)
+     * 店家處理客戶提出的取消申請（狀態為 CANCEL_REQUESTED）。
+     * 規則：
+     * - approve=true  -> 狀態改為 CANCELLED（取消完成）
+     * - approve=false -> 狀態改回 CONFIRMED（駁回取消）
+     *
+     * @param reservationId 預約ID
+     * @param approve       是否同意取消
      */
     @Transactional
     public void handleCancelRequestForBusiness(Long reservationId, boolean approve) {
