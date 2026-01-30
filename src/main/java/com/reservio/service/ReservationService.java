@@ -63,10 +63,16 @@ public class ReservationService {
 
     /**
      * 取得今日待處理預約數量
-     * @return 今日待處理預約數量
+     * 一般客戶：以 user + status 查
+     * 店家：以 business + status 查（店家「待確認」的核心）
      */
     public long countPendingReservations() {
         UserData user = userDataService.getCurrentUser();
+        BusinessData businessData = user.getBusinessData();
+
+        if (businessData != null) {
+            return reservationRepo.countByBusinessAndStatus(businessData, PENDING);
+        }
         return reservationRepo.countByUserAndStatus(user, PENDING);
     }
 
