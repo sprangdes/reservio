@@ -43,11 +43,11 @@
                                 <div class="card bg-white bg-opacity-10 border-0 shadow-lg text-white p-4" style="backdrop-filter: blur(10px);">
                                     <div class="row align-items-center">
                                         <a th:href="@{/reservation/today/manage}" class="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link">
-                                            <h5 class="small text-uppercase opacity-75">今日新預約</h5>
+                                            <h5 class="small text-uppercase opacity-75">今日預約</h5>
                                             <p class="h2 mb-0" th:text="${todayCount ?: 0}">0</p>
                                         </a>
                                         <div class="col-sm-4 border-end border-white border-opacity-25">
-                                            <h5 class="small text-uppercase opacity-75">待處理確認</h5>
+                                            <h5 class="small text-uppercase opacity-75">待處理預約</h5>
                                             <p class="h2 mb-0" th:text="${pendingCount ?: 0}">0</p>
                                         </div>
                                         <div class="col-sm-4">
