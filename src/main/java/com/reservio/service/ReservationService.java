@@ -79,18 +79,24 @@ public class ReservationService {
     }
 
     /**
-     * 取得「待處理預約數量」。
-     * 計算該店家的「待處理」= PENDING + CANCEL_REQUESTED
+    /**
+     * 取得待處理預約數量
+     * - 客戶：只計算自己的 PENDING
+     * - 店家：計算該店家的 PENDING + CANCEL_REQUESTED
      *
      * @return 待處理預約數量
      */
     public long countPendingReservations() {
         UserData user = userDataService.getCurrentUser();
         BusinessData businessData = user.getBusinessData();
-        if (businessData == null) {
-            throw new UserNotFoundException("非店家帳號");
+
+        // 店家：待處理包含「待確認」與「取消確認中」
+        if (businessData != null) {
+            return reservationRepo.countByBusinessAndStatusIn(businessData, List.of(PENDING, CANCEL_REQUESTED));
         }
-        return reservationRepo.countByBusinessAndStatusIn(businessData, List.of(PENDING, CANCEL_REQUESTED));
+
+        // 客戶：待處理就是自己的「待確認」
+        return reservationRepo.countByUserAndStatus(user, PENDING);
     }
 
     /**
