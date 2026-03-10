@@ -22,12 +22,12 @@ public class ServiceItemService {
     }
 
     @Transactional
-    public void saveServiceItem(BusinessData businessData, String name, Integer duration) {
+    public ServiceItem saveServiceItem(BusinessData businessData, String name, Integer duration) {
         ServiceItem item = ServiceItem.builder()
                 .name(name)
                 .duration(duration)
                 .business(businessData)
                 .build();
-        serviceItemRepo.save(item);
+        return serviceItemRepo.save(item);
     }
 }

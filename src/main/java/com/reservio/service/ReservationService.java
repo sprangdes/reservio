@@ -49,7 +49,7 @@ public class ReservationService {
      * @param reservation 預約資料（由表單綁定）
      * @throws UserNotFoundException 當找不到當前登入使用者時
      */
-    public void saveReservation(Reservation reservation) {
+    public Reservation saveReservation(Reservation reservation) {
         UserData user = userDataService.getCurrentUser();
         if (user == null) {
             throw new UserNotFoundException("無法為不存在的使用者建立預約");
@@ -59,7 +59,7 @@ public class ReservationService {
         reservation.setCreatedBy("SYSTEM");
         reservation.setDeletedFlag(false);
 
-        reservationRepo.save(reservation);
+        return reservationRepo.save(reservation);
     }
 
     /**
@@ -168,7 +168,8 @@ public class ReservationService {
             reservation.setCancelReason(null);
         } else if (currentStatus == CONFIRMED) {
             reservation.setStatus(CANCEL_REQUESTED);
-            reservation.setCancelReason(cancelReason.trim());
+            String reason = cancelReason == null ? "" : cancelReason.trim();
+            reservation.setCancelReason(reason);
         } else {
             throw new IllegalStateException("此預約狀態不可取消: " + currentStatus);
         }

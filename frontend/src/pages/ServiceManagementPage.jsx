@@ -1,0 +1,155 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { api } from '../api.js';
+import { useAuth } from '../state/AuthContext.jsx';
+import { useToast } from '../state/ToastContext.jsx';
+
+export default function ServiceManagementPage() {
+  const { me } = useAuth();
+  const { setSuccessMessage, setErrorMessage } = useToast();
+  const [services, setServices] = useState([]);
+  const [form, setForm] = useState({ name: '', duration: '' });
+
+  const load = async () => {
+    if (!me?.business?.id) {
+      setServices([]);
+      return;
+    }
+    const res = await api.businessServices(me.business.id);
+    setServices(res.data || []);
+  };
+
+  useEffect(() => {
+    load();
+  }, [me]);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    try {
+      await api.addServiceItem({ name: form.name, duration: Number(form.duration) });
+      setSuccessMessage('服務項目新增成功');
+      setForm({ name: '', duration: '' });
+      await load();
+    } catch (err) {
+      setErrorMessage(err.message || '服務項目新增失敗');
+    }
+  };
+
+  if (!me?.business) {
+    return (
+      <main className="container my-5 pt-5">
+        <div className="alert alert-warning">非商家帳號無法管理服務。</div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="container my-5 pt-5">
+      <div className="row g-4">
+        <div className="col-md-4">
+          <div className="card shadow-sm border-0 rounded-3">
+            <div className="card-header bg-gradient text-white p-4 text-center">
+              <h5 className="mb-0 fw-bold"><i className="bi bi-plus-lg me-2"></i>新增服務項目</h5>
+            </div>
+            <div className="card-body p-4">
+              <form onSubmit={handleSubmit}>
+                <div className="mb-3">
+                  <label htmlFor="name" className="form-label fw-bold small text-muted">服務名稱</label>
+                  <input
+                    type="text"
+                    className="form-control border-light bg-light"
+                    id="name"
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    placeholder="例如：精緻剪髮"
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label htmlFor="duration" className="form-label fw-bold small text-muted">服務時長 (分鐘)</label>
+                  <div className="input-group">
+                    <input
+                      type="number"
+                      className="form-control border-light bg-light"
+                      id="duration"
+                      name="duration"
+                      min="5"
+                      step="5"
+                      value={form.duration}
+                      onChange={handleChange}
+                      placeholder="30"
+                      required
+                    />
+                    <span className="input-group-text border-light bg-light text-muted small">min</span>
+                  </div>
+                </div>
+                <div className="d-grid">
+                  <button type="submit" className="btn btn-gradient fw-bold shadow-sm">確認新增</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-md-8">
+          <div className="card shadow-sm border-0 rounded-3 overflow-hidden">
+            <div className="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
+              <h5 className="mb-0 fw-bold text-primary"><i className="bi bi-list-ul me-2"></i>目前的服務項目</h5>
+              <span className="badge bg-primary bg-opacity-10 text-primary px-3 rounded-pill">{services.length} 個項目</span>
+            </div>
+            <div className="card-body p-0">
+              <div className="table-responsive">
+                <table className="table table-hover align-middle mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th className="ps-4 text-start" style={{ width: '50%' }}>服務名稱</th>
+                      <th className="text-center" style={{ width: '25%' }}>預估時長</th>
+                      <th className="text-center pe-4" style={{ width: '25%' }}>管理</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {services.map((s) => (
+                      <tr key={s.id}>
+                        <td className="ps-4 fw-bold text-dark">{s.name}</td>
+                        <td className="text-center">
+                          <span className="badge rounded-pill bg-light text-primary border border-primary border-opacity-25 px-3 py-2">
+                            <i className="bi bi-stopwatch me-1"></i> {s.duration} 分鐘
+                          </span>
+                        </td>
+                        <td className="text-center pe-4">
+                          <button className="btn btn-sm btn-link text-danger text-decoration-none" disabled>
+                            <i className="bi bi-trash3"></i> 移除
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {services.length === 0 ? (
+                      <tr>
+                        <td colSpan="3" className="text-center text-muted py-5">
+                          <i className="bi bi-journal-x display-4 d-block mb-3 opacity-25"></i>
+                          尚未設定任何服務項目，請從左側新增
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <Link to="/" className="btn btn-light btn-sm text-primary fw-bold">
+          <i className="bi bi-arrow-left me-1"></i> 返回儀表板
+        </Link>
+      </div>
+    </main>
+  );
+}

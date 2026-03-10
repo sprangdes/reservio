@@ -18,4 +18,9 @@ public class BusinessDataService {
     public List<BusinessData> getAllBusinesses() {
         return businessDataRepo.findAll();
     }
+
+    public BusinessData getBusinessById(Long id) {
+        return businessDataRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("找不到店家: " + id));
+    }
 }
