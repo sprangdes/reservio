@@ -34,4 +34,6 @@ public interface ReservationRepo extends JpaRepository<Reservation, Long> {
     long countByBusinessAndStatusIn(BusinessData businessData, List<ReservationStatus> statuses);
 
     long countByUserAndStatus(UserData user, ReservationStatus reservationStatus);
+
+    List<Reservation> findAllByStatusIn(List<ReservationStatus> statuses);
 }

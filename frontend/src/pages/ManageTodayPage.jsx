@@ -16,6 +16,9 @@ function StatusBadge({ status }) {
   if (status === 'CANCELLED') {
     return <span className="badge rounded-pill bg-secondary px-3"><i className="bi bi-x-circle me-1"></i> 已取消</span>;
   }
+  if (status === 'COMPLETED') {
+    return <span className="badge rounded-pill bg-info px-3"><i className="bi bi-flag me-1"></i> 已完成</span>;
+  }
   return null;
 }
 

@@ -6,6 +6,7 @@ import com.reservio.entity.UserData;
 import com.reservio.enums.ReservationStatus;
 import com.reservio.exception.UserNotFoundException;
 import com.reservio.repo.ReservationRepo;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -160,7 +161,16 @@ public class ReservationService {
         Reservation reservation = reservationRepo.findByIdAndUser(reservationId, currentUser)
                 .orElseThrow(() -> new IllegalArgumentException("找不到您的預約或無權限操作: " + reservationId));
 
+        if (isEnded(reservation)) {
+            markCompleted(reservation);
+            throw new IllegalStateException("已完成的預約不可取消");
+        }
+
         ReservationStatus currentStatus = reservation.getStatus();
+
+        if (currentStatus == COMPLETED) {
+            throw new IllegalStateException("已完成的預約不可取消");
+        }
 
         if (currentStatus == PENDING) {
             reservation.setStatus(CANCELLED);
@@ -193,6 +203,15 @@ public class ReservationService {
         Reservation reservation = reservationRepo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("找不到該筆預約資料: " + id));
 
+        if (isEnded(reservation)) {
+            markCompleted(reservation);
+            throw new IllegalStateException("已完成的預約不可變更狀態");
+        }
+
+        if (reservation.getStatus() == COMPLETED) {
+            throw new IllegalStateException("已完成的預約不可變更狀態");
+        }
+
         reservation.setStatus(newStatus);
         reservation.setUpdatedAt(LocalDateTime.now());
         reservation.setUpdatedBy(actor.getUsername());
@@ -224,6 +243,15 @@ public class ReservationService {
         Reservation reservation = reservationRepo.findByIdAndBusiness(reservationId, businessData)
                 .orElseThrow(() -> new IllegalArgumentException("找不到該店家的預約或無權限操作: " + reservationId));
 
+        if (isEnded(reservation)) {
+            markCompleted(reservation);
+            throw new IllegalStateException("已完成的預約不可處理取消");
+        }
+
+        if (reservation.getStatus() == COMPLETED) {
+            throw new IllegalStateException("已完成的預約不可處理取消");
+        }
+
         if (reservation.getStatus() != CANCEL_REQUESTED) {
             throw new IllegalStateException("此預約目前不是取消確認中，無法處理: " + reservation.getStatus());
         }
@@ -238,5 +266,35 @@ public class ReservationService {
         reservation.setUpdatedAt(LocalDateTime.now());
         reservation.setUpdatedBy(actor.getUsername());
         reservationRepo.save(reservation);
+    }
+
+    private boolean isEnded(Reservation reservation) {
+        if (!List.of(PENDING, CONFIRMED, CANCEL_REQUESTED).contains(reservation.getStatus())) {
+            return false;
+        }
+        LocalDateTime endAt = LocalDateTime.of(reservation.getReservationDate(), reservation.getEndTime());
+        return !endAt.isAfter(LocalDateTime.now());
+    }
+
+    private void markCompleted(Reservation reservation) {
+        reservation.setStatus(COMPLETED);
+        reservation.setUpdatedAt(LocalDateTime.now());
+        reservation.setUpdatedBy("SYSTEM");
+        reservationRepo.save(reservation);
+    }
+
+    @Scheduled(cron = "0 */5 * * * * ")
+    public void markCompletedReservations() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Reservation> candidates = reservationRepo.findAllByStatusIn(List.of(PENDING, CONFIRMED, CANCEL_REQUESTED));
+        for (Reservation reservation : candidates) {
+            LocalDateTime endAt = LocalDateTime.of(reservation.getReservationDate(), reservation.getEndTime());
+            if (!endAt.isAfter(now)) {
+                reservation.setStatus(COMPLETED);
+                reservation.setUpdatedAt(now);
+                reservation.setUpdatedBy("SYSTEM");
+                reservationRepo.save(reservation);
+            }
+        }
     }
 }
