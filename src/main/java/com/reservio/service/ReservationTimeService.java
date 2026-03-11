@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.reservio.enums.ReservationStatus.CANCELLED;
 
@@ -81,7 +80,7 @@ public class ReservationTimeService {
 
                     return new TimeSlotDTO(slotTime, !isPast && !isConflict);
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<String> getDisabledDates() {

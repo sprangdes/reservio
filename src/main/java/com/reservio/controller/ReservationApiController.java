@@ -27,17 +27,14 @@ public class ReservationApiController {
     private final ReservationService reservationService;
     private final ReservationTimeService reservationTimeService;
     private final BusinessDataService businessDataService;
-    private final UserDataService userDataService;
 
     public ReservationApiController(
             ReservationService reservationService,
             ReservationTimeService reservationTimeService,
-            BusinessDataService businessDataService,
-            UserDataService userDataService) {
+            BusinessDataService businessDataService) {
         this.reservationService = reservationService;
         this.reservationTimeService = reservationTimeService;
         this.businessDataService = businessDataService;
-        this.userDataService = userDataService;
     }
 
     @GetMapping("/reservations/my")
