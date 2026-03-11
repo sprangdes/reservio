@@ -22,6 +22,17 @@ async function request(path, options = {}) {
   return data;
 }
 
+function buildQuery(params = {}) {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      search.append(key, value);
+    }
+  });
+  const query = search.toString();
+  return query ? `?${query}` : '';
+}
+
 export const api = {
   login: (payload) => request('/api/auth/login', {
     method: 'POST',
@@ -46,14 +57,14 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(payload)
   }),
-  myReservations: () => request('/api/reservations/my'),
+  myReservations: (params) => request(`/api/reservations/my${buildQuery(params)}`),
   cancelReservation: (id, payload) => request(`/api/reservations/${id}/cancel`, {
     method: 'POST',
     body: JSON.stringify(payload || {})
   }),
-  businessReservations: () => request('/api/reservations'),
-  pendingReservations: () => request('/api/reservations/pending'),
-  todayReservations: () => request('/api/reservations/today'),
+  businessReservations: (params) => request(`/api/reservations${buildQuery(params)}`),
+  pendingReservations: (params) => request(`/api/reservations/pending${buildQuery(params)}`),
+  todayReservations: (params) => request(`/api/reservations/today${buildQuery(params)}`),
   updateReservationStatus: (id, payload) => request(`/api/reservations/${id}/status`, {
     method: 'POST',
     body: JSON.stringify(payload)

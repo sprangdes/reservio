@@ -7,6 +7,10 @@ import com.reservio.enums.ReservationStatus;
 import com.reservio.exception.UserNotFoundException;
 import com.reservio.repo.ReservationRepo;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +42,12 @@ public class ReservationService {
     public List<Reservation> getMyReservations() {
         UserData user = userDataService.getCurrentUser();
         return reservationRepo.findAllByUserAndStatusNotOrderByReservationDateDescStartTimeDesc(user, CANCELLED);
+    }
+
+    public Page<Reservation> getMyReservationsPage(int page, int size, String sortBy, String sortDir) {
+        UserData user = userDataService.getCurrentUser();
+        Pageable pageable = PageRequest.of(page, size, buildSort(sortBy, sortDir));
+        return reservationRepo.findAllByUserAndStatusNot(user, CANCELLED, pageable);
     }
 
     /**
@@ -115,6 +125,16 @@ public class ReservationService {
         return reservationRepo.findAllByBusiness(businessData);
     }
 
+    public Page<Reservation> getAllReservationsForBusinessPage(int page, int size, String sortBy, String sortDir) {
+        UserData currentUser = userDataService.getCurrentUser();
+        BusinessData businessData = currentUser.getBusinessData();
+        if (businessData == null) {
+            return Page.empty();
+        }
+        Pageable pageable = PageRequest.of(page, size, buildSort(sortBy, sortDir));
+        return reservationRepo.findAllByBusiness(businessData, pageable);
+    }
+
     /**
      * 取得店家的「待處理」預約清單（PENDING + CANCEL_REQUESTED）。
      * 若當前登入者不是店家帳號，回傳空清單。
@@ -130,6 +150,16 @@ public class ReservationService {
         return reservationRepo.findAllByBusinessAndStatusIn(businessData, List.of(PENDING, CANCEL_REQUESTED));
     }
 
+    public Page<Reservation> getPendingReservationsForBusinessPage(int page, int size, String sortBy, String sortDir) {
+        UserData currentUser = userDataService.getCurrentUser();
+        BusinessData businessData = currentUser.getBusinessData();
+        if (businessData == null) {
+            return Page.empty();
+        }
+        Pageable pageable = PageRequest.of(page, size, buildSort(sortBy, sortDir));
+        return reservationRepo.findAllByBusinessAndStatusIn(businessData, List.of(PENDING, CANCEL_REQUESTED), pageable);
+    }
+
     /**
      * 取得店家「今日預約清單」。
      * 僅店家帳號可取得；非店家回空清單。
@@ -143,6 +173,16 @@ public class ReservationService {
             return List.of();
         }
         return reservationRepo.findAllByBusinessAndReservationDate(businessData, LocalDate.now());
+    }
+
+    public Page<Reservation> getTodayReservationsPage(int page, int size, String sortBy, String sortDir) {
+        UserData currentUser = userDataService.getCurrentUser();
+        BusinessData businessData = currentUser.getBusinessData();
+        if (businessData == null) {
+            return Page.empty();
+        }
+        Pageable pageable = PageRequest.of(page, size, buildSort(sortBy, sortDir));
+        return reservationRepo.findAllByBusinessAndReservationDate(businessData, LocalDate.now(), pageable);
     }
 
     /**
@@ -274,6 +314,28 @@ public class ReservationService {
         }
         LocalDateTime endAt = LocalDateTime.of(reservation.getReservationDate(), reservation.getEndTime());
         return !endAt.isAfter(LocalDateTime.now());
+    }
+
+    private Sort buildSort(String sortBy, String sortDir) {
+        String sortField = mapSortField(sortBy);
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        return Sort.by(direction, sortField);
+    }
+
+    private String mapSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) {
+            return "reservationDate";
+        }
+        return switch (sortBy) {
+            case "reservationDate" -> "reservationDate";
+            case "startTime" -> "startTime";
+            case "status" -> "status";
+            case "title" -> "title";
+            case "remark" -> "remark";
+            case "username" -> "user.username";
+            case "businessName" -> "business.name";
+            default -> "reservationDate";
+        };
     }
 
     private void markCompleted(Reservation reservation) {

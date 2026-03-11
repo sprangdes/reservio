@@ -5,6 +5,8 @@ import com.reservio.entity.Reservation;
 import com.reservio.entity.UserData;
 import com.reservio.enums.ReservationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -17,9 +19,15 @@ public interface ReservationRepo extends JpaRepository<Reservation, Long> {
 
     List<Reservation> findAllByBusinessAndReservationDate(BusinessData businessData, LocalDate now);
 
+    Page<Reservation> findAllByBusinessAndReservationDate(BusinessData businessData, LocalDate now, Pageable pageable);
+
     List<Reservation> findAllByBusiness(BusinessData businessData);
 
+    Page<Reservation> findAllByBusiness(BusinessData businessData, Pageable pageable);
+
     List<Reservation> findAllByUserAndStatusNotOrderByReservationDateDescStartTimeDesc(UserData user, ReservationStatus status);
+
+    Page<Reservation> findAllByUserAndStatusNot(UserData user, ReservationStatus status, Pageable pageable);
 
     long countByUserAndReservationDateAndStatusNot(UserData user, LocalDate date, ReservationStatus status);
 
@@ -30,6 +38,8 @@ public interface ReservationRepo extends JpaRepository<Reservation, Long> {
     Optional<Reservation> findByIdAndBusiness(Long id, BusinessData businessData);
 
     List<Reservation> findAllByBusinessAndStatusIn(BusinessData businessData, List<ReservationStatus> statuses);
+
+    Page<Reservation> findAllByBusinessAndStatusIn(BusinessData businessData, List<ReservationStatus> statuses, Pageable pageable);
 
     long countByBusinessAndStatusIn(BusinessData businessData, List<ReservationStatus> statuses);
 

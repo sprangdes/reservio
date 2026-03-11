@@ -8,7 +8,7 @@ import com.reservio.enums.ReservationStatus;
 import com.reservio.service.BusinessDataService;
 import com.reservio.service.ReservationService;
 import com.reservio.service.ReservationTimeService;
-import com.reservio.service.UserDataService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -38,50 +38,62 @@ public class ReservationApiController {
     }
 
     @GetMapping("/reservations/my")
-    public ResponseEntity<ApiResponse<List<ReservationDTO>>> getMyReservations() {
-        List<ReservationDTO> items = reservationService.getMyReservations().stream()
-                .map(this::toReservationDTO)
-                .toList();
-        return ResponseEntity.ok(ApiResponse.<List<ReservationDTO>>builder()
+    public ResponseEntity<ApiResponse<PageResponse<ReservationDTO>>> getMyReservations(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "reservationDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        Page<ReservationDTO> items = reservationService.getMyReservationsPage(page, size, sortBy, sortDir)
+                .map(this::toReservationDTO);
+        return ResponseEntity.ok(ApiResponse.<PageResponse<ReservationDTO>>builder()
                 .success(true)
                 .message("OK")
-                .data(items)
+                .data(toPageResponse(items, sortBy, sortDir))
                 .build());
     }
 
     @GetMapping("/reservations/today")
-    public ResponseEntity<ApiResponse<List<ReservationDTO>>> getTodayReservations() {
-        List<ReservationDTO> items = reservationService.getTodayReservations().stream()
-                .map(this::toReservationDTO)
-                .toList();
-        return ResponseEntity.ok(ApiResponse.<List<ReservationDTO>>builder()
+    public ResponseEntity<ApiResponse<PageResponse<ReservationDTO>>> getTodayReservations(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "startTime") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir) {
+        Page<ReservationDTO> items = reservationService.getTodayReservationsPage(page, size, sortBy, sortDir)
+                .map(this::toReservationDTO);
+        return ResponseEntity.ok(ApiResponse.<PageResponse<ReservationDTO>>builder()
                 .success(true)
                 .message("OK")
-                .data(items)
+                .data(toPageResponse(items, sortBy, sortDir))
                 .build());
     }
 
     @GetMapping("/reservations")
-    public ResponseEntity<ApiResponse<List<ReservationDTO>>> getAllReservationsForBusiness() {
-        List<ReservationDTO> items = reservationService.getAllReservationsForBusiness().stream()
-                .map(this::toReservationDTO)
-                .toList();
-        return ResponseEntity.ok(ApiResponse.<List<ReservationDTO>>builder()
+    public ResponseEntity<ApiResponse<PageResponse<ReservationDTO>>> getAllReservationsForBusiness(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "reservationDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        Page<ReservationDTO> items = reservationService.getAllReservationsForBusinessPage(page, size, sortBy, sortDir)
+                .map(this::toReservationDTO);
+        return ResponseEntity.ok(ApiResponse.<PageResponse<ReservationDTO>>builder()
                 .success(true)
                 .message("OK")
-                .data(items)
+                .data(toPageResponse(items, sortBy, sortDir))
                 .build());
     }
 
     @GetMapping("/reservations/pending")
-    public ResponseEntity<ApiResponse<List<ReservationDTO>>> getPendingReservationsForBusiness() {
-        List<ReservationDTO> items = reservationService.getPendingReservationsForBusiness().stream()
-                .map(this::toReservationDTO)
-                .toList();
-        return ResponseEntity.ok(ApiResponse.<List<ReservationDTO>>builder()
+    public ResponseEntity<ApiResponse<PageResponse<ReservationDTO>>> getPendingReservationsForBusiness(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "reservationDate") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir) {
+        Page<ReservationDTO> items = reservationService.getPendingReservationsForBusinessPage(page, size, sortBy, sortDir)
+                .map(this::toReservationDTO);
+        return ResponseEntity.ok(ApiResponse.<PageResponse<ReservationDTO>>builder()
                 .success(true)
                 .message("OK")
-                .data(items)
+                .data(toPageResponse(items, sortBy, sortDir))
                 .build());
     }
 
@@ -208,6 +220,18 @@ public class ReservationApiController {
                 .cancelReason(reservation.getCancelReason())
                 .createdAt(reservation.getCreatedAt())
                 .updatedAt(reservation.getUpdatedAt())
+                .build();
+    }
+
+    private PageResponse<ReservationDTO> toPageResponse(Page<ReservationDTO> page, String sortBy, String sortDir) {
+        return PageResponse.<ReservationDTO>builder()
+                .content(page.getContent())
+                .page(page.getNumber())
+                .size(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .sortBy(sortBy)
+                .sortDir(sortDir)
                 .build();
     }
 }
