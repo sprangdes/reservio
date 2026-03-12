@@ -9,6 +9,8 @@ export default function ServiceManagementPage() {
   const { setSuccessMessage, setErrorMessage } = useToast();
   const [services, setServices] = useState([]);
   const [form, setForm] = useState({ name: '', duration: '' });
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', duration: '' });
 
   const load = async () => {
     if (!me?.business?.id) {
@@ -37,6 +39,45 @@ export default function ServiceManagementPage() {
       await load();
     } catch (err) {
       setErrorMessage(err.message || '服務項目新增失敗');
+    }
+  };
+
+  const startEdit = (item) => {
+    setEditingId(item.id);
+    setEditForm({ name: item.name, duration: String(item.duration) });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditForm({ name: '', duration: '' });
+  };
+
+  const handleEditChange = (event) => {
+    const { name, value } = event.target;
+    setEditForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = async (id) => {
+    try {
+      await api.modifyServiceItem(id, { name: editForm.name, duration: Number(editForm.duration) });
+      setSuccessMessage('服務項目更新成功');
+      setEditingId(null);
+      await load();
+    } catch (err) {
+      setErrorMessage(err.message || '服務項目更新失敗');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('確定要刪除此服務項目嗎？')) {
+      return;
+    }
+    try {
+      await api.deleteServiceItem(id);
+      setSuccessMessage('服務項目刪除成功');
+      await load();
+    } catch (err) {
+      setErrorMessage(err.message || '服務項目刪除失敗');
     }
   };
 
@@ -116,16 +157,61 @@ export default function ServiceManagementPage() {
                   <tbody>
                     {services.map((s) => (
                       <tr key={s.id}>
-                        <td className="ps-4 fw-bold text-dark">{s.name}</td>
+                        <td className="ps-4 fw-bold text-dark">
+                          {editingId === s.id ? (
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              name="name"
+                              value={editForm.name}
+                              onChange={handleEditChange}
+                              required
+                            />
+                          ) : (
+                            s.name
+                          )}
+                        </td>
                         <td className="text-center">
-                          <span className="badge rounded-pill bg-light text-primary border border-primary border-opacity-25 px-3 py-2">
-                            <i className="bi bi-stopwatch me-1"></i> {s.duration} 分鐘
-                          </span>
+                          {editingId === s.id ? (
+                            <div className="input-group input-group-sm">
+                              <input
+                                type="number"
+                                className="form-control"
+                                name="duration"
+                                min="5"
+                                step="5"
+                                value={editForm.duration}
+                                onChange={handleEditChange}
+                                required
+                              />
+                              <span className="input-group-text">min</span>
+                            </div>
+                          ) : (
+                            <span className="badge rounded-pill bg-light text-primary border border-primary border-opacity-25 px-3 py-2">
+                              <i className="bi bi-stopwatch me-1"></i> {s.duration} 分鐘
+                            </span>
+                          )}
                         </td>
                         <td className="text-center pe-4">
-                          <button className="btn btn-sm btn-link text-danger text-decoration-none" disabled>
-                            <i className="bi bi-trash3"></i> 移除
-                          </button>
+                          {editingId === s.id ? (
+                            <div className="btn-group">
+                              <button className="btn btn-sm btn-outline-success" onClick={() => handleSave(s.id)}>
+                                <i className="bi bi-check-lg"></i> 儲存
+                              </button>
+                              <button className="btn btn-sm btn-outline-secondary" onClick={cancelEdit}>
+                                取消
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="btn-group">
+                              <button className="btn btn-sm btn-link text-primary text-decoration-none" onClick={() => startEdit(s)}>
+                                <i className="bi bi-pencil-square"></i> 編輯
+                              </button>
+                              <button className="btn btn-sm btn-link text-danger text-decoration-none" onClick={() => handleDelete(s.id)}>
+                                <i className="bi bi-trash3"></i> 移除
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}

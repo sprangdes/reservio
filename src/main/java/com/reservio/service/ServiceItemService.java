@@ -30,4 +30,17 @@ public class ServiceItemService {
                 .build();
         return serviceItemRepo.save(item);
     }
+
+    @Transactional
+    public void deleteServiceItem(Long id) {
+        serviceItemRepo.deleteById(id);
+    }
+
+    @Transactional
+    public void modifyServiceItem(Long id, String name, Integer duration) {
+        ServiceItem item = serviceItemRepo.findById(id).orElseThrow();
+        item.setName(name);
+        item.setDuration(duration);
+        serviceItemRepo.save(item);
+    }
 }

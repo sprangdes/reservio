@@ -55,7 +55,7 @@ public class BusinessApiController {
     }
 
     @PostMapping("/businesses/services")
-    public ResponseEntity<ApiResponse<ServiceItemDTO>> addServiceItem(@RequestBody ServiceItemCreateRequest request) {
+    public ResponseEntity<ApiResponse<ServiceItemDTO>> addServiceItem(@RequestBody ServiceItemRequest request) {
         UserData currentUser = userDataService.getCurrentUser();
         if (currentUser.getBusinessData() == null) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
@@ -70,6 +70,26 @@ public class BusinessApiController {
                         .success(true)
                         .message("服務項目新增成功")
                         .data(toServiceItemDTO(item))
+                        .build());
+    }
+
+    @PostMapping("/businesses/services/{id}/delete")
+    public ResponseEntity<ApiResponse<Void>> deleteServiceItem(@PathVariable Long id) {
+        serviceItemService.deleteServiceItem(id);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.<Void>builder()
+                        .success(true)
+                        .message("服務項目刪除成功")
+                        .build());
+    }
+
+    @PostMapping("/businesses/services/{id}/modify")
+    public ResponseEntity<ApiResponse<Void>> modifyServiceItem(@PathVariable Long id, @RequestBody ServiceItemRequest request) {
+        serviceItemService.modifyServiceItem(id, request.getName(), request.getDuration());
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.<Void>builder()
+                        .success(true)
+                        .message("服務項目更新成功")
                         .build());
     }
 

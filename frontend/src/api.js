@@ -72,5 +72,12 @@ export const api = {
   addServiceItem: (payload) => request('/api/businesses/services', {
     method: 'POST',
     body: JSON.stringify(payload)
+  }),
+  deleteServiceItem: (id) => request(`/api/businesses/services/${id}/delete`, {
+    method: 'POST'
+  }),
+  modifyServiceItem: (id, payload) => request(`/api/businesses/services/${id}/modify`, {
+    method: 'POST',
+    body: JSON.stringify(payload)
   })
 };
