@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api")
@@ -71,6 +72,42 @@ public class BusinessApiController {
                         .message("服務項目新增成功")
                         .data(toServiceItemDTO(item))
                         .build());
+    }
+
+    @PostMapping("/businesses/services/{id}/on")
+    public ResponseEntity<ApiResponse<Void>> serviceItemOn(@PathVariable Long id) {
+        try {
+            serviceItemService.switchServiceItem(id, true);
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.<Void>builder()
+                            .success(true)
+                            .message("服務項目啟用成功")
+                            .build());
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.<Void>builder()
+                            .success(false)
+                            .message("服務項目不存在")
+                            .build());
+        }
+    }
+
+    @PostMapping("/businesses/services/{id}/off")
+    public ResponseEntity<ApiResponse<Void>> serviceItemOff(@PathVariable Long id) {
+        try {
+            serviceItemService.switchServiceItem(id, false);
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.<Void>builder()
+                            .success(true)
+                            .message("服務項目停用成功")
+                            .build());
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.<Void>builder()
+                            .success(false)
+                            .message("服務項目不存在")
+                            .build());
+        }
     }
 
     @PostMapping("/businesses/services/{id}/delete")

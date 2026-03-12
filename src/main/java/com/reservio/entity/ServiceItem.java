@@ -25,6 +25,8 @@ public class ServiceItem {
     @Column(nullable = false)
     private Integer duration;
 
+    private Boolean active = false;
+
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "business_id", nullable = false)

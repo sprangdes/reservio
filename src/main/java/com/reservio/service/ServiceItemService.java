@@ -2,19 +2,23 @@ package com.reservio.service;
 
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.ServiceItem;
+import com.reservio.entity.UserData;
 import com.reservio.repo.ServiceItemRepo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 public class ServiceItemService {
 
     private final ServiceItemRepo serviceItemRepo;
+    private final UserDataService userDataService;
 
-    public ServiceItemService(ServiceItemRepo serviceItemRepo) {
+    public ServiceItemService(ServiceItemRepo serviceItemRepo, UserDataService userDataService) {
         this.serviceItemRepo = serviceItemRepo;
+        this.userDataService = userDataService;
     }
 
     public List<ServiceItem> getServicesByBusinessId(Long businessId) {
@@ -41,6 +45,16 @@ public class ServiceItemService {
         ServiceItem item = serviceItemRepo.findById(id).orElseThrow();
         item.setName(name);
         item.setDuration(duration);
+        serviceItemRepo.save(item);
+    }
+
+    @Transactional
+    public void switchServiceItem(Long id, boolean status) throws NoSuchElementException {
+        UserData userData = userDataService.getCurrentUser();
+        ServiceItem item = serviceItemRepo.findById(id)
+                .filter(i -> i.getBusiness().equals(userData.getBusinessData()))
+                .orElseThrow();
+        item.setActive(status);
         serviceItemRepo.save(item);
     }
 }
