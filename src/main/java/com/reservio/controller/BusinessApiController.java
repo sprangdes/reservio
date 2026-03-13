@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import static com.reservio.enums.ApiResponseMessageEnum.*;
+
 @RestController
 @RequestMapping("/api")
 public class BusinessApiController {
@@ -39,7 +41,7 @@ public class BusinessApiController {
                 .toList();
         return ResponseEntity.ok(ApiResponse.<List<BusinessDTO>>builder()
                 .success(true)
-                .message("OK")
+                .message(OK.getMessage())
                 .data(items)
                 .build());
     }
@@ -51,7 +53,7 @@ public class BusinessApiController {
                 .toList();
         return ResponseEntity.ok(ApiResponse.<List<ServiceItemDTO>>builder()
                 .success(true)
-                .message("OK")
+                .message(OK.getMessage())
                 .data(services)
                 .build());
     }
@@ -63,14 +65,18 @@ public class BusinessApiController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.<ServiceItemDTO>builder()
                             .success(false)
-                            .message("非商家帳號無法新增服務")
+                            .message(NOT_BUSINESS_ACCOUNT_CANT_ADD_SERVICE.getMessage())
                             .build());
         }
-        ServiceItem item = serviceItemService.saveServiceItem(currentUser.getBusinessData(), request.getName(), request.getDuration());
+        ServiceItem item = serviceItemService.saveServiceItem(
+                currentUser.getBusinessData(),
+                request.getName(),
+                request.getDuration()
+        );
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.<ServiceItemDTO>builder()
                         .success(true)
-                        .message("服務項目新增成功")
+                        .message(ADD_SERVICE.getMessage())
                         .data(toServiceItemDTO(item))
                         .build());
     }
@@ -82,13 +88,13 @@ public class BusinessApiController {
             return ResponseEntity.status(HttpStatus.OK)
                     .body(ApiResponse.<Void>builder()
                             .success(true)
-                            .message("服務項目啟用成功")
+                            .message(SERVICE_ON.getMessage())
                             .build());
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.<Void>builder()
                             .success(false)
-                            .message("服務項目不存在")
+                            .message(SERVICE_NOT_EXIST.getMessage())
                             .build());
         }
     }
@@ -100,13 +106,13 @@ public class BusinessApiController {
             return ResponseEntity.status(HttpStatus.OK)
                     .body(ApiResponse.<Void>builder()
                             .success(true)
-                            .message("服務項目停用成功")
+                            .message(SERVICE_OFF.getMessage())
                             .build());
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.<Void>builder()
                             .success(false)
-                            .message("服務項目不存在")
+                            .message(SERVICE_NOT_EXIST.getMessage())
                             .build());
         }
     }
@@ -119,43 +125,45 @@ public class BusinessApiController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.<Void>builder()
                             .success(false)
-                            .message("服務項目不存在")
+                            .message(SERVICE_NOT_EXIST.getMessage())
                             .build());
         } catch (ServiceNotEditableException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.<Void>builder()
                             .success(false)
-                            .message("服務項目目前無法刪除")
+                            .message(CANT_DELETE_SERVICE.getMessage())
                             .build());
         }
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.<Void>builder()
                         .success(true)
-                        .message("服務項目刪除成功")
+                        .message(SERVICE_DELETE.getMessage())
                         .build());
     }
 
     @PostMapping("/businesses/services/{id}/modify")
-    public ResponseEntity<ApiResponse<Void>> modifyServiceItem(@PathVariable Long id, @RequestBody ServiceItemRequest request) {
+    public ResponseEntity<ApiResponse<Void>> modifyServiceItem(
+            @PathVariable Long id,
+            @RequestBody ServiceItemRequest request) {
         try {
             serviceItemService.modifyServiceItem(id, request.getName(), request.getDuration());
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.<Void>builder()
                             .success(false)
-                            .message("服務項目不存在")
+                            .message(SERVICE_NOT_EXIST.getMessage())
                             .build());
         } catch (ServiceNotEditableException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.<Void>builder()
                             .success(false)
-                            .message("服務項目目前無法編輯")
+                            .message(CANT_UPDATE_SERVICE.getMessage())
                             .build());
         }
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.<Void>builder()
                         .success(true)
-                        .message("服務項目更新成功")
+                        .message(SERVICE_UPDATE.getMessage())
                         .build());
     }
 
