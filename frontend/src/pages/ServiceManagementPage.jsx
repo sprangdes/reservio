@@ -166,9 +166,11 @@ export default function ServiceManagementPage() {
 
         <div className="col-md-8">
           <div className="card shadow-sm border-0 rounded-3 overflow-hidden">
-            <div className="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
-              <h5 className="mb-0 fw-bold text-primary"><i className="bi bi-list-ul me-2"></i>目前的服務項目</h5>
-              <span className="badge bg-primary bg-opacity-10 text-primary px-3 rounded-pill">{services.length} 個項目</span>
+            <div className="card-header bg-gradient text-white p-4 d-flex justify-content-between align-items-center">
+              <h5 className="mb-0 fw-bold"><i className="bi bi-list-ul me-2"></i>目前的服務項目</h5>
+              <span className="badge bg-white bg-opacity-25 fs-6 fw-normal">
+                <i className="bi bi-list-check me-1"></i> 共 {services.length} 筆
+              </span>
             </div>
             <div className="card-body p-0">
               <div className="table-responsive">

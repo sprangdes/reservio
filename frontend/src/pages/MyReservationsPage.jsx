@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
+import { formatTimeHM } from '../utils/time.js';
 import { useToast } from '../state/ToastContext.jsx';
 import { useAuth } from '../state/AuthContext.jsx';
 
@@ -145,7 +146,7 @@ export default function MyReservationsPage() {
                   <tr key={res.id}>
                     <td className="ps-4 text-start fw-bold">{res.businessName}</td>
                     <td className="text-start">{res.reservationDate}</td>
-                    <td className="text-start fw-bold text-primary">{res.startTime}</td>
+                    <td className="text-start fw-bold text-primary">{formatTimeHM(res.startTime)}</td>
                     <td className="text-start"><span className="text-dark">{res.title}</span></td>
                     <td className="text-center"><StatusBadge status={res.status} /></td>
                     <td className="text-start">
