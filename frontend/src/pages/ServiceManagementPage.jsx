@@ -11,6 +11,7 @@ export default function ServiceManagementPage() {
   const [form, setForm] = useState({ name: '', duration: '' });
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', duration: '' });
+  const [busyId, setBusyId] = useState(null);
 
   const load = async () => {
     if (!me?.business?.id) {
@@ -59,12 +60,15 @@ export default function ServiceManagementPage() {
 
   const handleSave = async (id) => {
     try {
+      setBusyId(id);
       await api.modifyServiceItem(id, { name: editForm.name, duration: Number(editForm.duration) });
       setSuccessMessage('服務項目更新成功');
       setEditingId(null);
       await load();
     } catch (err) {
       setErrorMessage(err.message || '服務項目更新失敗');
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -73,11 +77,33 @@ export default function ServiceManagementPage() {
       return;
     }
     try {
+      setBusyId(id);
       await api.deleteServiceItem(id);
       setSuccessMessage('服務項目刪除成功');
       await load();
     } catch (err) {
       setErrorMessage(err.message || '服務項目刪除失敗');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleToggle = async (item) => {
+    const nextActive = !item.active;
+    try {
+      setBusyId(item.id);
+      if (nextActive) {
+        await api.serviceOn(item.id);
+        setSuccessMessage('服務項目啟用成功');
+      } else {
+        await api.serviceOff(item.id);
+        setSuccessMessage('服務項目停用成功');
+      }
+      await load();
+    } catch (err) {
+      setErrorMessage(err.message || '服務狀態切換失敗');
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -149,9 +175,10 @@ export default function ServiceManagementPage() {
                 <table className="table table-hover align-middle mb-0">
                   <thead className="table-light">
                     <tr>
-                      <th className="ps-4 text-start" style={{ width: '50%' }}>服務名稱</th>
-                      <th className="text-center" style={{ width: '25%' }}>預估時長</th>
-                      <th className="text-center pe-4" style={{ width: '25%' }}>管理</th>
+                      <th className="ps-4 text-start" style={{ width: '45%' }}>服務名稱</th>
+                      <th className="text-center" style={{ width: '20%' }}>預估時長</th>
+                      <th className="text-center" style={{ width: '15%' }}>啟用</th>
+                      <th className="text-center pe-4" style={{ width: '20%' }}>管理</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -192,22 +219,33 @@ export default function ServiceManagementPage() {
                             </span>
                           )}
                         </td>
+                        <td className="text-center">
+                          <label className="switch" title={s.active ? '已啟用' : '已停用'}>
+                            <input
+                              type="checkbox"
+                              checked={!!s.active}
+                              disabled={busyId === s.id}
+                              onChange={() => handleToggle(s)}
+                            />
+                            <span className="slider"></span>
+                          </label>
+                        </td>
                         <td className="text-center pe-4">
                           {editingId === s.id ? (
                             <div className="btn-group">
-                              <button className="btn btn-sm btn-outline-success" onClick={() => handleSave(s.id)}>
+                              <button className="btn btn-sm btn-outline-success" onClick={() => handleSave(s.id)} disabled={busyId === s.id}>
                                 <i className="bi bi-check-lg"></i> 儲存
                               </button>
-                              <button className="btn btn-sm btn-outline-secondary" onClick={cancelEdit}>
+                              <button className="btn btn-sm btn-outline-secondary" onClick={cancelEdit} disabled={busyId === s.id}>
                                 取消
                               </button>
                             </div>
                           ) : (
                             <div className="btn-group">
-                              <button className="btn btn-sm btn-link text-primary text-decoration-none" onClick={() => startEdit(s)}>
+                              <button className="btn btn-sm btn-link text-primary text-decoration-none" onClick={() => startEdit(s)} disabled={busyId === s.id}>
                                 <i className="bi bi-pencil-square"></i> 編輯
                               </button>
-                              <button className="btn btn-sm btn-link text-danger text-decoration-none" onClick={() => handleDelete(s.id)}>
+                              <button className="btn btn-sm btn-link text-danger text-decoration-none" onClick={() => handleDelete(s.id)} disabled={busyId === s.id}>
                                 <i className="bi bi-trash3"></i> 移除
                               </button>
                             </div>
@@ -217,7 +255,7 @@ export default function ServiceManagementPage() {
                     ))}
                     {services.length === 0 ? (
                       <tr>
-                        <td colSpan="3" className="text-center text-muted py-5">
+                        <td colSpan="4" className="text-center text-muted py-5">
                           <i className="bi bi-journal-x display-4 d-block mb-3 opacity-25"></i>
                           尚未設定任何服務項目，請從左側新增
                         </td>

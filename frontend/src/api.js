@@ -79,5 +79,7 @@ export const api = {
   modifyServiceItem: (id, payload) => request(`/api/businesses/services/${id}/modify`, {
     method: 'POST',
     body: JSON.stringify(payload)
-  })
+  }),
+  serviceOn: (id) => request(`/api/businesses/services/${id}/on`, { method: 'POST' }),
+  serviceOff: (id) => request(`/api/businesses/services/${id}/off`, { method: 'POST' })
 };

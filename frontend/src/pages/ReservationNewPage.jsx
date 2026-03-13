@@ -42,7 +42,8 @@ export default function ReservationNewPage() {
 
     const load = async () => {
       const res = await api.businessServices(form.businessId);
-      setServices(res.data || []);
+      const list = (res.data || []).filter((item) => item.active);
+      setServices(list);
     };
     load();
   }, [form.businessId]);
