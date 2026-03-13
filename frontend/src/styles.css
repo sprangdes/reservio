@@ -165,3 +165,33 @@ main {
     background: transparent !important;
     box-shadow: none !important;
 }
+
+/* Reservation list fixed card + scrollable table */
+.reservation-card {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 220px);
+}
+.reservation-card .card-body {
+    overflow: hidden;
+    padding-bottom: 0;
+}
+.reservation-card .table-responsive {
+    max-height: calc(100vh - 360px);
+    overflow-y: auto;
+}
+.reservation-card .table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+    .reservation-card {
+        max-height: calc(100vh - 180px);
+    }
+    .reservation-card .table-responsive {
+        max-height: calc(100vh - 320px);
+    }
+}

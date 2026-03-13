@@ -75,7 +75,7 @@ export default function ManageAllPage() {
 
   return (
     <main className="container my-5 pt-5">
-      <div className="card shadow-sm border-0 overflow-hidden">
+      <div className="card shadow-sm border-0 overflow-hidden reservation-card">
         <div className="card-header bg-gradient text-white p-4">
           <div className="d-flex justify-content-between align-items-center">
             <h4 className="mb-0 fw-bold"><i className="bi bi-journal-text me-2"></i>全部預約管理</h4>
