@@ -270,7 +270,7 @@ export default function ServiceManagementPage() {
       </div>
 
       <div className="mt-4">
-        <Link to="/" className="btn btn-light btn-sm text-primary fw-bold">
+        <Link to="/" className="btn btn-link btn-sm text-primary fw-bold text-decoration-none btn-back-link">
           <i className="bi bi-arrow-left me-1"></i> 返回儀表板
         </Link>
       </div>

@@ -152,3 +152,16 @@ main {
     background-color: #e2e2e2;
     cursor: not-allowed;
 }
+
+.btn-back-link {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.btn-back-link:hover,
+.btn-back-link:focus,
+.btn-back-link:active {
+    background: transparent !important;
+    box-shadow: none !important;
+}
