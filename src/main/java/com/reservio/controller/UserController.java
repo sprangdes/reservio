@@ -31,25 +31,6 @@ public class UserController {
     }
 
     private UserDTO toUserDTO(UserData user) {
-        if (user == null) {
-            return null;
-        }
-        BusinessDTO businessDTO = null;
-        if (user.getBusinessData() != null) {
-            businessDTO = BusinessDTO.builder()
-                    .id(user.getBusinessData().getId())
-                    .name(user.getBusinessData().getName())
-                    .category(user.getBusinessData().getCategory())
-                    .phone(user.getBusinessData().getPhone())
-                    .address(user.getBusinessData().getAddress())
-                    .build();
-        }
-        return UserDTO.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .role(user.getRole())
-                .business(businessDTO)
-                .build();
+        return getUserDTO(user);
     }
 }

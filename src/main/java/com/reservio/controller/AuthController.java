@@ -16,6 +16,9 @@ import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.*;
 
+import static com.reservio.enums.ApiResponseMessageEnum.*;
+import static com.reservio.util.UserUtil.toUserDTO;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -39,7 +42,7 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.<UserDTO>builder()
                         .success(true)
-                        .message("註冊成功")
+                        .message(REGISTER.getMessage())
                         .data(toUserDTO(user))
                         .build());
     }
@@ -58,7 +61,7 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.<UserDTO>builder()
                         .success(true)
-                        .message("商家註冊成功")
+                        .message(BUSINESS_REGISTER.getMessage())
                         .data(toUserDTO(user))
                         .build());
     }
@@ -80,7 +83,7 @@ public class AuthController {
         UserData user = userDataService.getCurrentUser();
         return ResponseEntity.ok(ApiResponse.<UserDTO>builder()
                 .success(true)
-                .message("登入成功")
+                .message(LOGIN.getMessage())
                 .data(toUserDTO(user))
                 .build());
     }
@@ -92,28 +95,5 @@ public class AuthController {
             new SecurityContextLogoutHandler().logout(request, response, authentication);
         }
         return ResponseEntity.noContent().build();
-    }
-
-    private UserDTO toUserDTO(UserData user) {
-        if (user == null) {
-            return null;
-        }
-        BusinessDTO businessDTO = null;
-        if (user.getBusinessData() != null) {
-            businessDTO = BusinessDTO.builder()
-                    .id(user.getBusinessData().getId())
-                    .name(user.getBusinessData().getName())
-                    .category(user.getBusinessData().getCategory())
-                    .phone(user.getBusinessData().getPhone())
-                    .address(user.getBusinessData().getAddress())
-                    .build();
-        }
-        return UserDTO.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .role(user.getRole())
-                .business(businessDTO)
-                .build();
     }
 }

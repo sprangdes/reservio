@@ -17,15 +17,9 @@ import java.util.Optional;
 public interface ReservationRepo extends JpaRepository<Reservation, Long> {
     List<Reservation> findAllByReservationDateAndStatusNot(LocalDate date, ReservationStatus status);
 
-    List<Reservation> findAllByBusinessAndReservationDate(BusinessData businessData, LocalDate now);
-
     Page<Reservation> findAllByBusinessAndReservationDate(BusinessData businessData, LocalDate now, Pageable pageable);
 
-    List<Reservation> findAllByBusiness(BusinessData businessData);
-
     Page<Reservation> findAllByBusiness(BusinessData businessData, Pageable pageable);
-
-    List<Reservation> findAllByUserAndStatusNotOrderByReservationDateDescStartTimeDesc(UserData user, ReservationStatus status);
 
     Page<Reservation> findAllByUserAndStatusNot(UserData user, ReservationStatus status, Pageable pageable);
 
@@ -36,8 +30,6 @@ public interface ReservationRepo extends JpaRepository<Reservation, Long> {
     Optional<Reservation> findByIdAndUser(Long id, UserData user);
 
     Optional<Reservation> findByIdAndBusiness(Long id, BusinessData businessData);
-
-    List<Reservation> findAllByBusinessAndStatusIn(BusinessData businessData, List<ReservationStatus> statuses);
 
     Page<Reservation> findAllByBusinessAndStatusIn(BusinessData businessData, List<ReservationStatus> statuses, Pageable pageable);
 

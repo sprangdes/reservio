@@ -19,6 +19,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static com.reservio.enums.ReservationStatus.*;
+import static com.reservio.enums.SystemEnum.*;
+import static org.springframework.data.domain.Sort.Direction.*;
 
 @Service
 public class ReservationService {
@@ -31,17 +33,6 @@ public class ReservationService {
             UserDataService userDataService) {
         this.reservationRepo = reservationRepo;
         this.userDataService = userDataService;
-    }
-
-    /**
-     * 取得「目前登入的客戶」的預約清單（預設不含已取消）。
-     * 用於「我的預約」畫面。
-     *
-     * @return 我的預約清單（依日期/開始時間由新到舊）
-     */
-    public List<Reservation> getMyReservations() {
-        UserData user = userDataService.getCurrentUser();
-        return reservationRepo.findAllByUserAndStatusNotOrderByReservationDateDescStartTimeDesc(user, CANCELLED);
     }
 
     public Page<Reservation> getMyReservationsPage(int page, int size, String sortBy, String sortDir) {
@@ -67,7 +58,7 @@ public class ReservationService {
         }
         reservation.setUser(user);
         reservation.setCreatedAt(LocalDateTime.now());
-        reservation.setCreatedBy("SYSTEM");
+        reservation.setCreatedBy(SYSTEM.name());
         reservation.setDeletedFlag(false);
 
         return reservationRepo.save(reservation);
@@ -110,21 +101,6 @@ public class ReservationService {
         return reservationRepo.countByUserAndStatus(user, PENDING);
     }
 
-    /**
-     * 取得店家的「全部預約」清單。
-     * 若當前登入者不是店家帳號，回傳空清單。
-     *
-     * @return 店家全部預約清單
-     */
-    public List<Reservation> getAllReservationsForBusiness() {
-        UserData currentUser = userDataService.getCurrentUser();
-        BusinessData businessData = currentUser.getBusinessData();
-        if (businessData == null) {
-            return List.of();
-        }
-        return reservationRepo.findAllByBusiness(businessData);
-    }
-
     public Page<Reservation> getAllReservationsForBusinessPage(int page, int size, String sortBy, String sortDir) {
         UserData currentUser = userDataService.getCurrentUser();
         BusinessData businessData = currentUser.getBusinessData();
@@ -135,21 +111,6 @@ public class ReservationService {
         return reservationRepo.findAllByBusiness(businessData, pageable);
     }
 
-    /**
-     * 取得店家的「待處理」預約清單（PENDING + CANCEL_REQUESTED）。
-     * 若當前登入者不是店家帳號，回傳空清單。
-     *
-     * @return 店家待處理預約清單
-     */
-    public List<Reservation> getPendingReservationsForBusiness() {
-        UserData currentUser = userDataService.getCurrentUser();
-        BusinessData businessData = currentUser.getBusinessData();
-        if (businessData == null) {
-            return List.of();
-        }
-        return reservationRepo.findAllByBusinessAndStatusIn(businessData, List.of(PENDING, CANCEL_REQUESTED));
-    }
-
     public Page<Reservation> getPendingReservationsForBusinessPage(int page, int size, String sortBy, String sortDir) {
         UserData currentUser = userDataService.getCurrentUser();
         BusinessData businessData = currentUser.getBusinessData();
@@ -158,21 +119,6 @@ public class ReservationService {
         }
         Pageable pageable = PageRequest.of(page, size, buildSort(sortBy, sortDir));
         return reservationRepo.findAllByBusinessAndStatusIn(businessData, List.of(PENDING, CANCEL_REQUESTED), pageable);
-    }
-
-    /**
-     * 取得店家「今日預約清單」。
-     * 僅店家帳號可取得；非店家回空清單。
-     *
-     * @return 今日預約清單
-     */
-    public List<Reservation> getTodayReservations() {
-        UserData currentUser = userDataService.getCurrentUser();
-        BusinessData businessData = currentUser.getBusinessData();
-        if (businessData == null) {
-            return List.of();
-        }
-        return reservationRepo.findAllByBusinessAndReservationDate(businessData, LocalDate.now());
     }
 
     public Page<Reservation> getTodayReservationsPage(int page, int size, String sortBy, String sortDir) {
@@ -318,7 +264,7 @@ public class ReservationService {
 
     private Sort buildSort(String sortBy, String sortDir) {
         String sortField = mapSortField(sortBy);
-        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? ASC : DESC;
         return Sort.by(direction, sortField);
     }
 
@@ -327,7 +273,6 @@ public class ReservationService {
             return "reservationDate";
         }
         return switch (sortBy) {
-            case "reservationDate" -> "reservationDate";
             case "startTime" -> "startTime";
             case "status" -> "status";
             case "title" -> "title";
@@ -341,7 +286,7 @@ public class ReservationService {
     private void markCompleted(Reservation reservation) {
         reservation.setStatus(COMPLETED);
         reservation.setUpdatedAt(LocalDateTime.now());
-        reservation.setUpdatedBy("SYSTEM");
+        reservation.setUpdatedBy(SYSTEM.name());
         reservationRepo.save(reservation);
     }
 
@@ -354,7 +299,7 @@ public class ReservationService {
             if (!endAt.isAfter(now)) {
                 reservation.setStatus(COMPLETED);
                 reservation.setUpdatedAt(now);
-                reservation.setUpdatedBy("SYSTEM");
+                reservation.setUpdatedBy(SYSTEM.name());
                 reservationRepo.save(reservation);
             }
         }

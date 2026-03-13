@@ -3,7 +3,6 @@ package com.reservio.service;
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.ServiceItem;
 import com.reservio.entity.UserData;
-import com.reservio.enums.ReservationStatus;
 import com.reservio.exception.ServiceNotEditableException;
 import com.reservio.repo.ReservationRepo;
 import com.reservio.repo.ServiceItemRepo;

@@ -33,7 +33,7 @@ public class UserData {
     @Column(nullable = false)
     private String role;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private BusinessData businessData;
 
     @JsonIgnore

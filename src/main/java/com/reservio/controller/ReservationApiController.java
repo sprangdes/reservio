@@ -17,8 +17,8 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 
-import static com.reservio.enums.ReservationStatus.CANCELLED;
-import static com.reservio.enums.ReservationStatus.CONFIRMED;
+import static com.reservio.enums.ApiResponseMessageEnum.*;
+import static com.reservio.enums.ReservationStatus.*;
 
 @RestController
 @RequestMapping("/api")
@@ -47,7 +47,7 @@ public class ReservationApiController {
                 .map(this::toReservationDTO);
         return ResponseEntity.ok(ApiResponse.<PageResponse<ReservationDTO>>builder()
                 .success(true)
-                .message("OK")
+                .message(OK.getMessage())
                 .data(toPageResponse(items, sortBy, sortDir))
                 .build());
     }
@@ -62,7 +62,7 @@ public class ReservationApiController {
                 .map(this::toReservationDTO);
         return ResponseEntity.ok(ApiResponse.<PageResponse<ReservationDTO>>builder()
                 .success(true)
-                .message("OK")
+                .message(OK.getMessage())
                 .data(toPageResponse(items, sortBy, sortDir))
                 .build());
     }
@@ -77,7 +77,7 @@ public class ReservationApiController {
                 .map(this::toReservationDTO);
         return ResponseEntity.ok(ApiResponse.<PageResponse<ReservationDTO>>builder()
                 .success(true)
-                .message("OK")
+                .message(OK.getMessage())
                 .data(toPageResponse(items, sortBy, sortDir))
                 .build());
     }
@@ -92,7 +92,7 @@ public class ReservationApiController {
                 .map(this::toReservationDTO);
         return ResponseEntity.ok(ApiResponse.<PageResponse<ReservationDTO>>builder()
                 .success(true)
-                .message("OK")
+                .message(OK.getMessage())
                 .data(toPageResponse(items, sortBy, sortDir))
                 .build());
     }
@@ -106,14 +106,14 @@ public class ReservationApiController {
             List<TimeSlotDTO> slots = reservationTimeService.getTimeSlotsForDate(date, duration);
             return ResponseEntity.ok(ApiResponse.<List<TimeSlotDTO>>builder()
                     .success(true)
-                    .message("OK")
+                    .message(OK.getMessage())
                     .data(slots)
                     .build());
         } catch (Exception e) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.<List<TimeSlotDTO>>builder()
                             .success(false)
-                            .message("日期格式錯誤")
+                            .message(DATE_FORMAT_ERROR.getMessage())
                             .data(Collections.emptyList())
                             .build());
         }
@@ -123,7 +123,7 @@ public class ReservationApiController {
     public ResponseEntity<ApiResponse<List<String>>> getDisabledDates() {
         return ResponseEntity.ok(ApiResponse.<List<String>>builder()
                 .success(true)
-                .message("OK")
+                .message(OK.getMessage())
                 .data(reservationTimeService.getDisabledDates())
                 .build());
     }
@@ -139,7 +139,7 @@ public class ReservationApiController {
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .remark(request.getRemark())
-                .status(ReservationStatus.PENDING)
+                .status(PENDING)
                 .build();
 
         Reservation saved = reservationService.saveReservation(reservation);
@@ -147,7 +147,7 @@ public class ReservationApiController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.<ReservationDTO>builder()
                         .success(true)
-                        .message("預約成功")
+                        .message(NEW_RESERVATION.getMessage())
                         .data(toReservationDTO(saved))
                         .build());
     }
@@ -160,7 +160,7 @@ public class ReservationApiController {
         reservationService.customerCancel(id, reason);
         return ResponseEntity.ok(ApiResponse.<Void>builder()
                 .success(true)
-                .message("取消成功")
+                .message(RESERVATION_CANCEL.getMessage())
                 .build());
     }
 
@@ -180,21 +180,21 @@ public class ReservationApiController {
             reservationService.handleCancelRequestForBusiness(id, true);
             return ResponseEntity.ok(ApiResponse.<Void>builder()
                     .success(true)
-                    .message("已確認取消")
+                    .message(CONFIRM_CANCEL.getMessage())
                     .build());
         }
         if ("rejectCancel".equals(action)) {
             reservationService.handleCancelRequestForBusiness(id, false);
             return ResponseEntity.ok(ApiResponse.<Void>builder()
                     .success(true)
-                    .message("已駁回取消")
+                    .message(REJECT_CANCEL.getMessage())
                     .build());
         }
 
         ReservationStatus status = "confirm".equals(action) ? CONFIRMED : CANCELLED;
         reservationService.updateReservationStatus(id, status);
 
-        String msg = status == CONFIRMED ? "預約已確認" : "預約已取消";
+        String msg = status == CONFIRMED ? RESERVATION_CONFIRMED.getMessage() : RESERVATION_CANCELED.getMessage();
         return ResponseEntity.ok(ApiResponse.<Void>builder()
                 .success(true)
                 .message(msg)

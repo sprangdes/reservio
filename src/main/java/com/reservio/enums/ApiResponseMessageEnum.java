@@ -7,6 +7,11 @@ public enum ApiResponseMessageEnum {
 
     OK("OK"),
 
+    // 註冊/登入
+    REGISTER("註冊成功"),
+    BUSINESS_REGISTER("商家註冊成功"),
+    LOGIN("登入成功"),
+
     // 服務項目
     NOT_BUSINESS_ACCOUNT_CANT_ADD_SERVICE("非商家帳號無法新增服務"),
     ADD_SERVICE("服務項目新增成功"),
@@ -16,7 +21,16 @@ public enum ApiResponseMessageEnum {
     SERVICE_DELETE("服務項目刪除成功"),
     CANT_UPDATE_SERVICE("服務項目目前無法編輯"),
     CANT_DELETE_SERVICE("服務項目目前無法刪除"),
-    SERVICE_NOT_EXIST("服務項目不存在");
+    SERVICE_NOT_EXIST("服務項目不存在"),
+
+    // 預約
+    DATE_FORMAT_ERROR("日期格式錯誤"),
+    NEW_RESERVATION("預約成功"),
+    RESERVATION_CANCEL("預約取消成功"),
+    CONFIRM_CANCEL("確認取消預約"),
+    REJECT_CANCEL("駁回取消預約"),
+    RESERVATION_CANCELED("預約已取消"),
+    RESERVATION_CONFIRMED("預約已確認");
 
     private final String message;
 

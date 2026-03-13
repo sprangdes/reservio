@@ -11,8 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static com.reservio.enums.Role.ROLE_BUSINESS;
-import static com.reservio.enums.Role.ROLE_USER;
+import static com.reservio.enums.Role.*;
 
 @Service
 public class UserDataService {
