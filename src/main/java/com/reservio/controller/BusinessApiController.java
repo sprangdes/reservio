@@ -4,6 +4,7 @@ import com.reservio.dto.*;
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.ServiceItem;
 import com.reservio.entity.UserData;
+import com.reservio.exception.ServiceNotEditableException;
 import com.reservio.service.BusinessDataService;
 import com.reservio.service.ServiceItemService;
 import com.reservio.service.UserDataService;
@@ -120,6 +121,12 @@ public class BusinessApiController {
                             .success(false)
                             .message("服務項目不存在")
                             .build());
+        } catch (ServiceNotEditableException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.<Void>builder()
+                            .success(false)
+                            .message("服務項目目前無法刪除")
+                            .build());
         }
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.<Void>builder()
@@ -137,6 +144,12 @@ public class BusinessApiController {
                     .body(ApiResponse.<Void>builder()
                             .success(false)
                             .message("服務項目不存在")
+                            .build());
+        } catch (ServiceNotEditableException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.<Void>builder()
+                            .success(false)
+                            .message("服務項目目前無法編輯")
                             .build());
         }
         return ResponseEntity.status(HttpStatus.OK)
