@@ -36,13 +36,18 @@ public class ServiceItemService {
     }
 
     @Transactional
-    public void deleteServiceItem(Long id) {
+    public void deleteServiceItem(Long id) throws NoSuchElementException {
+        serviceItemRepo.findById(id)
+                .filter(i -> i.getBusiness().equals(getCurrentUser().getBusinessData()))
+                .orElseThrow();
         serviceItemRepo.deleteById(id);
     }
 
     @Transactional
-    public void modifyServiceItem(Long id, String name, Integer duration) {
-        ServiceItem item = serviceItemRepo.findById(id).orElseThrow();
+    public void modifyServiceItem(Long id, String name, Integer duration) throws NoSuchElementException {
+        ServiceItem item = serviceItemRepo.findById(id)
+                .filter(i -> i.getBusiness().equals(getCurrentUser().getBusinessData()))
+                .orElseThrow();
         item.setName(name);
         item.setDuration(duration);
         serviceItemRepo.save(item);
@@ -50,11 +55,14 @@ public class ServiceItemService {
 
     @Transactional
     public void switchServiceItem(Long id, boolean status) throws NoSuchElementException {
-        UserData userData = userDataService.getCurrentUser();
         ServiceItem item = serviceItemRepo.findById(id)
-                .filter(i -> i.getBusiness().equals(userData.getBusinessData()))
+                .filter(i -> i.getBusiness().equals(getCurrentUser().getBusinessData()))
                 .orElseThrow();
         item.setActive(status);
         serviceItemRepo.save(item);
+    }
+
+    private UserData getCurrentUser() {
+        return userDataService.getCurrentUser();
     }
 }

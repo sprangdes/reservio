@@ -112,7 +112,15 @@ public class BusinessApiController {
 
     @PostMapping("/businesses/services/{id}/delete")
     public ResponseEntity<ApiResponse<Void>> deleteServiceItem(@PathVariable Long id) {
-        serviceItemService.deleteServiceItem(id);
+        try {
+            serviceItemService.deleteServiceItem(id);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.<Void>builder()
+                            .success(false)
+                            .message("服務項目不存在")
+                            .build());
+        }
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.<Void>builder()
                         .success(true)
@@ -122,7 +130,15 @@ public class BusinessApiController {
 
     @PostMapping("/businesses/services/{id}/modify")
     public ResponseEntity<ApiResponse<Void>> modifyServiceItem(@PathVariable Long id, @RequestBody ServiceItemRequest request) {
-        serviceItemService.modifyServiceItem(id, request.getName(), request.getDuration());
+        try {
+            serviceItemService.modifyServiceItem(id, request.getName(), request.getDuration());
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.<Void>builder()
+                            .success(false)
+                            .message("服務項目不存在")
+                            .build());
+        }
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.<Void>builder()
                         .success(true)
