@@ -161,6 +161,7 @@ public class BusinessApiController {
                 .id(item.getId())
                 .name(item.getName())
                 .duration(item.getDuration())
+                .active(item.getActive())
                 .build();
     }
 }

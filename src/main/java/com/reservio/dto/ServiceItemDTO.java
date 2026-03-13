@@ -13,4 +13,5 @@ public class ServiceItemDTO {
     private Long id;
     private String name;
     private Integer duration;
+    private Boolean active;
 }
