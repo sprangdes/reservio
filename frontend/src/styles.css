@@ -203,6 +203,22 @@ main {
 }
 
 @media (max-width: 768px) {
+    .dashboard-card .row {
+        flex-wrap: wrap;
+    }
+    .dashboard-card .border-end {
+        border-right: 0 !important;
+    }
+    .dashboard-card .col-sm-4,
+    .dashboard-card .col-sm-6 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+    .dashboard-card .col-sm-4:last-child {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-top: 0.75rem;
+    }
     .reservation-card {
         max-height: none;
     }

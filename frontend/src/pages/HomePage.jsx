@@ -57,19 +57,19 @@ export default function HomePage() {
 
               <div className="row justify-content-center mt-4">
                 <div className="col-md-10">
-                  <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white p-4" style={{ backdropFilter: 'blur(10px)' }}>
+                  <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white p-4 dashboard-card" style={{ backdropFilter: 'blur(10px)' }}>
                     <div className="row align-items-center">
-                      <Link
-                        to="/reservation/today/manage"
-                        className="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link"
-                      >
+                          <Link
+                            to="/reservation/today/manage"
+                            className="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link"
+                          >
                         <h5 className="small text-uppercase opacity-75">今日預約</h5>
                         <p className="h2 mb-0">{dashboard?.todayCount ?? 0}</p>
                       </Link>
-                      <Link
-                        to="/reservation/pending/manage"
-                        className="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link"
-                      >
+                          <Link
+                            to="/reservation/pending/manage"
+                            className="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link"
+                          >
                         <h5 className="small text-uppercase opacity-75">待處理預約</h5>
                         <p className="h2 mb-0">{dashboard?.pendingCount ?? 0}</p>
                       </Link>
