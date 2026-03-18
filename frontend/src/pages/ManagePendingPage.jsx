@@ -80,7 +80,7 @@ export default function ManagePendingPage() {
         </div>
 
         <div className="card-body p-0">
-          <div className="table-responsive">
+          <div className="table-responsive desktop-table">
             <table className="table table-hover align-middle mb-0">
               <thead className="table-light">
                 <tr>
@@ -126,7 +126,7 @@ export default function ManagePendingPage() {
                     <td className="text-center"><StatusBadge status={res.status} /></td>
                     <td className="text-center pe-4">
                       {res.status === 'PENDING' ? (
-                        <div className="btn-group">
+                        <div className="d-flex gap-2 justify-content-center">
                           <button className="btn btn-sm btn-outline-success px-3" onClick={() => updateStatus(res.id, 'confirm')}>
                             <i className="bi bi-check-lg"></i> 確認
                           </button>
@@ -135,7 +135,7 @@ export default function ManagePendingPage() {
                           </button>
                         </div>
                       ) : res.status === 'CANCEL_REQUESTED' ? (
-                        <div className="btn-group">
+                        <div className="d-flex gap-2 justify-content-center">
                           <button className="btn btn-sm btn-outline-danger px-3" onClick={() => updateStatus(res.id, 'approveCancel')}>
                             <i className="bi bi-x-circle me-1"></i> 確認取消
                           </button>
@@ -159,6 +159,54 @@ export default function ManagePendingPage() {
                 ) : null}
               </tbody>
             </table>
+          </div>
+          <div className="mobile-list p-3">
+            {content.map((res) => (
+              <div key={res.id} className="card mb-3 shadow-sm">
+                <div className="card-body">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <div className="fw-bold">{res.username}</div>
+                    <div className="d-flex align-items-center gap-2">
+                      <StatusBadge status={res.status} />
+                      {res.status === 'PENDING' ? (
+                        <>
+                          <button className="btn btn-sm btn-outline-success" onClick={() => updateStatus(res.id, 'confirm')}>
+                            確認
+                          </button>
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => updateStatus(res.id, 'cancel')}>
+                            取消
+                          </button>
+                        </>
+                      ) : res.status === 'CANCEL_REQUESTED' ? (
+                        <>
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => updateStatus(res.id, 'approveCancel')}>
+                            確認取消
+                          </button>
+                          <button className="btn btn-sm btn-outline-secondary" onClick={() => updateStatus(res.id, 'rejectCancel')}>
+                            駁回
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-muted small">無可用操作</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="small text-muted mb-1">日期：{res.reservationDate}</div>
+                  <div className="small text-muted mb-1">時間：{formatTimeHM(res.startTime)}</div>
+                  <div className="small text-muted mb-1">服務：{res.title}</div>
+                  <div className="small text-muted mb-2">備註：{res.remark || '無備註'}</div>
+                  {res.status === 'CANCEL_REQUESTED' ? (
+                    <div className="small text-danger mb-2">取消原因：{res.cancelReason}</div>
+                  ) : null}
+                  <div className="d-flex gap-2"></div>
+                </div>
+              </div>
+            ))}
+            {content.length === 0 ? (
+              <div className="text-center text-muted py-4">
+                目前沒有待處理預約
+              </div>
+            ) : null}
           </div>
         </div>
 

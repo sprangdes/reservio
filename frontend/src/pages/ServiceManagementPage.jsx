@@ -173,7 +173,7 @@ export default function ServiceManagementPage() {
               </span>
             </div>
             <div className="card-body p-0">
-              <div className="table-responsive">
+              <div className="table-responsive desktop-table">
                 <table className="table table-hover align-middle mb-0">
                   <thead className="table-light">
                     <tr>
@@ -265,6 +265,83 @@ export default function ServiceManagementPage() {
                     ) : null}
                   </tbody>
                 </table>
+              </div>
+              <div className="mobile-list p-3">
+                {services.map((s) => (
+                  <div key={s.id} className="card mb-3 shadow-sm">
+                    <div className="card-body">
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <div className="fw-bold">{s.name}</div>
+                        <span className="badge rounded-pill bg-light text-primary border border-primary border-opacity-25 px-3 py-2">
+                          <i className="bi bi-stopwatch me-1"></i> {s.duration} 分鐘
+                        </span>
+                      </div>
+                      <div className="d-flex justify-content-between align-items-center mb-3">
+                        <span className="text-muted small">啟用</span>
+                        <label className="switch">
+                          <input
+                            type="checkbox"
+                            checked={!!s.active}
+                            disabled={busyId === s.id}
+                            onChange={() => handleToggle(s)}
+                          />
+                          <span className="slider"></span>
+                        </label>
+                      </div>
+                      {editingId === s.id ? (
+                        <div className="mb-3">
+                          <input
+                            type="text"
+                            className="form-control form-control-sm mb-2"
+                            name="name"
+                            value={editForm.name}
+                            onChange={handleEditChange}
+                            required
+                          />
+                          <div className="input-group input-group-sm">
+                            <input
+                              type="number"
+                              className="form-control"
+                              name="duration"
+                              min="5"
+                              step="5"
+                              value={editForm.duration}
+                              onChange={handleEditChange}
+                              required
+                            />
+                            <span className="input-group-text">min</span>
+                          </div>
+                        </div>
+                      ) : null}
+                      <div className="d-flex gap-2">
+                        {editingId === s.id ? (
+                          <>
+                            <button className="btn btn-sm btn-outline-success" onClick={() => handleSave(s.id)} disabled={busyId === s.id}>
+                              儲存
+                            </button>
+                            <button className="btn btn-sm btn-outline-secondary" onClick={cancelEdit} disabled={busyId === s.id}>
+                              取消
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button className="btn btn-sm btn-outline-primary" onClick={() => startEdit(s)} disabled={busyId === s.id}>
+                              編輯
+                            </button>
+                            <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(s.id)} disabled={busyId === s.id}>
+                              移除
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {services.length === 0 ? (
+                  <div className="text-center text-muted py-4">
+                    尚未設定任何服務項目，請從左側新增
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>

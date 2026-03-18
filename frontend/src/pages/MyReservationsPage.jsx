@@ -116,7 +116,7 @@ export default function MyReservationsPage() {
         </div>
 
         <div className="card-body p-0">
-          <div className="table-responsive">
+          <div className="table-responsive desktop-table">
             <table className="table table-hover align-middle mb-0">
               <thead className="table-light">
                 <tr>
@@ -154,13 +154,17 @@ export default function MyReservationsPage() {
                     </td>
                     <td className="text-center pe-4">
                       {res.status === 'PENDING' ? (
-                        <button className="btn btn-sm btn-outline-danger px-3" onClick={() => handleCancel(res.id)}>
-                          <i className="bi bi-x-lg"></i> 取消
-                        </button>
+                        <div className="d-flex gap-2 justify-content-center">
+                          <button className="btn btn-sm btn-outline-danger px-3" onClick={() => handleCancel(res.id)}>
+                            <i className="bi bi-x-lg"></i> 取消
+                          </button>
+                        </div>
                       ) : res.status === 'CONFIRMED' ? (
-                        <button className="btn btn-sm btn-outline-danger px-3" onClick={() => openModal(res.id)}>
-                          <i className="bi bi-x-lg"></i> 取消
-                        </button>
+                        <div className="d-flex gap-2 justify-content-center">
+                          <button className="btn btn-sm btn-outline-danger px-3" onClick={() => openModal(res.id)}>
+                            <i className="bi bi-x-lg"></i> 取消
+                          </button>
+                        </div>
                       ) : (
                         <small className="text-muted">-</small>
                       )}
@@ -177,6 +181,41 @@ export default function MyReservationsPage() {
                 ) : null}
               </tbody>
             </table>
+          </div>
+          <div className="mobile-list p-3">
+            {content.map((res) => (
+              <div key={res.id} className="card mb-3 shadow-sm">
+                <div className="card-body">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <div className="fw-bold">{res.businessName}</div>
+                    <div className="d-flex align-items-center gap-2">
+                      <StatusBadge status={res.status} />
+                      {res.status === 'PENDING' ? (
+                        <button className="btn btn-sm btn-outline-danger" onClick={() => handleCancel(res.id)}>
+                          取消
+                        </button>
+                      ) : res.status === 'CONFIRMED' ? (
+                        <button className="btn btn-sm btn-outline-danger" onClick={() => openModal(res.id)}>
+                          取消
+                        </button>
+                      ) : (
+                        <span className="text-muted small">無可用操作</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="small text-muted mb-1">日期：{res.reservationDate}</div>
+                  <div className="small text-muted mb-1">時間：{formatTimeHM(res.startTime)}</div>
+                  <div className="small text-muted mb-1">項目：{res.title}</div>
+                  <div className="small text-muted mb-2">備註：{res.remark || '無備註'}</div>
+                  <div className="d-flex gap-2"></div>
+                </div>
+              </div>
+            ))}
+            {content.length === 0 ? (
+              <div className="text-center text-muted py-4">
+                目前尚無預約資料
+              </div>
+            ) : null}
           </div>
         </div>
 
