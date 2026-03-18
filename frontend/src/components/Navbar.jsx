@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../state/AuthContext.jsx';
 import { api } from '../api.js';
 import { useToast } from '../state/ToastContext.jsx';
@@ -7,6 +8,20 @@ export default function Navbar({ transparent }) {
   const { me, setMe } = useAuth();
   const { setSuccessMessage, setErrorMessage } = useToast();
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [hoverEnabled, setHoverEnabled] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 768px)');
+    const update = () => setHoverEnabled(media.matches);
+    update();
+    if (media.addEventListener) {
+      media.addEventListener('change', update);
+      return () => media.removeEventListener('change', update);
+    }
+    media.addListener(update);
+    return () => media.removeListener(update);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -25,17 +40,26 @@ export default function Navbar({ transparent }) {
 
   return (
     <div>
-      <nav className={navClass}>
+      <nav
+        className={navClass}
+        onMouseEnter={() => hoverEnabled && setOpen(true)}
+        onMouseLeave={() => hoverEnabled && setOpen(false)}
+      >
         <div className="container">
           <Link className="navbar-brand fw-bold fs-3" to="/">
             Reservio
           </Link>
 
-          <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <button
+            className="navbar-toggler"
+            type="button"
+            aria-label="Toggle navigation"
+            onClick={() => setOpen((prev) => !prev)}
+          >
             <span className="navbar-toggler-icon"></span>
           </button>
 
-          <div className="collapse navbar-collapse" id="navbarNav">
+          <div className={`collapse navbar-collapse ${open ? 'show' : ''}`} id="navbarNav">
             <ul className="navbar-nav me-auto">
               {me ? (
                 <li className="nav-item">

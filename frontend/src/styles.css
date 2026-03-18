@@ -203,6 +203,14 @@ main {
 }
 
 @media (max-width: 768px) {
+    .navbar-collapse {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 1s ease;
+    }
+    .navbar-collapse.show {
+        max-height: 320px;
+    }
     .dashboard-card .row {
         flex-wrap: wrap;
     }
