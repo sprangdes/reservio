@@ -109,14 +109,14 @@ export default function ServiceManagementPage() {
 
   if (!me?.business) {
     return (
-      <main className="container my-5 pt-5">
+      <main className="container list-page">
         <div className="alert alert-warning">非商家帳號無法管理服務。</div>
       </main>
     );
   }
 
   return (
-    <main className="container my-5 pt-5">
+    <main className="container list-page">
       <div className="row g-4">
         <div className="col-md-4">
           <div className="card shadow-sm border-0 rounded-3">

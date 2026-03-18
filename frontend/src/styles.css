@@ -187,11 +187,20 @@ main {
     background: #f8f9fa;
 }
 
+.list-page {
+    margin-top: 1.5rem;
+    padding-top: 0.5rem;
+}
+
 @media (max-width: 768px) {
     .reservation-card {
         max-height: calc(100vh - 180px);
     }
     .reservation-card .table-responsive {
         max-height: calc(100vh - 320px);
+    }
+    .list-page {
+        margin-top: 1rem;
+        padding-top: 0.25rem;
     }
 }

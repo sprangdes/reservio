@@ -75,7 +75,7 @@ export default function ManageTodayPage() {
   const todayStr = new Date().toISOString().split('T')[0];
 
   return (
-    <main className="container my-5 pt-5">
+    <main className="container list-page">
       <div className="card shadow-sm border-0 overflow-hidden reservation-card">
         <div className="card-header bg-gradient text-white p-4">
           <div className="d-flex justify-content-between align-items-center">
