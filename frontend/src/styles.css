@@ -219,6 +219,18 @@ main {
         max-width: 100%;
         margin-top: 0.75rem;
     }
+    .dashboard-card.dashboard-card--customer .row {
+        flex-direction: column;
+        flex-wrap: nowrap;
+    }
+    .dashboard-card.dashboard-card--customer .row > .col-sm-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        width: 100%;
+    }
+    .dashboard-card.dashboard-card--customer .row > .col-sm-6 + .col-sm-6 {
+        margin-top: 0.75rem;
+    }
     .reservation-card {
         max-height: none;
     }

@@ -97,7 +97,7 @@ export default function HomePage() {
 
               <div className="row justify-content-center mt-4">
                 <div className="col-md-8">
-                  <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white p-4" style={{ backdropFilter: 'blur(10px)' }}>
+                  <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white p-4 dashboard-card dashboard-card--customer" style={{ backdropFilter: 'blur(10px)' }}>
                     <div className="row align-items-center">
                       <div className="col-sm-6 border-end border-white border-opacity-25">
                         <h5 className="small text-uppercase opacity-75">我的今日預約</h5>
