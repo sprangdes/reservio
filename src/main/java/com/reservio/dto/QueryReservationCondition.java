@@ -23,5 +23,8 @@ public class QueryReservationCondition {
     private String service;
 
     @Nullable
+    private String status;
+
+    @Nullable
     private String keyword;
 }

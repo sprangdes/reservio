@@ -133,6 +133,15 @@ public class ReservationService {
             spec = spec.and(ReservationSpecification.serviceEqual(condition.getService()));
         }
 
+        if (condition.getStatus() != null && !condition.getStatus().isBlank()) {
+            try {
+                ReservationStatus status = ReservationStatus.valueOf(condition.getStatus().toUpperCase());
+                spec = spec.and(ReservationSpecification.statusEqual(status));
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid reservation status: " + condition.getStatus(), e);
+            }
+        }
+
         // keyword 條件：假設想讓 customerNameLike 和 remarkLike 以 OR 組合（同時搜尋），然後與整體 AND
         if (condition.getKeyword() != null) {
             spec = spec.and(ReservationSpecification.keywordLike(condition.getKeyword()));

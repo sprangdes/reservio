@@ -39,8 +39,8 @@ export default function ManageAllPage() {
   const { setSuccessMessage, setErrorMessage } = useToast();
   const [data, setData] = useState({ content: [], totalPages: 0, totalElements: 0 });
   const [services, setServices] = useState([]);
-  const [filterDraft, setFilterDraft] = useState({ dateFrom: '', dateTo: '', service: '', keyword: '' });
-  const [filters, setFilters] = useState({ dateFrom: '', dateTo: '', service: '', keyword: '' });
+  const [filterDraft, setFilterDraft] = useState({ dateFrom: '', dateTo: '', service: '', keyword: '', status: '' });
+  const [filters, setFilters] = useState({ dateFrom: '', dateTo: '', service: '', keyword: '', status: '' });
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [sortBy, setSortBy] = useState('reservationDate');
@@ -52,7 +52,8 @@ export default function ManageAllPage() {
         startDate: filters.dateFrom || null,
         endDate: filters.dateTo || null,
         service: filters.service || null,
-        keyword: filters.keyword || null
+        keyword: filters.keyword || null,
+        status: filters.status || null
       };
       const res = await api.businessReservations({ page, size, sortBy, sortDir }, condition);
       setData(res.data || res || { content: [], totalPages: 0, totalElements: 0 });
@@ -107,7 +108,7 @@ export default function ManageAllPage() {
   };
 
   const clearFilters = () => {
-    const empty = { dateFrom: '', dateTo: '', service: '', keyword: '' };
+    const empty = { dateFrom: '', dateTo: '', service: '', keyword: '', status: '' };
     setFilterDraft(empty);
     setFilters(empty);
     setPage(0);
@@ -163,6 +164,21 @@ export default function ManageAllPage() {
                         {service.name}
                       </option>
                     ))}
+                  </select>
+                </div>
+                <div className="col-12 col-md-3">
+                  <label className="form-label">預約狀態</label>
+                  <select
+                    className="form-select"
+                    value={filterDraft.status}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, status: e.target.value }))}
+                  >
+                    <option value="">全部</option>
+                    <option value="PENDING">待確認</option>
+                    <option value="CONFIRMED">已確認</option>
+                    <option value="CANCEL_REQUESTED">取消確認中</option>
+                    <option value="CANCELLED">已取消</option>
+                    <option value="COMPLETED">已完成</option>
                   </select>
                 </div>
                 <div className="col-12 col-md-3">

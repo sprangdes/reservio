@@ -1,6 +1,7 @@
 package com.reservio.service.specification;
 
 import com.reservio.entity.Reservation;
+import com.reservio.enums.ReservationStatus;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
@@ -72,6 +73,13 @@ public class ReservationSpecification {
             return customerNameLike(keyword)
                     .or(remarkLike(keyword))
                     .toPredicate(root, query, criteriaBuilder);
+        };
+    }
+
+    public static Specification<Reservation> statusEqual(ReservationStatus status) {
+        return (root, query, criteriaBuilder) -> {
+            if (status == null) return null;
+            return criteriaBuilder.equal(root.get("status"), status);
         };
     }
 }
