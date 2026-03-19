@@ -67,13 +67,19 @@ public class ReservationApiController {
                 .build());
     }
 
-    @GetMapping("/reservations")
-    public ResponseEntity<ApiResponse<PageResponse<ReservationDTO>>> getAllReservationsForBusiness(
+    @PostMapping("/reservations/query")
+    public ResponseEntity<ApiResponse<PageResponse<ReservationDTO>>> queryReservationsForBusiness(
+            @RequestBody QueryReservationCondition condition,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "reservationDate") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
-        Page<ReservationDTO> items = reservationService.getAllReservationsForBusinessPage(page, size, sortBy, sortDir)
+        Page<ReservationDTO> items = reservationService.queryReservationsForBusinessPage(
+                condition,
+                page,
+                size,
+                sortBy,
+                sortDir)
                 .map(this::toReservationDTO);
         return ResponseEntity.ok(ApiResponse.<PageResponse<ReservationDTO>>builder()
                 .success(true)

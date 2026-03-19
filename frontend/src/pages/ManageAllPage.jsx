@@ -39,8 +39,8 @@ export default function ManageAllPage() {
   const { setSuccessMessage, setErrorMessage } = useToast();
   const [data, setData] = useState({ content: [], totalPages: 0, totalElements: 0 });
   const [services, setServices] = useState([]);
-  const [filterDraft, setFilterDraft] = useState({ dateFrom: '', dateTo: '', serviceId: '', keyword: '' });
-  const [filters, setFilters] = useState({ dateFrom: '', dateTo: '', serviceId: '', keyword: '' });
+  const [filterDraft, setFilterDraft] = useState({ dateFrom: '', dateTo: '', service: '', keyword: '' });
+  const [filters, setFilters] = useState({ dateFrom: '', dateTo: '', service: '', keyword: '' });
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [sortBy, setSortBy] = useState('reservationDate');
@@ -48,7 +48,13 @@ export default function ManageAllPage() {
 
   const load = async () => {
     try {
-      const res = await api.businessReservations({ page, size, sortBy, sortDir, ...filters });
+      const condition = {
+        startDate: filters.dateFrom || null,
+        endDate: filters.dateTo || null,
+        service: filters.service || null,
+        keyword: filters.keyword || null
+      };
+      const res = await api.businessReservations({ page, size, sortBy, sortDir }, condition);
       setData(res.data || res || { content: [], totalPages: 0, totalElements: 0 });
     } catch (err) {
       setErrorMessage(err.message || '載入失敗');
@@ -101,7 +107,7 @@ export default function ManageAllPage() {
   };
 
   const clearFilters = () => {
-    const empty = { dateFrom: '', dateTo: '', serviceId: '', keyword: '' };
+    const empty = { dateFrom: '', dateTo: '', service: '', keyword: '' };
     setFilterDraft(empty);
     setFilters(empty);
     setPage(0);
@@ -148,12 +154,12 @@ export default function ManageAllPage() {
                   <label className="form-label">服務項目</label>
                   <select
                     className="form-select"
-                    value={filterDraft.serviceId}
-                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, serviceId: e.target.value }))}
+                    value={filterDraft.service}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, service: e.target.value }))}
                   >
                     <option value="">全部</option>
                     {services.map((service) => (
-                      <option key={service.id} value={service.id}>
+                      <option key={service.id} value={service.name}>
                         {service.name}
                       </option>
                     ))}

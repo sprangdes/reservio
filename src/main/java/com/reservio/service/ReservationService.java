@@ -1,11 +1,14 @@
 package com.reservio.service;
 
+import com.reservio.dto.QueryReservationCondition;
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.Reservation;
 import com.reservio.entity.UserData;
 import com.reservio.enums.ReservationStatus;
 import com.reservio.exception.UserNotFoundException;
 import com.reservio.repo.ReservationRepo;
+import com.reservio.service.specification.ReservationSpecification;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -101,14 +104,41 @@ public class ReservationService {
         return reservationRepo.countByUserAndStatus(user, PENDING);
     }
 
-    public Page<Reservation> getAllReservationsForBusinessPage(int page, int size, String sortBy, String sortDir) {
+    public Page<Reservation> queryReservationsForBusinessPage(
+            QueryReservationCondition condition,
+            int page,
+            int size,
+            String sortBy,
+            String sortDir) {
         UserData currentUser = userDataService.getCurrentUser();
         BusinessData businessData = currentUser.getBusinessData();
         if (businessData == null) {
             return Page.empty();
         }
         Pageable pageable = PageRequest.of(page, size, buildSort(sortBy, sortDir));
-        return reservationRepo.findAllByBusiness(businessData, pageable);
+        Specification<Reservation> spec = Specification
+                .where(ReservationSpecification.businessEqual(businessData.getId()));
+
+        // 動態處理日期條件（避免重疊）
+        if (condition.getStartDate() != null && condition.getEndDate() != null) {
+            spec = spec.and(ReservationSpecification.dateBetween(condition.getStartDate(), condition.getEndDate()));
+        } else if (condition.getStartDate() != null) {
+            spec = spec.and(ReservationSpecification.dateAfter(condition.getStartDate()));
+        } else if (condition.getEndDate() != null) {
+            spec = spec.and(ReservationSpecification.dateBefore(condition.getEndDate()));
+        }
+
+        // 服務條件
+        if (condition.getService() != null) {
+            spec = spec.and(ReservationSpecification.serviceEqual(condition.getService()));
+        }
+
+        // keyword 條件：假設想讓 customerNameLike 和 remarkLike 以 OR 組合（同時搜尋），然後與整體 AND
+        if (condition.getKeyword() != null) {
+            spec = spec.and(ReservationSpecification.keywordLike(condition.getKeyword()));
+        }
+
+        return reservationRepo.findAll(spec, pageable);
     }
 
     public Page<Reservation> getPendingReservationsForBusinessPage(int page, int size, String sortBy, String sortDir) {
