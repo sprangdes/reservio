@@ -15,6 +15,7 @@ public class ReservationSpecification {
     private static final String TITLE = "title";
     private static final String ID = "id";
     private static final String REMARK = "remark";
+    private static final String STATUS = "status";
 
     private ReservationSpecification() {}
 
@@ -79,7 +80,7 @@ public class ReservationSpecification {
     public static Specification<Reservation> statusEqual(ReservationStatus status) {
         return (root, query, criteriaBuilder) -> {
             if (status == null) return null;
-            return criteriaBuilder.equal(root.get("status"), status);
+            return criteriaBuilder.equal(root.get(STATUS), status);
         };
     }
 }
