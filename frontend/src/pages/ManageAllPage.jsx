@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { formatTimeHM } from '../utils/time.js';
@@ -37,6 +37,8 @@ function SortButton({ label, field, sortBy, sortDir, onSort }) {
 export default function ManageAllPage() {
   const { me } = useAuth();
   const { setSuccessMessage, setErrorMessage } = useToast();
+  const dateFromRef = useRef(null);
+  const dateToRef = useRef(null);
   const [data, setData] = useState({ content: [], totalPages: 0, totalElements: 0 });
   const [services, setServices] = useState([]);
   const [filterDraft, setFilterDraft] = useState({ dateFrom: '', dateTo: '', service: '', keyword: '', status: '' });
@@ -80,6 +82,37 @@ export default function ManageAllPage() {
     };
     loadServices();
   }, [me]);
+
+  useEffect(() => {
+    if (!window.flatpickr) return;
+    const fpFrom = dateFromRef.current
+      ? window.flatpickr(dateFromRef.current, {
+          locale: 'zh_tw',
+          dateFormat: 'Y-m-d',
+          disableMobile: true,
+          onChange: (_, dateStr) => {
+            setFilterDraft((prev) => ({ ...prev, dateFrom: dateStr }));
+            if (fpTo) {
+              fpTo.set('minDate', dateStr || null);
+            }
+          }
+        })
+      : null;
+    const fpTo = dateToRef.current
+      ? window.flatpickr(dateToRef.current, {
+          locale: 'zh_tw',
+          dateFormat: 'Y-m-d',
+          disableMobile: true,
+          onChange: (_, dateStr) => {
+            setFilterDraft((prev) => ({ ...prev, dateTo: dateStr }));
+          }
+        })
+      : null;
+    return () => {
+      if (fpFrom) fpFrom.destroy();
+      if (fpTo) fpTo.destroy();
+    };
+  }, []);
 
   const updateStatus = async (id, action) => {
     try {
@@ -136,8 +169,10 @@ export default function ManageAllPage() {
                 <div className="col-12 col-md-3">
                   <label className="form-label">開始日期</label>
                   <input
-                    type="date"
-                    className="form-control"
+                    type="text"
+                    className="form-control bg-white"
+                    placeholder="選擇開始日期"
+                    ref={dateFromRef}
                     value={filterDraft.dateFrom}
                     onChange={(e) => setFilterDraft((prev) => ({ ...prev, dateFrom: e.target.value }))}
                   />
@@ -145,8 +180,10 @@ export default function ManageAllPage() {
                 <div className="col-12 col-md-3">
                   <label className="form-label">結束日期</label>
                   <input
-                    type="date"
-                    className="form-control"
+                    type="text"
+                    className="form-control bg-white"
+                    placeholder="選擇結束日期"
+                    ref={dateToRef}
                     value={filterDraft.dateTo}
                     onChange={(e) => setFilterDraft((prev) => ({ ...prev, dateTo: e.target.value }))}
                   />
