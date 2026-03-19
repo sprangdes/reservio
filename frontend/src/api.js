@@ -69,6 +69,7 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(payload)
   }),
+  businessActiveServices: (id) => request(`/api/businesses/${id}/services/active`),
   addServiceItem: (payload) => request('/api/businesses/services', {
     method: 'POST',
     body: JSON.stringify(payload)

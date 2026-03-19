@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface ServiceItemRepo extends JpaRepository<ServiceItem, Long> {
     List<ServiceItem> findAllByBusinessId(Long businessId);
+    List<ServiceItem> findAllByBusinessIdAndActiveTrue(Long businessId);
 }

@@ -35,6 +35,10 @@ public class ServiceItemService {
         return serviceItemRepo.findAllByBusinessId(businessId);
     }
 
+    public List<ServiceItem> getActiveServicesByBusinessId(Long businessId) {
+        return serviceItemRepo.findAllByBusinessIdAndActiveTrue(businessId);
+    }
+
     @Transactional
     public ServiceItem saveServiceItem(BusinessData businessData, String name, Integer duration) {
         ServiceItem item = ServiceItem.builder()

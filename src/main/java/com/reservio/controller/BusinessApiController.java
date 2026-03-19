@@ -58,6 +58,18 @@ public class BusinessApiController {
                 .build());
     }
 
+    @GetMapping("/businesses/{businessId}/services/active")
+    public ResponseEntity<ApiResponse<List<ActiveServiceItemDTO>>> getActiveServices(@PathVariable Long businessId) {
+        List<ActiveServiceItemDTO> activeServices = serviceItemService.getActiveServicesByBusinessId(businessId).stream()
+                .map(this::toActiveServiceItemDTO)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.<List<ActiveServiceItemDTO>>builder()
+                .success(true)
+                .message(OK.getMessage())
+                .data(activeServices)
+                .build());
+    }
+
     @PostMapping("/businesses/services")
     public ResponseEntity<ApiResponse<ServiceItemDTO>> addServiceItem(@RequestBody ServiceItemRequest request) {
         UserData currentUser = userDataService.getCurrentUser();
@@ -183,6 +195,13 @@ public class BusinessApiController {
                 .name(item.getName())
                 .duration(item.getDuration())
                 .active(item.getActive())
+                .build();
+    }
+
+    private ActiveServiceItemDTO toActiveServiceItemDTO(ServiceItem item) {
+        return ActiveServiceItemDTO.builder()
+                .id(item.getId())
+                .name(item.getName())
                 .build();
     }
 }

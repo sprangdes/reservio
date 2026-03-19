@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { formatTimeHM } from '../utils/time.js';
 import { useToast } from '../state/ToastContext.jsx';
+import { useAuth } from '../state/AuthContext.jsx';
 
 function StatusBadge({ status }) {
   if (status === 'PENDING') {
@@ -34,21 +35,44 @@ function SortButton({ label, field, sortBy, sortDir, onSort }) {
 }
 
 export default function ManageAllPage() {
+  const { me } = useAuth();
   const { setSuccessMessage, setErrorMessage } = useToast();
   const [data, setData] = useState({ content: [], totalPages: 0, totalElements: 0 });
+  const [services, setServices] = useState([]);
+  const [filterDraft, setFilterDraft] = useState({ dateFrom: '', dateTo: '', serviceId: '', keyword: '' });
+  const [filters, setFilters] = useState({ dateFrom: '', dateTo: '', serviceId: '', keyword: '' });
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [sortBy, setSortBy] = useState('reservationDate');
   const [sortDir, setSortDir] = useState('desc');
 
   const load = async () => {
-    const res = await api.businessReservations({ page, size, sortBy, sortDir });
-    setData(res.data || { content: [], totalPages: 0, totalElements: 0 });
+    try {
+      const res = await api.businessReservations({ page, size, sortBy, sortDir, ...filters });
+      setData(res.data || res || { content: [], totalPages: 0, totalElements: 0 });
+    } catch (err) {
+      setErrorMessage(err.message || '載入失敗');
+    }
   };
 
   useEffect(() => {
     load();
-  }, [page, size, sortBy, sortDir]);
+  }, [page, size, sortBy, sortDir, filters]);
+
+  useEffect(() => {
+    const loadServices = async () => {
+      try {
+        const businessId = me?.business?.id;
+        if (!businessId) return;
+        const res = await api.businessActiveServices(businessId);
+        const items = res?.items || res?.data || res || [];
+        setServices(Array.isArray(items) ? items : []);
+      } catch (err) {
+        setErrorMessage(err.message || '載入服務項目失敗');
+      }
+    };
+    loadServices();
+  }, [me]);
 
   const updateStatus = async (id, action) => {
     try {
@@ -70,6 +94,19 @@ export default function ManageAllPage() {
     setPage(0);
   };
 
+  const applyFilters = (event) => {
+    event.preventDefault();
+    setFilters({ ...filterDraft });
+    setPage(0);
+  };
+
+  const clearFilters = () => {
+    const empty = { dateFrom: '', dateTo: '', serviceId: '', keyword: '' };
+    setFilterDraft(empty);
+    setFilters(empty);
+    setPage(0);
+  };
+
   const totalPages = Math.max(data.totalPages || 0, 1);
   const content = useMemo(() => data.content || [], [data.content]);
 
@@ -86,6 +123,59 @@ export default function ManageAllPage() {
         </div>
 
         <div className="card-body p-0">
+          <div className="p-3 border-bottom bg-white">
+            <form onSubmit={applyFilters}>
+              <div className="row g-3 align-items-end">
+                <div className="col-12 col-md-3">
+                  <label className="form-label">開始日期</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={filterDraft.dateFrom}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, dateFrom: e.target.value }))}
+                  />
+                </div>
+                <div className="col-12 col-md-3">
+                  <label className="form-label">結束日期</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={filterDraft.dateTo}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, dateTo: e.target.value }))}
+                  />
+                </div>
+                <div className="col-12 col-md-3">
+                  <label className="form-label">服務項目</label>
+                  <select
+                    className="form-select"
+                    value={filterDraft.serviceId}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, serviceId: e.target.value }))}
+                  >
+                    <option value="">全部</option>
+                    {services.map((service) => (
+                      <option key={service.id} value={service.id}>
+                        {service.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-12 col-md-3">
+                  <label className="form-label">關鍵字</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="姓名 / 電話 / 備註"
+                    value={filterDraft.keyword}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, keyword: e.target.value }))}
+                  />
+                </div>
+                <div className="col-12 col-md-3 d-flex gap-2">
+                  <button type="submit" className="btn btn-primary w-100">查詢</button>
+                  <button type="button" className="btn btn-outline-secondary w-100" onClick={clearFilters}>清除</button>
+                </div>
+              </div>
+            </form>
+          </div>
           <div className="table-responsive desktop-table">
             <table className="table table-hover align-middle mb-0">
               <thead className="table-light">
