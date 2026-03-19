@@ -192,8 +192,8 @@ export default function ManageAllPage() {
                   />
                 </div>
                 <div className="col-12 col-md-3 d-flex gap-2">
-                  <button type="submit" className="btn btn-primary w-100">查詢</button>
-                  <button type="button" className="btn btn-outline-secondary w-100" onClick={clearFilters}>清除</button>
+                  <button type="submit" className="btn btn-gradient fw-bold shadow-sm w-100">查詢</button>
+                  <button type="button" className="btn btn-outline-secondary fw-bold w-100" onClick={clearFilters}>清除</button>
                 </div>
               </div>
             </form>
