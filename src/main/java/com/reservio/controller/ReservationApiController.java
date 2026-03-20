@@ -52,7 +52,7 @@ public class ReservationApiController {
                 .build());
     }
 
-    @PostMapping("/reservations/query")
+    @PostMapping("/reservations/business/query")
     public ResponseEntity<ApiResponse<PageResponse<ReservationDTO>>> queryReservationsForBusiness(
             @RequestBody QueryReservationCondition condition,
             @RequestParam(defaultValue = "0") int page,
