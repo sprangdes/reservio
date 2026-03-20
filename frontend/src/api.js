@@ -57,7 +57,6 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(payload)
   }),
-  myReservations: (params) => request(`/api/reservations/my${buildQuery(params)}`),
   cancelReservation: (id, payload) => request(`/api/reservations/${id}/cancel`, {
     method: 'POST',
     body: JSON.stringify(payload || {})
