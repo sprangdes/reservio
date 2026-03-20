@@ -19,7 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import static com.reservio.enums.ReservationStatus.*;
 import static com.reservio.enums.SystemEnum.*;
@@ -84,7 +86,6 @@ public class ReservationService {
     }
 
     /**
-    /**
      * 取得待處理預約數量
      * - 客戶：只計算自己的 PENDING
      * - 店家：計算該店家的 PENDING + CANCEL_REQUESTED
@@ -120,6 +121,65 @@ public class ReservationService {
                 .where(ReservationSpecification.businessEqual(businessData.getId()));
 
         // 動態處理日期條件（避免重疊）
+        spec = timeSpecification(condition, spec);
+        // 服務條件
+        spec = serviceSpecification(condition, spec);
+        // 狀態條件
+        spec = statusSpecification(condition, spec);
+        // keyword 條件：假設想讓 customerNameLike 和 remarkLike 以 OR 組合（同時搜尋），然後與整體 AND
+        spec = remarkSpecification(condition, spec);
+        return reservationRepo.findAll(spec, pageable);
+    }
+
+    private static Specification<Reservation> remarkSpecification(
+            QueryReservationCondition condition,
+            Specification<Reservation> spec) {
+        if (condition.getKeyword() != null) {
+            spec = spec.and(ReservationSpecification.keywordLike(condition.getKeyword()));
+        }
+        return spec;
+    }
+
+    private static Specification<Reservation> statusSpecification(
+            QueryReservationCondition condition,
+            Specification<Reservation> spec) {
+        if (condition.getStatus() != null && !condition.getStatus().isBlank()) {
+            try {
+                Specification<Reservation> statusSpec = Arrays.stream(condition.getStatus().split(","))
+                        .map(String::trim)
+                        .map(str -> {
+                            try {
+                                return ReservationStatus.valueOf(str.toUpperCase());
+                            } catch (IllegalArgumentException e) {
+                                return null;
+                            }
+                        })
+                        .filter(Objects::nonNull)
+                        .map(ReservationSpecification::statusEqual)
+                        .reduce(Specification::or)
+                        .orElse(null);
+                if (statusSpec != null) {
+                    spec = spec.and(statusSpec);
+                }
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid reservation status: " + condition.getStatus(), e);
+            }
+        }
+        return spec;
+    }
+
+    private static Specification<Reservation> serviceSpecification(
+            QueryReservationCondition condition,
+            Specification<Reservation> spec) {
+        if (condition.getService() != null) {
+            spec = spec.and(ReservationSpecification.serviceEqual(condition.getService()));
+        }
+        return spec;
+    }
+
+    private static Specification<Reservation> timeSpecification(
+            QueryReservationCondition condition,
+            Specification<Reservation> spec) {
         if (condition.getStartDate() != null && condition.getEndDate() != null) {
             spec = spec.and(ReservationSpecification.dateBetween(condition.getStartDate(), condition.getEndDate()));
         } else if (condition.getStartDate() != null) {
@@ -127,27 +187,7 @@ public class ReservationService {
         } else if (condition.getEndDate() != null) {
             spec = spec.and(ReservationSpecification.dateBefore(condition.getEndDate()));
         }
-
-        // 服務條件
-        if (condition.getService() != null) {
-            spec = spec.and(ReservationSpecification.serviceEqual(condition.getService()));
-        }
-
-        if (condition.getStatus() != null && !condition.getStatus().isBlank()) {
-            try {
-                ReservationStatus status = ReservationStatus.valueOf(condition.getStatus().toUpperCase());
-                spec = spec.and(ReservationSpecification.statusEqual(status));
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid reservation status: " + condition.getStatus(), e);
-            }
-        }
-
-        // keyword 條件：假設想讓 customerNameLike 和 remarkLike 以 OR 組合（同時搜尋），然後與整體 AND
-        if (condition.getKeyword() != null) {
-            spec = spec.and(ReservationSpecification.keywordLike(condition.getKeyword()));
-        }
-
-        return reservationRepo.findAll(spec, pageable);
+        return spec;
     }
 
     public Page<Reservation> getPendingReservationsForBusinessPage(int page, int size, String sortBy, String sortDir) {
