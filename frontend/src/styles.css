@@ -204,12 +204,19 @@ main {
 
 @media (max-width: 768px) {
     .navbar-collapse {
+        display: block !important;
         max-height: 0;
         overflow: hidden;
-        transition: max-height 1s ease;
+        opacity: 0;
+        transform: translateY(-14px);
+        transition: max-height 0.9s ease, opacity 0.6s ease, transform 0.6s ease;
+        pointer-events: none;
     }
     .navbar-collapse.show {
         max-height: 320px;
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
     }
     .dashboard-card .row {
         flex-wrap: wrap;
