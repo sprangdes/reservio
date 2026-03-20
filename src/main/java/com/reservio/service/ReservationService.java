@@ -131,65 +131,6 @@ public class ReservationService {
         return reservationRepo.findAll(spec, pageable);
     }
 
-    private static Specification<Reservation> remarkSpecification(
-            QueryReservationCondition condition,
-            Specification<Reservation> spec) {
-        if (condition.getKeyword() != null) {
-            spec = spec.and(ReservationSpecification.keywordLike(condition.getKeyword()));
-        }
-        return spec;
-    }
-
-    private static Specification<Reservation> statusSpecification(
-            QueryReservationCondition condition,
-            Specification<Reservation> spec) {
-        if (condition.getStatus() != null && !condition.getStatus().isBlank()) {
-            try {
-                Specification<Reservation> statusSpec = Arrays.stream(condition.getStatus().split(","))
-                        .map(String::trim)
-                        .map(str -> {
-                            try {
-                                return ReservationStatus.valueOf(str.toUpperCase());
-                            } catch (IllegalArgumentException e) {
-                                return null;
-                            }
-                        })
-                        .filter(Objects::nonNull)
-                        .map(ReservationSpecification::statusEqual)
-                        .reduce(Specification::or)
-                        .orElse(null);
-                if (statusSpec != null) {
-                    spec = spec.and(statusSpec);
-                }
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid reservation status: " + condition.getStatus(), e);
-            }
-        }
-        return spec;
-    }
-
-    private static Specification<Reservation> serviceSpecification(
-            QueryReservationCondition condition,
-            Specification<Reservation> spec) {
-        if (condition.getService() != null) {
-            spec = spec.and(ReservationSpecification.serviceEqual(condition.getService()));
-        }
-        return spec;
-    }
-
-    private static Specification<Reservation> timeSpecification(
-            QueryReservationCondition condition,
-            Specification<Reservation> spec) {
-        if (condition.getStartDate() != null && condition.getEndDate() != null) {
-            spec = spec.and(ReservationSpecification.dateBetween(condition.getStartDate(), condition.getEndDate()));
-        } else if (condition.getStartDate() != null) {
-            spec = spec.and(ReservationSpecification.dateAfter(condition.getStartDate()));
-        } else if (condition.getEndDate() != null) {
-            spec = spec.and(ReservationSpecification.dateBefore(condition.getEndDate()));
-        }
-        return spec;
-    }
-
     public Page<Reservation> getPendingReservationsForBusinessPage(int page, int size, String sortBy, String sortDir) {
         UserData currentUser = userDataService.getCurrentUser();
         BusinessData businessData = currentUser.getBusinessData();
@@ -333,6 +274,28 @@ public class ReservationService {
         reservationRepo.save(reservation);
     }
 
+    @Scheduled(cron = "0 */5 * * * * ")
+    public void markCompletedReservations() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Reservation> candidates = reservationRepo.findAllByStatusIn(List.of(PENDING, CONFIRMED, CANCEL_REQUESTED));
+        for (Reservation reservation : candidates) {
+            LocalDateTime endAt = LocalDateTime.of(reservation.getReservationDate(), reservation.getEndTime());
+            if (!endAt.isAfter(now)) {
+                reservation.setStatus(COMPLETED);
+                reservation.setUpdatedAt(now);
+                reservation.setUpdatedBy(SYSTEM.name());
+                reservationRepo.save(reservation);
+            }
+        }
+    }
+
+    private void markCompleted(Reservation reservation) {
+        reservation.setStatus(COMPLETED);
+        reservation.setUpdatedAt(LocalDateTime.now());
+        reservation.setUpdatedBy(SYSTEM.name());
+        reservationRepo.save(reservation);
+    }
+
     private boolean isEnded(Reservation reservation) {
         if (!List.of(PENDING, CONFIRMED, CANCEL_REQUESTED).contains(reservation.getStatus())) {
             return false;
@@ -362,25 +325,62 @@ public class ReservationService {
         };
     }
 
-    private void markCompleted(Reservation reservation) {
-        reservation.setStatus(COMPLETED);
-        reservation.setUpdatedAt(LocalDateTime.now());
-        reservation.setUpdatedBy(SYSTEM.name());
-        reservationRepo.save(reservation);
+    private static Specification<Reservation> remarkSpecification(
+            QueryReservationCondition condition,
+            Specification<Reservation> spec) {
+        if (condition.getKeyword() != null) {
+            spec = spec.and(ReservationSpecification.keywordLike(condition.getKeyword()));
+        }
+        return spec;
     }
 
-    @Scheduled(cron = "0 */5 * * * * ")
-    public void markCompletedReservations() {
-        LocalDateTime now = LocalDateTime.now();
-        List<Reservation> candidates = reservationRepo.findAllByStatusIn(List.of(PENDING, CONFIRMED, CANCEL_REQUESTED));
-        for (Reservation reservation : candidates) {
-            LocalDateTime endAt = LocalDateTime.of(reservation.getReservationDate(), reservation.getEndTime());
-            if (!endAt.isAfter(now)) {
-                reservation.setStatus(COMPLETED);
-                reservation.setUpdatedAt(now);
-                reservation.setUpdatedBy(SYSTEM.name());
-                reservationRepo.save(reservation);
+    private static Specification<Reservation> statusSpecification(
+            QueryReservationCondition condition,
+            Specification<Reservation> spec) {
+        if (condition.getStatus() != null && !condition.getStatus().isBlank()) {
+            try {
+                Specification<Reservation> statusSpec = Arrays.stream(condition.getStatus().split(","))
+                        .map(String::trim)
+                        .map(str -> {
+                            try {
+                                return ReservationStatus.valueOf(str.toUpperCase());
+                            } catch (IllegalArgumentException e) {
+                                return null;
+                            }
+                        })
+                        .filter(Objects::nonNull)
+                        .map(ReservationSpecification::statusEqual)
+                        .reduce(Specification::or)
+                        .orElse(null);
+                if (statusSpec != null) {
+                    spec = spec.and(statusSpec);
+                }
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid reservation status: " + condition.getStatus(), e);
             }
         }
+        return spec;
+    }
+
+    private static Specification<Reservation> serviceSpecification(
+            QueryReservationCondition condition,
+            Specification<Reservation> spec) {
+        if (condition.getService() != null) {
+            spec = spec.and(ReservationSpecification.serviceEqual(condition.getService()));
+        }
+        return spec;
+    }
+
+    private static Specification<Reservation> timeSpecification(
+            QueryReservationCondition condition,
+            Specification<Reservation> spec) {
+        if (condition.getStartDate() != null && condition.getEndDate() != null) {
+            spec = spec.and(ReservationSpecification.dateBetween(condition.getStartDate(), condition.getEndDate()));
+        } else if (condition.getStartDate() != null) {
+            spec = spec.and(ReservationSpecification.dateAfter(condition.getStartDate()));
+        } else if (condition.getEndDate() != null) {
+            spec = spec.and(ReservationSpecification.dateBefore(condition.getEndDate()));
+        }
+        return spec;
     }
 }
