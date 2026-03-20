@@ -244,21 +244,6 @@ export default function MyReservationsPage() {
                   />
                 </div>
                 <div className="col-12 col-md-3">
-                  <label className="form-label">預約狀態</label>
-                  <select
-                    className="form-select"
-                    value={filterDraft.status}
-                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, status: e.target.value }))}
-                  >
-                    <option value="">全部</option>
-                    <option value="PENDING">待確認</option>
-                    <option value="CONFIRMED">已確認</option>
-                    <option value="CANCEL_REQUESTED">取消確認中</option>
-                    <option value="CANCELLED">已取消</option>
-                    <option value="COMPLETED">已完成</option>
-                  </select>
-                </div>
-                <div className="col-12 col-md-3">
                   <label className="form-label">商家</label>
                   <select
                     className="form-select"
@@ -287,6 +272,21 @@ export default function MyReservationsPage() {
                         {service.name}
                       </option>
                     ))}
+                  </select>
+                </div>
+                <div className="col-12 col-md-3">
+                  <label className="form-label">預約狀態</label>
+                  <select
+                    className="form-select"
+                    value={filterDraft.status}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, status: e.target.value }))}
+                  >
+                    <option value="">全部</option>
+                    <option value="PENDING">待確認</option>
+                    <option value="CONFIRMED">已確認</option>
+                    <option value="CANCEL_REQUESTED">取消確認中</option>
+                    <option value="CANCELLED">已取消</option>
+                    <option value="COMPLETED">已完成</option>
                   </select>
                 </div>
                 <div className="col-12 col-md-3">
