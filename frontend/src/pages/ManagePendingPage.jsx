@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { formatTimeHM } from '../utils/time.js';
 import { useToast } from '../state/ToastContext.jsx';
+import { useAuth } from '../state/AuthContext.jsx';
 
 function StatusBadge({ status }) {
   if (status === 'PENDING') {
@@ -28,21 +29,84 @@ function SortButton({ label, field, sortBy, sortDir, onSort }) {
 }
 
 export default function ManagePendingPage() {
+  const { me } = useAuth();
   const { setSuccessMessage, setErrorMessage } = useToast();
   const [data, setData] = useState({ content: [], totalPages: 0, totalElements: 0 });
+  const [services, setServices] = useState([]);
+  const [filterDraft, setFilterDraft] = useState({ dateFrom: '', dateTo: '', service: '', keyword: '', status: '' });
+  const [filters, setFilters] = useState({ dateFrom: '', dateTo: '', service: '', keyword: '', status: '' });
+  const dateFromRef = useRef(null);
+  const dateToRef = useRef(null);
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [sortBy, setSortBy] = useState('reservationDate');
   const [sortDir, setSortDir] = useState('asc');
 
   const load = async () => {
-    const res = await api.pendingReservations({ page, size, sortBy, sortDir });
-    setData(res.data || { content: [], totalPages: 0, totalElements: 0 });
+    try {
+      const condition = {
+        startDate: filters.dateFrom || null,
+        endDate: filters.dateTo || null,
+        service: filters.service || null,
+        keyword: filters.keyword || null,
+        status: filters.status ? filters.status : 'PENDING,CANCEL_REQUESTED'
+      };
+      const res = await api.businessReservations({ page, size, sortBy, sortDir }, condition);
+      setData(res.data || res || { content: [], totalPages: 0, totalElements: 0 });
+    } catch (err) {
+      setErrorMessage(err.message || '載入失敗');
+    }
   };
 
   useEffect(() => {
     load();
-  }, [page, size, sortBy, sortDir]);
+  }, [page, size, sortBy, sortDir, filters]);
+
+  useEffect(() => {
+    const loadServices = async () => {
+      try {
+        const businessId = me?.business?.id;
+        if (!businessId) return;
+        const res = await api.businessActiveServices(businessId);
+        const items = res?.items || res?.data || res || [];
+        setServices(Array.isArray(items) ? items : []);
+      } catch (err) {
+        setErrorMessage(err.message || '載入服務項目失敗');
+      }
+    };
+    loadServices();
+  }, [me]);
+
+  useEffect(() => {
+    if (!window.flatpickr) return;
+    const fpFrom = dateFromRef.current
+      ? window.flatpickr(dateFromRef.current, {
+          locale: 'zh_tw',
+          dateFormat: 'Y-m-d',
+          disableMobile: true,
+          onChange: (_, dateStr) => {
+            setFilterDraft((prev) => ({ ...prev, dateFrom: dateStr }));
+            if (fpTo) {
+              fpTo.set('minDate', dateStr || null);
+            }
+          }
+        })
+      : null;
+    const fpTo = dateToRef.current
+      ? window.flatpickr(dateToRef.current, {
+          locale: 'zh_tw',
+          dateFormat: 'Y-m-d',
+          disableMobile: true,
+          onChange: (_, dateStr) => {
+            setFilterDraft((prev) => ({ ...prev, dateTo: dateStr }));
+          }
+        })
+      : null;
+    return () => {
+      if (fpFrom) fpFrom.destroy();
+      if (fpTo) fpTo.destroy();
+    };
+  }, []);
 
   const updateStatus = async (id, action) => {
     try {
@@ -64,6 +128,19 @@ export default function ManagePendingPage() {
     setPage(0);
   };
 
+  const applyFilters = (event) => {
+    event.preventDefault();
+    setFilters({ ...filterDraft });
+    setPage(0);
+  };
+
+  const clearFilters = () => {
+    const empty = { dateFrom: '', dateTo: '', service: '', keyword: '', status: '' };
+    setFilterDraft(empty);
+    setFilters(empty);
+    setPage(0);
+  };
+
   const totalPages = Math.max(data.totalPages || 0, 1);
   const content = useMemo(() => data.content || [], [data.content]);
 
@@ -80,6 +157,75 @@ export default function ManagePendingPage() {
         </div>
 
         <div className="card-body p-0">
+          <div className="p-3 border-bottom bg-white">
+            <form onSubmit={applyFilters}>
+              <div className="row g-3 align-items-end">
+                <div className="col-12 col-md-3">
+                  <label className="form-label">開始日期</label>
+                  <input
+                    type="text"
+                    className="form-control bg-white"
+                    placeholder="選擇開始日期"
+                    ref={dateFromRef}
+                    value={filterDraft.dateFrom}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, dateFrom: e.target.value }))}
+                  />
+                </div>
+                <div className="col-12 col-md-3">
+                  <label className="form-label">結束日期</label>
+                  <input
+                    type="text"
+                    className="form-control bg-white"
+                    placeholder="選擇結束日期"
+                    ref={dateToRef}
+                    value={filterDraft.dateTo}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, dateTo: e.target.value }))}
+                  />
+                </div>
+                <div className="col-12 col-md-3">
+                  <label className="form-label">服務項目</label>
+                  <select
+                    className="form-select"
+                    value={filterDraft.service}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, service: e.target.value }))}
+                  >
+                    <option value="">全部</option>
+                    {services.map((service) => (
+                      <option key={service.id} value={service.name}>
+                        {service.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-12 col-md-3">
+                  <label className="form-label">預約狀態</label>
+                  <select
+                    className="form-select"
+                    value={filterDraft.status}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, status: e.target.value }))}
+                  >
+                    <option value="">全部（待處理）</option>
+                    <option value="PENDING">待確認</option>
+                    <option value="CANCEL_REQUESTED">取消確認中</option>
+                  </select>
+                </div>
+                <div className="col-12 col-md-3">
+                  <label className="form-label">關鍵字</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="姓名 / 電話 / 備註"
+                    value={filterDraft.keyword}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, keyword: e.target.value }))}
+                  />
+                </div>
+                <div className="col-12 col-md-3 d-flex gap-2">
+                  <button type="submit" className="btn btn-gradient fw-bold shadow-sm w-100">查詢</button>
+                  <button type="button" className="btn btn-outline-secondary fw-bold w-100" onClick={clearFilters}>清除</button>
+                </div>
+              </div>
+            </form>
+          </div>
           <div className="table-responsive desktop-table">
             <table className="table table-hover align-middle mb-0">
               <thead className="table-light">
