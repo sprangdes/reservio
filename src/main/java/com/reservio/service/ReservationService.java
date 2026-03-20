@@ -131,26 +131,6 @@ public class ReservationService {
         return reservationRepo.findAll(spec, pageable);
     }
 
-    public Page<Reservation> getPendingReservationsForBusinessPage(int page, int size, String sortBy, String sortDir) {
-        UserData currentUser = userDataService.getCurrentUser();
-        BusinessData businessData = currentUser.getBusinessData();
-        if (businessData == null) {
-            return Page.empty();
-        }
-        Pageable pageable = PageRequest.of(page, size, buildSort(sortBy, sortDir));
-        return reservationRepo.findAllByBusinessAndStatusIn(businessData, List.of(PENDING, CANCEL_REQUESTED), pageable);
-    }
-
-    public Page<Reservation> getTodayReservationsPage(int page, int size, String sortBy, String sortDir) {
-        UserData currentUser = userDataService.getCurrentUser();
-        BusinessData businessData = currentUser.getBusinessData();
-        if (businessData == null) {
-            return Page.empty();
-        }
-        Pageable pageable = PageRequest.of(page, size, buildSort(sortBy, sortDir));
-        return reservationRepo.findAllByBusinessAndReservationDate(businessData, LocalDate.now(), pageable);
-    }
-
     /**
      * 客戶取消預約。
      * 規則：

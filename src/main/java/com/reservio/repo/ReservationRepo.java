@@ -18,8 +18,6 @@ import java.util.Optional;
 public interface ReservationRepo extends JpaRepository<Reservation, Long>, JpaSpecificationExecutor<Reservation> {
     List<Reservation> findAllByReservationDateAndStatusNot(LocalDate date, ReservationStatus status);
 
-    Page<Reservation> findAllByBusinessAndReservationDate(BusinessData businessData, LocalDate now, Pageable pageable);
-
     Page<Reservation> findAllByUserAndStatusNot(UserData user, ReservationStatus status, Pageable pageable);
 
     long countByUserAndReservationDateAndStatusNot(UserData user, LocalDate date, ReservationStatus status);
@@ -29,8 +27,6 @@ public interface ReservationRepo extends JpaRepository<Reservation, Long>, JpaSp
     Optional<Reservation> findByIdAndUser(Long id, UserData user);
 
     Optional<Reservation> findByIdAndBusiness(Long id, BusinessData businessData);
-
-    Page<Reservation> findAllByBusinessAndStatusIn(BusinessData businessData, List<ReservationStatus> statuses, Pageable pageable);
 
     long countByBusinessAndStatusIn(BusinessData businessData, List<ReservationStatus> statuses);
 
