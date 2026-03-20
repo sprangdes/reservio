@@ -37,13 +37,19 @@ public class ReservationApiController {
         this.businessDataService = businessDataService;
     }
 
-    @GetMapping("/reservations/my")
-    public ResponseEntity<ApiResponse<PageResponse<ReservationDTO>>> getMyReservations(
+    @PostMapping("/reservations/customer/query")
+    public ResponseEntity<ApiResponse<PageResponse<ReservationDTO>>> queryReservationForCustomer(
+            @RequestBody QueryReservationCondition condition,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "reservationDate") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
-        Page<ReservationDTO> items = reservationService.getMyReservationsPage(page, size, sortBy, sortDir)
+        Page<ReservationDTO> items = reservationService.queryReservationsForCustomerPage(
+                condition,
+                page,
+                size,
+                sortBy,
+                sortDir)
                 .map(this::toReservationDTO);
         return ResponseEntity.ok(ApiResponse.<PageResponse<ReservationDTO>>builder()
                 .success(true)
@@ -73,37 +79,6 @@ public class ReservationApiController {
                 .build());
     }
 
-    @GetMapping("/reservations/slots")
-    public ResponseEntity<ApiResponse<List<TimeSlotDTO>>> getTimeSlotsForDate(
-            @RequestParam("date") String dateStr,
-            @RequestParam("duration") int duration) {
-        try {
-            LocalDate date = LocalDate.parse(dateStr);
-            List<TimeSlotDTO> slots = reservationTimeService.getTimeSlotsForDate(date, duration);
-            return ResponseEntity.ok(ApiResponse.<List<TimeSlotDTO>>builder()
-                    .success(true)
-                    .message(OK.getMessage())
-                    .data(slots)
-                    .build());
-        } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.<List<TimeSlotDTO>>builder()
-                            .success(false)
-                            .message(DATE_FORMAT_ERROR.getMessage())
-                            .data(Collections.emptyList())
-                            .build());
-        }
-    }
-
-    @GetMapping("/reservations/disabled-dates")
-    public ResponseEntity<ApiResponse<List<String>>> getDisabledDates() {
-        return ResponseEntity.ok(ApiResponse.<List<String>>builder()
-                .success(true)
-                .message(OK.getMessage())
-                .data(reservationTimeService.getDisabledDates())
-                .build());
-    }
-
     @PostMapping("/reservations")
     public ResponseEntity<ApiResponse<ReservationDTO>> createReservation(@RequestBody ReservationCreateRequest request) {
         BusinessData business = businessDataService.getBusinessById(request.getBusinessId());
@@ -129,7 +104,7 @@ public class ReservationApiController {
     }
 
     @PostMapping("/reservations/{id}/cancel")
-    public ResponseEntity<ApiResponse<Void>> cancelMyReservation(
+    public ResponseEntity<ApiResponse<Void>> cancelReservation(
             @PathVariable Long id,
             @RequestBody(required = false) ReservationCancelRequest request) {
         String reason = request == null ? null : request.getCancelReason();
@@ -174,6 +149,47 @@ public class ReservationApiController {
         return ResponseEntity.ok(ApiResponse.<Void>builder()
                 .success(true)
                 .message(msg)
+                .build());
+    }
+
+    @GetMapping("/reservations/slots")
+    public ResponseEntity<ApiResponse<List<TimeSlotDTO>>> getTimeSlotsForDate(
+            @RequestParam("date") String dateStr,
+            @RequestParam("duration") int duration) {
+        try {
+            LocalDate date = LocalDate.parse(dateStr);
+            List<TimeSlotDTO> slots = reservationTimeService.getTimeSlotsForDate(date, duration);
+            return ResponseEntity.ok(ApiResponse.<List<TimeSlotDTO>>builder()
+                    .success(true)
+                    .message(OK.getMessage())
+                    .data(slots)
+                    .build());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.<List<TimeSlotDTO>>builder()
+                            .success(false)
+                            .message(DATE_FORMAT_ERROR.getMessage())
+                            .data(Collections.emptyList())
+                            .build());
+        }
+    }
+
+    @GetMapping("/reservations/disabled-dates")
+    public ResponseEntity<ApiResponse<List<String>>> getDisabledDates() {
+        return ResponseEntity.ok(ApiResponse.<List<String>>builder()
+                .success(true)
+                .message(OK.getMessage())
+                .data(reservationTimeService.getDisabledDates())
+                .build());
+    }
+
+    @GetMapping("/reservations/customer/reserved-businesses")
+    public ResponseEntity<ApiResponse<List<BusinessDTO>>> getReservedBusinesses() {
+        List<BusinessDTO> reservedBusinesses = reservationService.getReservedBusinesses();
+        return ResponseEntity.ok(ApiResponse.<List<BusinessDTO>>builder()
+                .success(true)
+                .message(OK.getMessage())
+                .data(reservedBusinesses)
                 .build());
     }
 

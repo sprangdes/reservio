@@ -26,5 +26,8 @@ public class QueryReservationCondition {
     private String status;
 
     @Nullable
+    private Long businessId;
+
+    @Nullable
     private String keyword;
 }

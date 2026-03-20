@@ -62,6 +62,11 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(payload || {})
   }),
+  customerReservations: (params, condition) => request(`/api/reservations/customer/query${buildQuery(params)}`, {
+    method: 'POST',
+    body: JSON.stringify(condition || {})
+  }),
+  customerReservedBusinesses: () => request('/api/reservations/customer/reserved-businesses'),
   businessReservations: (params, condition) => request(`/api/reservations/business/query${buildQuery(params)}`, {
     method: 'POST',
     body: JSON.stringify(condition || {})

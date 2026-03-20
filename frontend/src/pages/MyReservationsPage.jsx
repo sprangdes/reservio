@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { formatTimeHM } from '../utils/time.js';
@@ -39,6 +39,26 @@ export default function MyReservationsPage() {
   const { me, loading } = useAuth();
   const navigate = useNavigate();
   const [data, setData] = useState({ content: [], totalPages: 0, totalElements: 0 });
+  const [filterDraft, setFilterDraft] = useState({
+    dateFrom: '',
+    dateTo: '',
+    status: '',
+    businessId: '',
+    service: '',
+    keyword: ''
+  });
+  const [filters, setFilters] = useState({
+    dateFrom: '',
+    dateTo: '',
+    status: '',
+    businessId: '',
+    service: '',
+    keyword: ''
+  });
+  const [businessOptions, setBusinessOptions] = useState([]);
+  const [serviceOptions, setServiceOptions] = useState([]);
+  const dateFromRef = useRef(null);
+  const dateToRef = useRef(null);
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [sortBy, setSortBy] = useState('reservationDate');
@@ -53,13 +73,82 @@ export default function MyReservationsPage() {
   }, [loading, me, navigate]);
 
   const load = async () => {
-    const res = await api.myReservations({ page, size, sortBy, sortDir });
-    setData(res.data || { content: [], totalPages: 0, totalElements: 0 });
+    const condition = {
+      startDate: filters.dateFrom || null,
+      endDate: filters.dateTo || null,
+      status: filters.status || null,
+      businessId: filters.businessId || null,
+      service: filters.service || null,
+      keyword: filters.keyword || null
+    };
+    const res = await api.customerReservations({ page, size, sortBy, sortDir }, condition);
+    setData(res.data || res || { content: [], totalPages: 0, totalElements: 0 });
   };
 
   useEffect(() => {
     load();
-  }, [page, size, sortBy, sortDir]);
+  }, [page, size, sortBy, sortDir, filters]);
+
+  useEffect(() => {
+    if (!window.flatpickr) return;
+    const fpFrom = dateFromRef.current
+      ? window.flatpickr(dateFromRef.current, {
+          locale: 'zh_tw',
+          dateFormat: 'Y-m-d',
+          disableMobile: true,
+          onChange: (_, dateStr) => {
+            setFilterDraft((prev) => ({ ...prev, dateFrom: dateStr }));
+            if (fpTo) {
+              fpTo.set('minDate', dateStr || null);
+            }
+          }
+        })
+      : null;
+    const fpTo = dateToRef.current
+      ? window.flatpickr(dateToRef.current, {
+          locale: 'zh_tw',
+          dateFormat: 'Y-m-d',
+          disableMobile: true,
+          onChange: (_, dateStr) => {
+            setFilterDraft((prev) => ({ ...prev, dateTo: dateStr }));
+          }
+        })
+      : null;
+    return () => {
+      if (fpFrom) fpFrom.destroy();
+      if (fpTo) fpTo.destroy();
+    };
+  }, []);
+
+  useEffect(() => {
+    const loadBusinesses = async () => {
+      try {
+        const res = await api.customerReservedBusinesses();
+        const items = res?.items || res?.data || res || [];
+        setBusinessOptions(Array.isArray(items) ? items : []);
+      } catch (err) {
+        setErrorMessage(err.message || '載入商家清單失敗');
+      }
+    };
+    loadBusinesses();
+  }, [setErrorMessage]);
+
+  useEffect(() => {
+    const loadServices = async () => {
+      if (!filterDraft.businessId) {
+        setServiceOptions([]);
+        return;
+      }
+      try {
+        const res = await api.businessServices(filterDraft.businessId);
+        const items = res?.data || res?.items || res || [];
+        setServiceOptions(Array.isArray(items) ? items : []);
+      } catch (err) {
+        setErrorMessage(err.message || '載入服務項目失敗');
+      }
+    };
+    loadServices();
+  }, [filterDraft.businessId, setErrorMessage]);
 
   const handleCancel = async (id, reason) => {
     try {
@@ -100,6 +189,19 @@ export default function MyReservationsPage() {
     setPage(0);
   };
 
+  const applyFilters = (event) => {
+    event.preventDefault();
+    setFilters({ ...filterDraft });
+    setPage(0);
+  };
+
+  const clearFilters = () => {
+    const empty = { dateFrom: '', dateTo: '', status: '', businessId: '', service: '', keyword: '' };
+    setFilterDraft(empty);
+    setFilters(empty);
+    setPage(0);
+  };
+
   const totalPages = Math.max(data.totalPages || 0, 1);
   const content = useMemo(() => data.content || [], [data.content]);
 
@@ -116,6 +218,94 @@ export default function MyReservationsPage() {
         </div>
 
         <div className="card-body p-0">
+          <div className="p-3 border-bottom bg-white">
+            <form onSubmit={applyFilters}>
+              <div className="row g-3 align-items-end">
+                <div className="col-12 col-md-3">
+                  <label className="form-label">開始日期</label>
+                  <input
+                    type="text"
+                    className="form-control bg-white"
+                    placeholder="選擇開始日期"
+                    ref={dateFromRef}
+                    value={filterDraft.dateFrom}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, dateFrom: e.target.value }))}
+                  />
+                </div>
+                <div className="col-12 col-md-3">
+                  <label className="form-label">結束日期</label>
+                  <input
+                    type="text"
+                    className="form-control bg-white"
+                    placeholder="選擇結束日期"
+                    ref={dateToRef}
+                    value={filterDraft.dateTo}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, dateTo: e.target.value }))}
+                  />
+                </div>
+                <div className="col-12 col-md-3">
+                  <label className="form-label">預約狀態</label>
+                  <select
+                    className="form-select"
+                    value={filterDraft.status}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, status: e.target.value }))}
+                  >
+                    <option value="">全部</option>
+                    <option value="PENDING">待確認</option>
+                    <option value="CONFIRMED">已確認</option>
+                    <option value="CANCEL_REQUESTED">取消確認中</option>
+                    <option value="CANCELLED">已取消</option>
+                    <option value="COMPLETED">已完成</option>
+                  </select>
+                </div>
+                <div className="col-12 col-md-3">
+                  <label className="form-label">商家</label>
+                  <select
+                    className="form-select"
+                    value={filterDraft.businessId}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, businessId: e.target.value }))}
+                  >
+                    <option value="">全部</option>
+                    {businessOptions.map((biz) => (
+                      <option key={biz.id} value={biz.id}>
+                        {biz.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-12 col-md-3">
+                  <label className="form-label">服務項目</label>
+                  <select
+                    className="form-select"
+                    value={filterDraft.service}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, service: e.target.value }))}
+                    disabled={!filterDraft.businessId}
+                  >
+                    <option value="">{filterDraft.businessId ? '全部' : '請先選擇商家'}</option>
+                    {serviceOptions.map((service) => (
+                      <option key={service.id} value={service.name}>
+                        {service.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-12 col-md-3">
+                  <label className="form-label">關鍵字</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="店家 / 服務 / 備註"
+                    value={filterDraft.keyword}
+                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, keyword: e.target.value }))}
+                  />
+                </div>
+                <div className="col-12 col-md-3 d-flex gap-2">
+                  <button type="submit" className="btn btn-gradient fw-bold shadow-sm w-100">查詢</button>
+                  <button type="button" className="btn btn-outline-secondary fw-bold w-100" onClick={clearFilters}>清除</button>
+                </div>
+              </div>
+            </form>
+          </div>
           <div className="table-responsive desktop-table">
             <table className="table table-hover align-middle mb-0">
               <thead className="table-light">

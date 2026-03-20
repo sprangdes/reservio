@@ -1,5 +1,6 @@
 package com.reservio.service;
 
+import com.reservio.dto.BusinessDTO;
 import com.reservio.dto.QueryReservationCondition;
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.Reservation;
@@ -22,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static com.reservio.enums.ReservationStatus.*;
 import static com.reservio.enums.SystemEnum.*;
@@ -38,12 +40,6 @@ public class ReservationService {
             UserDataService userDataService) {
         this.reservationRepo = reservationRepo;
         this.userDataService = userDataService;
-    }
-
-    public Page<Reservation> getMyReservationsPage(int page, int size, String sortBy, String sortDir) {
-        UserData user = userDataService.getCurrentUser();
-        Pageable pageable = PageRequest.of(page, size, buildSort(sortBy, sortDir));
-        return reservationRepo.findAllByUserAndStatusNot(user, CANCELLED, pageable);
     }
 
     /**
@@ -105,6 +101,28 @@ public class ReservationService {
         return reservationRepo.countByUserAndStatus(user, PENDING);
     }
 
+    public Page<Reservation> queryReservationsForCustomerPage(
+            QueryReservationCondition condition,
+            int page,
+            int size,
+            String sortBy,
+            String sortDir) {
+        UserData user = userDataService.getCurrentUser();
+        Pageable pageable = PageRequest.of(page, size, buildSort(sortBy, sortDir));
+        Specification<Reservation> spec = Specification.where(ReservationSpecification.customerIs(user.getId()));
+        // 動態處理日期條件
+        spec = timeSpecification(condition, spec);
+        // 狀態條件
+        spec = statusSpecification(condition, spec);
+        // 商家條件
+        spec = businessSpecification(condition, spec);
+        // 服務條件
+        spec = serviceSpecification(condition, spec);
+        // keyword 條件
+        spec = keywordSpecificationForCustomer(condition, spec);
+        return reservationRepo.findAll(spec, pageable);
+    }
+
     public Page<Reservation> queryReservationsForBusinessPage(
             QueryReservationCondition condition,
             int page,
@@ -117,18 +135,26 @@ public class ReservationService {
             return Page.empty();
         }
         Pageable pageable = PageRequest.of(page, size, buildSort(sortBy, sortDir));
-        Specification<Reservation> spec = Specification
-                .where(ReservationSpecification.businessEqual(businessData.getId()));
-
-        // 動態處理日期條件（避免重疊）
+        Specification<Reservation> spec = Specification.where(ReservationSpecification.businessIs(businessData.getId()));
+        // 動態處理日期條件
         spec = timeSpecification(condition, spec);
         // 服務條件
         spec = serviceSpecification(condition, spec);
         // 狀態條件
         spec = statusSpecification(condition, spec);
         // keyword 條件：假設想讓 customerNameLike 和 remarkLike 以 OR 組合（同時搜尋），然後與整體 AND
-        spec = remarkSpecification(condition, spec);
+        spec = keywordSpecificationForBusiness(condition, spec);
         return reservationRepo.findAll(spec, pageable);
+    }
+
+    public List<BusinessDTO> getReservedBusinesses() {
+        UserData currentUser = userDataService.getCurrentUser();
+        List<Reservation> customerReservations = reservationRepo.findAllByUser(currentUser);
+        return customerReservations.stream()
+                .map(Reservation::getBusiness)
+                .map(this::toBusinessDTO)
+                .distinct()
+                .toList();
     }
 
     /**
@@ -305,11 +331,20 @@ public class ReservationService {
         };
     }
 
-    private static Specification<Reservation> remarkSpecification(
+    private static Specification<Reservation> keywordSpecificationForBusiness(
             QueryReservationCondition condition,
             Specification<Reservation> spec) {
         if (condition.getKeyword() != null) {
-            spec = spec.and(ReservationSpecification.keywordLike(condition.getKeyword()));
+            spec = spec.and(ReservationSpecification.keywordLikeForBusiness(condition.getKeyword()));
+        }
+        return spec;
+    }
+
+    private static Specification<Reservation> keywordSpecificationForCustomer(
+            QueryReservationCondition condition,
+            Specification<Reservation> spec) {
+        if (condition.getKeyword() != null) {
+            spec = spec.and(ReservationSpecification.keywordLikeForCustomer(condition.getKeyword()));
         }
         return spec;
     }
@@ -329,7 +364,7 @@ public class ReservationService {
                             }
                         })
                         .filter(Objects::nonNull)
-                        .map(ReservationSpecification::statusEqual)
+                        .map(ReservationSpecification::statusIs)
                         .reduce(Specification::or)
                         .orElse(null);
                 if (statusSpec != null) {
@@ -346,7 +381,7 @@ public class ReservationService {
             QueryReservationCondition condition,
             Specification<Reservation> spec) {
         if (condition.getService() != null) {
-            spec = spec.and(ReservationSpecification.serviceEqual(condition.getService()));
+            spec = spec.and(ReservationSpecification.serviceIs(condition.getService()));
         }
         return spec;
     }
@@ -362,5 +397,24 @@ public class ReservationService {
             spec = spec.and(ReservationSpecification.dateBefore(condition.getEndDate()));
         }
         return spec;
+    }
+
+    private static Specification<Reservation> businessSpecification(
+            QueryReservationCondition condition,
+            Specification<Reservation> spec) {
+        if (condition.getBusinessId() != null) {
+            spec = spec.and(ReservationSpecification.businessIs(condition.getBusinessId()));
+        }
+        return spec;
+    }
+
+    private BusinessDTO toBusinessDTO(BusinessData data) {
+        return BusinessDTO.builder()
+                .id(data.getId())
+                .name(data.getName())
+                .category(data.getCategory())
+                .phone(data.getPhone())
+                .address(data.getAddress())
+                .build();
     }
 }
