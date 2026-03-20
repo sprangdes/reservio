@@ -275,6 +275,7 @@ export default function HomePage() {
               {calendarView === 'day' ? (
                 <div className="calendar-day">
                   <div className="calendar-day__times">
+                    <div className="calendar-day__date">{today}</div>
                     {timeLabels.map((label) => (
                       <div key={label} className="calendar-day__time">
                         {label}
@@ -309,21 +310,23 @@ export default function HomePage() {
               {calendarView === 'week' ? (
                 isMobile ? (
                   <div className="calendar-week-grid calendar-week-grid--scroll">
-                    <div className="calendar-week-grid__scroll">
-                      <div className="calendar-week-grid__header">
-                        <div className="calendar-week-grid__corner"></div>
-                        {weekDates.map((date, idx) => (
-                          <div key={date} className="calendar-week-grid__dayhead">
-                            <div className="calendar-week-grid__dayname">星期{weekDayLabels[idx]}</div>
-                            <div className="calendar-week-grid__date">{date}</div>
+                    <div className="calendar-week-grid__fixed-col">
+                      <div className="calendar-week-grid__corner"></div>
+                      <div className="calendar-week-grid__timescol">
+                        {timeLabels.map((label) => (
+                          <div key={label} className="calendar-week-grid__time">
+                            {label}
                           </div>
                         ))}
                       </div>
-                      <div className="calendar-week-grid__bodyrow">
-                        <div className="calendar-week-grid__timescol">
-                          {timeLabels.map((label) => (
-                            <div key={label} className="calendar-week-grid__time">
-                              {label}
+                    </div>
+                    <div className="calendar-week-grid__scroll">
+                      <div className="calendar-week-grid__scroll-inner">
+                        <div className="calendar-week-grid__header">
+                          {weekDates.map((date, idx) => (
+                            <div key={date} className="calendar-week-grid__dayhead">
+                              <div className="calendar-week-grid__dayname">星期{weekDayLabels[idx]}</div>
+                              <div className="calendar-week-grid__date">{date}</div>
                             </div>
                           ))}
                         </div>
@@ -365,17 +368,9 @@ export default function HomePage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="calendar-week-grid">
-                    <div className="calendar-week-grid__header">
+                  <div className="calendar-week-grid calendar-week-grid--scroll">
+                    <div className="calendar-week-grid__fixed-col">
                       <div className="calendar-week-grid__corner"></div>
-                      {weekDates.map((date, idx) => (
-                        <div key={date} className="calendar-week-grid__dayhead">
-                          <div className="calendar-week-grid__dayname">星期{weekDayLabels[idx]}</div>
-                          <div className="calendar-week-grid__date">{date}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="calendar-week-grid__bodyrow">
                       <div className="calendar-week-grid__timescol">
                         {timeLabels.map((label) => (
                           <div key={label} className="calendar-week-grid__time">
@@ -383,39 +378,51 @@ export default function HomePage() {
                           </div>
                         ))}
                       </div>
-                      <div className="calendar-week-grid__weekcols">
-                        {weekDates.map((date) => {
-                          const items = calendarItems.filter((item) => item.date === date);
-                          return (
-                            <div key={date} className="calendar-week-grid__daycol">
-                              {timeLabels.map((label) => (
-                                <div key={label} className="calendar-day__row" />
-                              ))}
-                              {items.map((item) => {
-                                const [sh, sm] = item.start.split(':').map(Number);
-                                const [eh, em] = item.end.split(':').map(Number);
-                                const startMinutes = sh * 60 + sm;
-                                const endMinutes = eh * 60 + em;
-                                const duration = Math.max(endMinutes - startMinutes, 15);
-                                const top = (startMinutes / 60) * 48;
-                                const height = (duration / 60) * 48;
-                                const title = me?.role === 'ROLE_BUSINESS' ? item.customerName : item.businessName;
-                                return (
-                                  <div
-                                    key={item.id}
-                                    className="calendar-day__event"
-                                    style={{ top: `${top}px`, height: `${height}px` }}
-                                  >
-                                    <div className="calendar-day__event-title">{title}</div>
-                                    <div className="calendar-day__event-sub">
-                                      {item.service} · {item.start} - {item.end}
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                    </div>
+                    <div className="calendar-week-grid__scroll">
+                      <div className="calendar-week-grid__scroll-inner">
+                        <div className="calendar-week-grid__header">
+                          {weekDates.map((date, idx) => (
+                            <div key={date} className="calendar-week-grid__dayhead">
+                              <div className="calendar-week-grid__dayname">星期{weekDayLabels[idx]}</div>
+                              <div className="calendar-week-grid__date">{date}</div>
                             </div>
-                          );
-                        })}
+                          ))}
+                        </div>
+                        <div className="calendar-week-grid__weekcols">
+                          {weekDates.map((date) => {
+                            const items = calendarItems.filter((item) => item.date === date);
+                            return (
+                              <div key={date} className="calendar-week-grid__daycol">
+                                {timeLabels.map((label) => (
+                                  <div key={label} className="calendar-day__row" />
+                                ))}
+                                {items.map((item) => {
+                                  const [sh, sm] = item.start.split(':').map(Number);
+                                  const [eh, em] = item.end.split(':').map(Number);
+                                  const startMinutes = sh * 60 + sm;
+                                  const endMinutes = eh * 60 + em;
+                                  const duration = Math.max(endMinutes - startMinutes, 15);
+                                  const top = (startMinutes / 60) * 48;
+                                  const height = (duration / 60) * 48;
+                                  const title = me?.role === 'ROLE_BUSINESS' ? item.customerName : item.businessName;
+                                  return (
+                                    <div
+                                      key={item.id}
+                                      className="calendar-day__event"
+                                      style={{ top: `${top}px`, height: `${height}px` }}
+                                    >
+                                      <div className="calendar-day__event-title">{title}</div>
+                                      <div className="calendar-day__event-sub">
+                                        {item.service} · {item.start} - {item.end}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   </div>
