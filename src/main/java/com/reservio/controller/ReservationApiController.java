@@ -52,21 +52,6 @@ public class ReservationApiController {
                 .build());
     }
 
-    @GetMapping("/reservations/today")
-    public ResponseEntity<ApiResponse<PageResponse<ReservationDTO>>> getTodayReservations(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "startTime") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir) {
-        Page<ReservationDTO> items = reservationService.getTodayReservationsPage(page, size, sortBy, sortDir)
-                .map(this::toReservationDTO);
-        return ResponseEntity.ok(ApiResponse.<PageResponse<ReservationDTO>>builder()
-                .success(true)
-                .message(OK.getMessage())
-                .data(toPageResponse(items, sortBy, sortDir))
-                .build());
-    }
-
     @PostMapping("/reservations/query")
     public ResponseEntity<ApiResponse<PageResponse<ReservationDTO>>> queryReservationsForBusiness(
             @RequestBody QueryReservationCondition condition,
@@ -80,21 +65,6 @@ public class ReservationApiController {
                 size,
                 sortBy,
                 sortDir)
-                .map(this::toReservationDTO);
-        return ResponseEntity.ok(ApiResponse.<PageResponse<ReservationDTO>>builder()
-                .success(true)
-                .message(OK.getMessage())
-                .data(toPageResponse(items, sortBy, sortDir))
-                .build());
-    }
-
-    @GetMapping("/reservations/pending")
-    public ResponseEntity<ApiResponse<PageResponse<ReservationDTO>>> getPendingReservationsForBusiness(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "reservationDate") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir) {
-        Page<ReservationDTO> items = reservationService.getPendingReservationsForBusinessPage(page, size, sortBy, sortDir)
                 .map(this::toReservationDTO);
         return ResponseEntity.ok(ApiResponse.<PageResponse<ReservationDTO>>builder()
                 .success(true)

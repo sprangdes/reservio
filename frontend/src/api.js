@@ -66,8 +66,6 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(condition || {})
   }),
-  pendingReservations: (params) => request(`/api/reservations/pending${buildQuery(params)}`),
-  todayReservations: (params) => request(`/api/reservations/today${buildQuery(params)}`),
   updateReservationStatus: (id, payload) => request(`/api/reservations/${id}/status`, {
     method: 'POST',
     body: JSON.stringify(payload)
