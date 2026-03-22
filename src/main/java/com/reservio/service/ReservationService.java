@@ -2,6 +2,7 @@ package com.reservio.service;
 
 import com.reservio.dto.BusinessDTO;
 import com.reservio.dto.QueryReservationCondition;
+import com.reservio.dto.ReservationDTO;
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.Reservation;
 import com.reservio.entity.UserData;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.reservio.enums.ReservationStatus.*;
+import static com.reservio.enums.Role.ROLE_BUSINESS;
 import static com.reservio.enums.SystemEnum.*;
 import static org.springframework.data.domain.Sort.Direction.*;
 
@@ -292,6 +294,15 @@ public class ReservationService {
                 reservationRepo.save(reservation);
             }
         }
+    }
+
+    public List<Reservation> getTodayReservations() {
+        UserData currentUser = userDataService.getCurrentUser();
+        LocalDate today = LocalDate.now();
+        if (currentUser.getRole().equals(ROLE_BUSINESS.name())) {
+            return reservationRepo.getAllByBusinessAndReservationDate(currentUser.getBusinessData(), today);
+        }
+        return reservationRepo.getAllByUserAndReservationDate(currentUser, today);
     }
 
     private void markCompleted(Reservation reservation) {

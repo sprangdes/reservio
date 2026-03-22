@@ -193,6 +193,19 @@ public class ReservationApiController {
                 .build());
     }
 
+    @GetMapping("/reservations/today")
+    public ResponseEntity<ApiResponse<List<ReservationDTO>>> getTodayReservations() {
+        List<ReservationDTO> reservations = reservationService.getTodayReservations()
+                .stream()
+                .map(this::toReservationDTO)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.<List<ReservationDTO>>builder()
+                .success(true)
+                .message(OK.getMessage())
+                .data(reservations)
+                .build());
+    }
+
     private ReservationDTO toReservationDTO(Reservation reservation) {
         UserData user = reservation.getUser();
         BusinessData business = reservation.getBusiness();

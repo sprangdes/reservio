@@ -70,6 +70,7 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(condition || {})
   }),
+  todayReservations: () => request('/api/reservations/today'),
   updateReservationStatus: (id, payload) => request(`/api/reservations/${id}/status`, {
     method: 'POST',
     body: JSON.stringify(payload)

@@ -6,10 +6,11 @@ import { useToast } from '../state/ToastContext.jsx';
 
 export default function HomePage() {
   const { me, refresh } = useAuth();
-  const { errorMessage } = useToast();
+  const { errorMessage, setErrorMessage } = useToast();
   const [dashboard, setDashboard] = useState(null);
   const [calendarView, setCalendarView] = useState('week');
   const [isMobile, setIsMobile] = useState(false);
+  const [todayReservations, setTodayReservations] = useState([]);
 
   useEffect(() => {
     if (!me) {
@@ -32,6 +33,23 @@ export default function HomePage() {
     };
     load();
   }, [me]);
+
+  useEffect(() => {
+    const loadTodayReservations = async () => {
+      if (!me) {
+        setTodayReservations([]);
+        return;
+      }
+      try {
+        const res = await api.todayReservations();
+        const items = res?.data || res?.items || res || [];
+        setTodayReservations(Array.isArray(items) ? items : []);
+      } catch (err) {
+        setErrorMessage(err.message || '載入今日預約失敗');
+      }
+    };
+    loadTodayReservations();
+  }, [me, setErrorMessage]);
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 768px)');
@@ -59,38 +77,7 @@ export default function HomePage() {
     return `${d.getFullYear()}年${d.getMonth() + 1}月`;
   }, []);
 
-  const calendarItems = useMemo(
-    () => [
-      {
-        id: 1,
-        date: today,
-        start: '09:30',
-        end: '10:15',
-        service: '剪髮',
-        customerName: '王小明',
-        businessName: '理髮廳 A'
-      },
-      {
-        id: 2,
-        date: today,
-        start: '13:00',
-        end: '14:30',
-        service: '染髮',
-        customerName: '林小美',
-        businessName: '沙龍 B'
-      },
-      {
-        id: 3,
-        date: today,
-        start: '17:00',
-        end: '17:45',
-        service: '修眉',
-        customerName: '陳小姐',
-        businessName: '美學 C'
-      }
-    ],
-    [today]
-  );
+  const calendarItems = useMemo(() => [], []);
 
   const timeLabels = useMemo(
     () => Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`),
@@ -130,27 +117,32 @@ export default function HomePage() {
 
   const weekDayLabels = useMemo(() => ['日', '一', '二', '三', '四', '五', '六'], []);
 
-  const dayItems = useMemo(
-    () =>
-      calendarItems
-        .filter((item) => item.date === today)
-        .map((item) => {
-          const [sh, sm] = item.start.split(':').map(Number);
-          const [eh, em] = item.end.split(':').map(Number);
-          const startMinutes = sh * 60 + sm;
-          const endMinutes = eh * 60 + em;
-          return { ...item, startMinutes, endMinutes, duration: Math.max(endMinutes - startMinutes, 15) };
-        }),
-    [calendarItems, today]
-  );
+  const dayItems = useMemo(() => {
+    const source = todayReservations.map((item, idx) => ({
+      id: item.id ?? `today-${idx}`,
+      date: item.reservationDate ?? today,
+      start: item.startTime,
+      end: item.endTime,
+      service: item.title,
+      customerName: item.username,
+      businessName: item.businessName
+    }));
+    return source.map((item) => {
+      const [sh, sm] = item.start.split(':').map(Number);
+      const [eh, em] = item.end.split(':').map(Number);
+      const startMinutes = sh * 60 + sm;
+      const endMinutes = eh * 60 + em;
+      return { ...item, startMinutes, endMinutes, duration: Math.max(endMinutes - startMinutes, 15) };
+    });
+  }, [calendarItems, today, todayReservations]);
 
   const groupedByDate = useMemo(() => {
-    return calendarItems.reduce((acc, item) => {
+    return dayItems.reduce((acc, item) => {
       acc[item.date] = acc[item.date] || [];
       acc[item.date].push(item);
       return acc;
     }, {});
-  }, [calendarItems]);
+  }, [dayItems]);
 
   return (
     <main>
