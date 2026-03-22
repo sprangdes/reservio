@@ -4,7 +4,7 @@ import { useAuth } from '../state/AuthContext.jsx';
 import { api } from '../api.js';
 import { useToast } from '../state/ToastContext.jsx';
 
-export default function Navbar({ transparent }) {
+export default function Navbar() {
   const { me, setMe } = useAuth();
   const { setSuccessMessage, setErrorMessage } = useToast();
   const navigate = useNavigate();
@@ -34,9 +34,7 @@ export default function Navbar({ transparent }) {
     }
   };
 
-  const navClass = `navbar navbar-expand-lg navbar-dark fixed-top ${
-    transparent ? 'navbar-transparent' : 'bg-gradient navbar-custom-shadow'
-  }`;
+  const navClass = 'navbar navbar-expand-lg navbar-dark fixed-top navbar-transparent navbar-custom-shadow';
 
   return (
     <div>

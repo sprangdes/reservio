@@ -17,7 +17,7 @@ export default function App() {
       <Route
         path="/"
         element={
-          <Layout transparentNavbar>
+          <Layout>
             <HomePage />
           </Layout>
         }
