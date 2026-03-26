@@ -36,5 +36,5 @@ public interface ReservationRepo extends JpaRepository<Reservation, Long>, JpaSp
 
     List<Reservation> getAllByUserAndReservationDate(UserData user, LocalDate date);
 
-    List<Reservation> getAllByBusinessAndReservationDate(BusinessData businessData, LocalDate today);
+    List<Reservation> getAllByBusinessAndReservationDateAndStatus(BusinessData businessData, LocalDate today, ReservationStatus status);
 }

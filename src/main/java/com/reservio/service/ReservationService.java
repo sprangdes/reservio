@@ -300,7 +300,11 @@ public class ReservationService {
         UserData currentUser = userDataService.getCurrentUser();
         LocalDate today = LocalDate.now();
         if (currentUser.getRole().equals(ROLE_BUSINESS.name())) {
-            return reservationRepo.getAllByBusinessAndReservationDate(currentUser.getBusinessData(), today);
+            return reservationRepo.getAllByBusinessAndReservationDateAndStatus(
+                    currentUser.getBusinessData(),
+                    today,
+                    CONFIRMED
+            );
         }
         return reservationRepo.getAllByUserAndReservationDate(currentUser, today);
     }
