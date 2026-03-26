@@ -120,7 +120,7 @@ export default function ServiceManagementPage() {
       <div className="row g-4">
         <div className="col-md-4">
           <div className="card shadow-sm border-0 rounded-3">
-            <div className="card-header bg-gradient text-white p-4 text-center">
+            <div className="card-header bg-gradient text-white text-white-strong p-4 text-center">
               <h5 className="mb-0 fw-bold"><i className="bi bi-plus-lg me-2"></i>新增服務項目</h5>
             </div>
             <div className="card-body p-4">
@@ -166,7 +166,7 @@ export default function ServiceManagementPage() {
 
         <div className="col-md-8">
           <div className="card shadow-sm border-0 rounded-3 overflow-hidden reservation-card">
-            <div className="card-header bg-gradient text-white p-4 d-flex justify-content-between align-items-center">
+            <div className="card-header bg-gradient text-white text-white-strong p-4 d-flex justify-content-between align-items-center">
               <h5 className="mb-0 fw-bold"><i className="bi bi-list-ul me-2"></i>目前的服務項目</h5>
               <span className="badge bg-white bg-opacity-25 fs-6 fw-normal">
                 <i className="bi bi-list-check me-1"></i> 共 {services.length} 筆

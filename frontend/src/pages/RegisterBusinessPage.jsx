@@ -54,7 +54,7 @@ export default function RegisterBusinessPage() {
         <div className="row justify-content-center">
           <div className="col-md-8 col-lg-6">
             <div className="card shadow-sm border-0">
-              <div className="card-header bg-gradient text-white p-4 text-center">
+              <div className="card-header bg-gradient text-white text-white-strong p-4 text-center">
                 <h4 className="mb-0 fw-bold"><i className="bi bi-shop me-2"></i>成為 Reservio 合作商家</h4>
                 <p className="mb-0 mt-2 opacity-75">讓智慧預約助您的事業一臂之力</p>
               </div>

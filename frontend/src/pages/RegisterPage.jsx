@@ -58,7 +58,7 @@ export default function RegisterPage() {
         <div className="row justify-content-center">
           <div className="col-md-6">
             <div className="card shadow-sm border-0">
-              <div className="card-header bg-gradient text-white p-4 text-center">
+              <div className="card-header bg-gradient text-white text-white-strong p-4 text-center">
                 <h4 className="mb-0 fw-bold">建立您的使用者帳號</h4>
                 <p className="mb-0 mt-2 opacity-75">加入 Reservio，開始您的智慧預約體驗</p>
               </div>

@@ -44,8 +44,8 @@ export default function Navbar() {
         onMouseLeave={() => hoverEnabled && setOpen(false)}
       >
         <div className="container">
-          <Link className="navbar-brand fw-bold fs-3" to="/">
-            Reservio
+          <Link className="navbar-brand fw-bold fs-3 brand-highlight" to="/">
+            Reserv<span className="brand-accent">io</span>
           </Link>
 
           <button
@@ -71,7 +71,7 @@ export default function Navbar() {
             <div className="navbar-nav ms-auto">
               {me ? (
                 <div className="d-flex align-items-center">
-                  <span className="navbar-text me-3 text-white">
+                  <span className="navbar-text me-3 text-white text-white-strong">
                     <i className="bi bi-person-circle"></i> 你好，<strong>{me.username}</strong>！
                   </span>
                   <button type="button" onClick={handleLogout} className="btn btn-outline-light btn-sm px-3 rounded-pill">

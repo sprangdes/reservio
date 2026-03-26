@@ -41,7 +41,7 @@ export default function LoginPage() {
         <div className="row justify-content-center">
           <div className="col-md-5">
             <div className="card shadow-sm border-0">
-              <div className="card-header bg-gradient text-white p-4 text-center">
+              <div className="card-header bg-gradient text-white text-white-strong p-4 text-center">
                 <h4 className="mb-0 fw-bold">歡迎回來</h4>
                 <p className="mb-0 mt-2 opacity-75">登入以管理您的預約服務</p>
               </div>

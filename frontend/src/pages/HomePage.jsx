@@ -150,8 +150,8 @@ export default function HomePage() {
         <div className="container">
           {!me ? (
             <div>
-              <h1 className="display-3 fw-bold mb-4">歡迎來到 Reservio</h1>
-              <p className="lead mb-5">最直覺、最快速的預約系統，讓管理預約不再是難事。</p>
+              <h1 className="display-3 fw-bold mb-4 text-white-strong">歡迎來到 Reservio</h1>
+              <p className="lead mb-5 text-white-strong">最直覺、最快速的預約系統，讓管理預約不再是難事。</p>
               <div className="d-grid gap-2 d-sm-flex justify-content-sm-center">
                 <Link to="/register" className="btn btn-light btn-lg px-4 gap-3 fw-bold text-primary">
                   開始使用
@@ -163,14 +163,14 @@ export default function HomePage() {
             </div>
           ) : me.role === 'ROLE_BUSINESS' ? (
             <div>
-              <h1 className="display-4 fw-bold mb-3">
+              <h1 className="display-4 fw-bold mb-3 text-white-strong">
                 店長 <span className="text-warning">{me.business?.name}</span>，你好！
               </h1>
-              <p className="lead mb-4">歡迎回來，這是您今日的營運概況。</p>
+              <p className="lead mb-4 text-white-strong">歡迎回來，這是您今日的營運概況。</p>
 
               <div className="row justify-content-center mt-4">
                 <div className="col-md-10">
-                  <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white p-4 dashboard-card" style={{ backdropFilter: 'blur(10px)' }}>
+                  <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white text-white-strong p-4 dashboard-card" style={{ backdropFilter: 'blur(10px)' }}>
                     <div className="row align-items-center">
                           <Link
                             to="/reservation/today/manage"
@@ -203,14 +203,14 @@ export default function HomePage() {
             </div>
           ) : (
             <div>
-              <h1 className="display-4 fw-bold mb-3">
+              <h1 className="display-4 fw-bold mb-3 text-white-strong">
                 你好，<span className="text-warning">{me.username}</span>！
               </h1>
-              <p className="lead mb-4">歡迎回來，今天想預約哪些服務呢？</p>
+              <p className="lead mb-4 text-white-strong">歡迎回來，今天想預約哪些服務呢？</p>
 
               <div className="row justify-content-center mt-4">
                 <div className="col-md-8">
-                  <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white p-4 dashboard-card dashboard-card--customer" style={{ backdropFilter: 'blur(10px)' }}>
+                  <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white text-white-strong p-4 dashboard-card dashboard-card--customer" style={{ backdropFilter: 'blur(10px)' }}>
                     <div className="row align-items-center">
                       <div className="col-sm-6 border-end border-white border-opacity-25">
                         <h5 className="small text-uppercase opacity-75">我的今日預約</h5>
@@ -233,7 +233,7 @@ export default function HomePage() {
       {me ? (
         <section className="container my-5">
           <div className="card shadow-sm border-0 overflow-hidden calendar-card">
-            <div className="card-header bg-gradient text-white p-4">
+            <div className="card-header bg-gradient text-white text-white-strong p-4">
               <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <div className="fw-bold">
                   <i className="bi bi-calendar3 me-2"></i>行事曆

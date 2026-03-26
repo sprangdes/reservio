@@ -128,7 +128,7 @@ export default function ManageTodayPage() {
   return (
     <main className="container list-page">
       <div className="card shadow-sm border-0 overflow-hidden reservation-card">
-        <div className="card-header bg-gradient text-white p-4">
+        <div className="card-header bg-gradient text-white text-white-strong p-4">
           <div className="d-flex justify-content-between align-items-center">
             <h4 className="mb-0 fw-bold"><i className="bi bi-calendar-check me-2"></i>今日預約管理</h4>
             <span className="badge bg-white bg-opacity-25 fs-6 fw-normal">
