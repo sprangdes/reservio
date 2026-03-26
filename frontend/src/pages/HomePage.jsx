@@ -188,10 +188,10 @@ export default function HomePage() {
                       </Link>
                       <div className="col-sm-4">
                         <div className="d-grid gap-2">
-                          <Link to="/service/manage" className="btn btn-warning fw-bold shadow-sm">
+                          <Link to="/service/manage" className="btn btn-warning fw-bold shadow-sm no-text-shadow">
                             管理服務項目
                           </Link>
-                          <Link to="/reservation/manage" className="btn btn-light fw-bold shadow-sm">
+                          <Link to="/reservation/manage" className="btn btn-light fw-bold shadow-sm no-text-shadow">
                             查看所有預約
                           </Link>
                         </div>
@@ -217,7 +217,7 @@ export default function HomePage() {
                         <p className="h2 mb-0">{dashboard?.todayCount ?? 0}</p>
                       </div>
                       <div className="col-sm-6 text-center">
-                        <Link to="/reservation/new" className="btn btn-light fw-bold px-4 shadow-sm">
+                        <Link to="/reservation/new" className="btn btn-light fw-bold px-4 shadow-sm no-text-shadow">
                           <i className="bi bi-calendar-plus me-1"></i> 立即預約
                         </Link>
                       </div>

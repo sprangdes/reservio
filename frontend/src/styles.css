@@ -46,6 +46,11 @@ main {
     text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
+.no-text-shadow,
+.no-text-shadow * {
+    text-shadow: none !important;
+}
+
 /* 抽離出純背景漸層 */
 .bg-gradient {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
