@@ -78,6 +78,25 @@ main {
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
+/* Navbar buttons: keep transparency but increase contrast */
+.navbar .btn-outline-light {
+    color: rgba(255, 255, 255, 0.95);
+    border-color: rgba(255, 255, 255, 0.75);
+    background: rgba(255, 255, 255, 0.08);
+}
+.navbar .btn-outline-light:hover {
+    color: #2b2b2b;
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(255, 255, 255, 0.9);
+}
+.navbar .btn-light {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.85);
+}
+.navbar .btn-light:hover {
+    background: rgba(255, 255, 255, 0.95);
+}
+
 /* Flatpickr 樣式微調 - 讓選取的顏色與專案一致 */
 .flatpickr-day.selected {
     background: #764ba2 !important;
