@@ -11,6 +11,8 @@ export default function HomePage() {
   const [calendarView, setCalendarView] = useState('week');
   const [isMobile, setIsMobile] = useState(false);
   const [todayReservations, setTodayReservations] = useState([]);
+  const [weekReservations, setWeekReservations] = useState([]);
+  const [monthReservations, setMonthReservations] = useState([]);
 
   useEffect(() => {
     if (!me) {
@@ -52,6 +54,44 @@ export default function HomePage() {
   }, [me, setErrorMessage]);
 
   useEffect(() => {
+    const loadWeekReservations = async () => {
+      if (!me) {
+        setWeekReservations([]);
+        return;
+      }
+      try {
+        const res = await api.weekReservations();
+        const items = res?.data || res?.items || res || [];
+        setWeekReservations(Array.isArray(items) ? items : []);
+      } catch (err) {
+        setErrorMessage(err.message || '載入一週預約失敗');
+      }
+    };
+    if (calendarView === 'week') {
+      loadWeekReservations();
+    }
+  }, [calendarView, me, setErrorMessage]);
+
+  useEffect(() => {
+    const loadMonthReservations = async () => {
+      if (!me) {
+        setMonthReservations([]);
+        return;
+      }
+      try {
+        const res = await api.monthReservations();
+        const items = res?.data || res?.items || res || [];
+        setMonthReservations(Array.isArray(items) ? items : []);
+      } catch (err) {
+        setErrorMessage(err.message || '載入一月預約失敗');
+      }
+    };
+    if (calendarView === 'month') {
+      loadMonthReservations();
+    }
+  }, [calendarView, me, setErrorMessage]);
+
+  useEffect(() => {
     const media = window.matchMedia('(max-width: 768px)');
     const update = () => {
       const mobile = media.matches;
@@ -77,7 +117,31 @@ export default function HomePage() {
     return `${d.getFullYear()}年${d.getMonth() + 1}月`;
   }, []);
 
-  const calendarItems = useMemo(() => [], []);
+  const calendarItems = useMemo(() => {
+    if (calendarView === 'week') {
+      return weekReservations.map((item, idx) => ({
+        id: item.id ?? `week-${idx}`,
+        date: item.reservationDate,
+        start: item.startTime,
+        end: item.endTime,
+        service: item.title,
+        customerName: item.username,
+        businessName: item.businessName
+      }));
+    }
+    if (calendarView === 'month') {
+      return monthReservations.map((item, idx) => ({
+        id: item.id ?? `month-${idx}`,
+        date: item.reservationDate,
+        start: item.startTime,
+        end: item.endTime,
+        service: item.title,
+        customerName: item.username,
+        businessName: item.businessName
+      }));
+    }
+    return [];
+  }, [calendarView, monthReservations, weekReservations]);
 
   const timeLabels = useMemo(
     () => Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`),
@@ -118,23 +182,26 @@ export default function HomePage() {
   const weekDayLabels = useMemo(() => ['日', '一', '二', '三', '四', '五', '六'], []);
 
   const dayItems = useMemo(() => {
-    const source = todayReservations.map((item, idx) => ({
-      id: item.id ?? `today-${idx}`,
-      date: item.reservationDate ?? today,
-      start: item.startTime,
-      end: item.endTime,
-      service: item.title,
-      customerName: item.username,
-      businessName: item.businessName
-    }));
-    return source.map((item) => {
-      const [sh, sm] = item.start.split(':').map(Number);
-      const [eh, em] = item.end.split(':').map(Number);
+    return todayReservations.map((item, idx) => {
+      const mapped = {
+        id: item.id ?? `today-${idx}`,
+        date: item.reservationDate ?? today,
+        start: item.startTime || item.start,
+        end: item.endTime || item.end,
+        service: item.title,
+        customerName: item.username,
+        businessName: item.businessName
+      };
+      if (!mapped.start || !mapped.end) {
+        return null;
+      }
+      const [sh, sm] = mapped.start.split(':').map(Number);
+      const [eh, em] = mapped.end.split(':').map(Number);
       const startMinutes = sh * 60 + sm;
       const endMinutes = eh * 60 + em;
-      return { ...item, startMinutes, endMinutes, duration: Math.max(endMinutes - startMinutes, 15) };
-    });
-  }, [calendarItems, today, todayReservations]);
+      return { ...mapped, startMinutes, endMinutes, duration: Math.max(endMinutes - startMinutes, 15) };
+    }).filter(Boolean);
+  }, [today, todayReservations]);
 
   const groupedByDate = useMemo(() => {
     return dayItems.reduce((acc, item) => {

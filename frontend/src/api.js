@@ -71,6 +71,8 @@ export const api = {
     body: JSON.stringify(condition || {})
   }),
   todayReservations: () => request('/api/reservations/today'),
+  weekReservations: () => request('/api/reservations/week'),
+  monthReservations: () => request('/api/reservations/month'),
   updateReservationStatus: (id, payload) => request(`/api/reservations/${id}/status`, {
     method: 'POST',
     body: JSON.stringify(payload)
