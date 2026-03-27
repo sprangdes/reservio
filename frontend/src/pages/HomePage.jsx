@@ -96,7 +96,7 @@ export default function HomePage() {
     const update = () => {
       const mobile = media.matches;
       setIsMobile(mobile);
-      setCalendarView(mobile ? 'day' : 'week');
+      setCalendarView(mobile ? 'day' : 'month');
     };
     update();
     if (media.addEventListener) {
