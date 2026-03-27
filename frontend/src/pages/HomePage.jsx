@@ -129,21 +129,25 @@ export default function HomePage() {
     return `${d.getFullYear()}年${d.getMonth() + 1}月`;
   }, []);
 
-  const COLOR_PALETTE = useMemo(
-    () => [
-      '#ffb703','#fb8500','#e76f51','#e63946','#f94144','#f3722c','#f8961e','#f9c74f','#90be6d','#43aa8b',
-      '#4d908e','#577590','#277da1','#5a189a','#7b2cbf','#9d4edd','#c77dff','#ff6d00','#ff8800','#ff9f1c',
-      '#ffbf69','#ffd166','#f4d35e','#ee6c4d','#f5cac3','#f28482','#f6bd60','#f7ede2','#f07167','#f9a826',
-      '#ffd166','#06d6a0','#118ab2','#073b4c','#ef476f','#ffd6a5','#fdffb6','#caffbf','#9bf6ff','#a0c4ff',
-      '#bdb2ff','#ffc6ff','#ffadad','#ffd6a5','#fdffb6','#caffbf','#9bf6ff','#a0c4ff','#bdb2ff','#ffc6ff',
-      '#ff595e','#ffca3a','#8ac926','#1982c4','#6a4c93','#ff924c','#ffca3a','#c4f1be','#2ec4b6','#3a86ff',
-      '#8338ec','#ff006e','#fb5607','#ffbe0b','#06d6a0','#118ab2','#073b4c','#ef476f','#ffd6a5','#fdffb6',
-      '#caffbf','#9bf6ff','#a0c4ff','#bdb2ff','#ffc6ff','#f72585','#b5179e','#7209b7','#560bad','#480ca8',
-      '#3a0ca3','#3f37c9','#4361ee','#4895ef','#4cc9f0','#ff8fab','#fb6f92','#ffafcc','#a2d2ff','#bde0fe',
-      '#d4a373','#e9edc9','#ccd5ae','#faedcd','#fefae0','#e5989b','#b5838d','#6d6875','#f6d860','#f7a072'
-    ],
-    []
-  );
+  const hslToHex = (h, s, l) => {
+    const a = s * Math.min(l, 1 - l);
+    const f = (n) => {
+      const k = (n + h / 30) % 12;
+      const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+      return Math.round(255 * color).toString(16).padStart(2, '0');
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
+  };
+
+  const COLOR_PALETTE = useMemo(() => {
+    const colors = [];
+    const count = 100;
+    for (let i = 0; i < count; i += 1) {
+      const hue = (i * 137.508) % 360;
+      colors.push(hslToHex(hue, 0.35, 0.78));
+    }
+    return colors;
+  }, []);
 
   const colorForName = (name, list) => {
     if (!name) return COLOR_PALETTE[0];
