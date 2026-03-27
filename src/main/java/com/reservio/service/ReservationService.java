@@ -1,6 +1,7 @@
 package com.reservio.service;
 
 import com.reservio.dto.BusinessDTO;
+import com.reservio.dto.CalendarDTO;
 import com.reservio.dto.QueryReservationCondition;
 import com.reservio.dto.ReservationDTO;
 import com.reservio.entity.BusinessData;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -356,6 +358,13 @@ public class ReservationService {
         );
     }
 
+    public CalendarDTO buildCalendarDTO(List<ReservationDTO> reservations) {
+        return CalendarDTO.builder()
+                .users(getUserSort(reservations))
+                .reservations(reservations)
+                .build();
+    }
+
     private void markCompleted(Reservation reservation) {
         reservation.setStatus(COMPLETED);
         reservation.setUpdatedAt(LocalDateTime.now());
@@ -477,5 +486,24 @@ public class ReservationService {
                 .phone(data.getPhone())
                 .address(data.getAddress())
                 .build();
+    }
+
+    private List<String> getUserSort(List<ReservationDTO> reservations) {
+        UserData currentUser = userDataService.getCurrentUser();
+        if (currentUser.getRole().equals(ROLE_BUSINESS.name())) {
+            return reservations.stream()
+                    .map(ReservationDTO::getBusinessName)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .sorted()
+                    .toList();
+        } else {
+            return reservations.stream()
+                    .map(ReservationDTO::getUsername)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .sorted()
+                    .toList();
+        }
     }
 }

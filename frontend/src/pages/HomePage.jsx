@@ -11,8 +11,11 @@ export default function HomePage() {
   const [calendarView, setCalendarView] = useState('week');
   const [isMobile, setIsMobile] = useState(false);
   const [todayReservations, setTodayReservations] = useState([]);
+  const [todayUsers, setTodayUsers] = useState([]);
   const [weekReservations, setWeekReservations] = useState([]);
+  const [weekUsers, setWeekUsers] = useState([]);
   const [monthReservations, setMonthReservations] = useState([]);
+  const [monthUsers, setMonthUsers] = useState([]);
 
   useEffect(() => {
     if (!me) {
@@ -40,12 +43,15 @@ export default function HomePage() {
     const loadTodayReservations = async () => {
       if (!me) {
         setTodayReservations([]);
+        setTodayUsers([]);
         return;
       }
       try {
         const res = await api.todayReservations();
-        const items = res?.data || res?.items || res || [];
+        const items = res?.data?.reservations || [];
+        const users = res?.data?.users || [];
         setTodayReservations(Array.isArray(items) ? items : []);
+        setTodayUsers(Array.isArray(users) ? users : []);
       } catch (err) {
         setErrorMessage(err.message || '載入今日預約失敗');
       }
@@ -57,12 +63,15 @@ export default function HomePage() {
     const loadWeekReservations = async () => {
       if (!me) {
         setWeekReservations([]);
+        setWeekUsers([]);
         return;
       }
       try {
         const res = await api.weekReservations();
-        const items = res?.data || res?.items || res || [];
+        const items = res?.data?.reservations || [];
+        const users = res?.data?.users || [];
         setWeekReservations(Array.isArray(items) ? items : []);
+        setWeekUsers(Array.isArray(users) ? users : []);
       } catch (err) {
         setErrorMessage(err.message || '載入一週預約失敗');
       }
@@ -76,12 +85,15 @@ export default function HomePage() {
     const loadMonthReservations = async () => {
       if (!me) {
         setMonthReservations([]);
+        setMonthUsers([]);
         return;
       }
       try {
         const res = await api.monthReservations();
-        const items = res?.data || res?.items || res || [];
+        const items = res?.data?.reservations || [];
+        const users = res?.data?.users || [];
         setMonthReservations(Array.isArray(items) ? items : []);
+        setMonthUsers(Array.isArray(users) ? users : []);
       } catch (err) {
         setErrorMessage(err.message || '載入一月預約失敗');
       }
@@ -117,31 +129,60 @@ export default function HomePage() {
     return `${d.getFullYear()}年${d.getMonth() + 1}月`;
   }, []);
 
+  const COLOR_PALETTE = useMemo(
+    () => [
+      '#ffb703','#fb8500','#e76f51','#e63946','#f94144','#f3722c','#f8961e','#f9c74f','#90be6d','#43aa8b',
+      '#4d908e','#577590','#277da1','#5a189a','#7b2cbf','#9d4edd','#c77dff','#ff6d00','#ff8800','#ff9f1c',
+      '#ffbf69','#ffd166','#f4d35e','#ee6c4d','#f5cac3','#f28482','#f6bd60','#f7ede2','#f07167','#f9a826',
+      '#ffd166','#06d6a0','#118ab2','#073b4c','#ef476f','#ffd6a5','#fdffb6','#caffbf','#9bf6ff','#a0c4ff',
+      '#bdb2ff','#ffc6ff','#ffadad','#ffd6a5','#fdffb6','#caffbf','#9bf6ff','#a0c4ff','#bdb2ff','#ffc6ff',
+      '#ff595e','#ffca3a','#8ac926','#1982c4','#6a4c93','#ff924c','#ffca3a','#c4f1be','#2ec4b6','#3a86ff',
+      '#8338ec','#ff006e','#fb5607','#ffbe0b','#06d6a0','#118ab2','#073b4c','#ef476f','#ffd6a5','#fdffb6',
+      '#caffbf','#9bf6ff','#a0c4ff','#bdb2ff','#ffc6ff','#f72585','#b5179e','#7209b7','#560bad','#480ca8',
+      '#3a0ca3','#3f37c9','#4361ee','#4895ef','#4cc9f0','#ff8fab','#fb6f92','#ffafcc','#a2d2ff','#bde0fe',
+      '#d4a373','#e9edc9','#ccd5ae','#faedcd','#fefae0','#e5989b','#b5838d','#6d6875','#f6d860','#f7a072'
+    ],
+    []
+  );
+
+  const colorForName = (name, list) => {
+    if (!name) return COLOR_PALETTE[0];
+    const idx = list.indexOf(name);
+    if (idx >= 0) return COLOR_PALETTE[idx % COLOR_PALETTE.length];
+    let hash = 0;
+    for (let i = 0; i < name.length; i += 1) {
+      hash = (hash * 31 + name.charCodeAt(i)) % COLOR_PALETTE.length;
+    }
+    return COLOR_PALETTE[hash];
+  };
+
   const calendarItems = useMemo(() => {
     if (calendarView === 'week') {
       return weekReservations.map((item, idx) => ({
         id: item.id ?? `week-${idx}`,
         date: item.reservationDate,
-        start: item.startTime,
-        end: item.endTime,
+        start: item.startTime || item.start,
+        end: item.endTime || item.end,
         service: item.title,
         customerName: item.username,
-        businessName: item.businessName
+        businessName: item.businessName,
+        color: colorForName(me?.role === 'ROLE_BUSINESS' ? item.username : item.businessName, weekUsers)
       }));
     }
     if (calendarView === 'month') {
       return monthReservations.map((item, idx) => ({
         id: item.id ?? `month-${idx}`,
         date: item.reservationDate,
-        start: item.startTime,
-        end: item.endTime,
+        start: item.startTime || item.start,
+        end: item.endTime || item.end,
         service: item.title,
         customerName: item.username,
-        businessName: item.businessName
+        businessName: item.businessName,
+        color: colorForName(me?.role === 'ROLE_BUSINESS' ? item.username : item.businessName, monthUsers)
       }));
     }
     return [];
-  }, [calendarView, monthReservations, weekReservations]);
+  }, [calendarView, monthReservations, weekReservations, monthUsers, weekUsers, me, COLOR_PALETTE]);
 
   const timeLabels = useMemo(
     () => Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`),
@@ -196,7 +237,8 @@ export default function HomePage() {
         end: item.endTime || item.end,
         service: item.title,
         customerName: item.username,
-        businessName: item.businessName
+        businessName: item.businessName,
+        color: colorForName(me?.role === 'ROLE_BUSINESS' ? item.username : item.businessName, todayUsers)
       };
       if (!mapped.start || !mapped.end) {
         return null;
@@ -205,9 +247,18 @@ export default function HomePage() {
       const [eh, em] = mapped.end.split(':').map(Number);
       const startMinutes = sh * 60 + sm;
       const endMinutes = eh * 60 + em;
-      return { ...mapped, startMinutes, endMinutes, duration: Math.max(endMinutes - startMinutes, 15) };
+      const gap = 2;
+      const duration = Math.max(endMinutes - startMinutes, 15);
+      return {
+        ...mapped,
+        startMinutes,
+        endMinutes,
+        duration,
+        topOffset: gap,
+        heightOffset: gap * 2
+      };
     }).filter(Boolean);
-  }, [today, todayReservations]);
+  }, [today, todayReservations, todayUsers, me]);
 
   const groupedByDate = useMemo(() => {
     return dayItems.reduce((acc, item) => {
@@ -352,18 +403,18 @@ export default function HomePage() {
                       <div key={label} className="calendar-day__row" />
                     ))}
                     {dayItems.map((item) => {
-                      const top = (item.startMinutes / 60) * 48;
-                      const height = (item.duration / 60) * 48;
+                      const top = (item.startMinutes / 60) * 48 + (item.topOffset || 0);
+                      const height = (item.duration / 60) * 48 - (item.heightOffset || 0);
                       const title = me?.role === 'ROLE_BUSINESS' ? item.customerName : item.businessName;
                       return (
                         <div
                           key={item.id}
                           className="calendar-day__event"
-                          style={{ top: `${top}px`, height: `${height}px` }}
+                          style={{ top: `${top}px`, height: `${height}px`, background: item.color, borderLeftColor: item.color }}
                         >
-                                    <div className="calendar-day__event-title">{title} · {item.service}</div>
-                                    <div className="calendar-day__event-time">
-                                      {formatHM(item.start)} - {formatHM(item.end)}
+                          <div className="calendar-day__event-title">{title} · {item.service}</div>
+                          <div className="calendar-day__event-time">
+                            {formatHM(item.start)} - {formatHM(item.end)}
                                     </div>
                         </div>
                       );
@@ -403,24 +454,24 @@ export default function HomePage() {
                                 {timeLabels.map((label) => (
                                   <div key={label} className="calendar-day__row" />
                                 ))}
-                                {items.map((item) => {
-                                  const [sh, sm] = item.start.split(':').map(Number);
-                                  const [eh, em] = item.end.split(':').map(Number);
-                                  const startMinutes = sh * 60 + sm;
-                                  const endMinutes = eh * 60 + em;
-                                  const duration = Math.max(endMinutes - startMinutes, 15);
-                                  const top = (startMinutes / 60) * 48;
-                                  const height = (duration / 60) * 48;
-                                  const title = me?.role === 'ROLE_BUSINESS' ? item.customerName : item.businessName;
-                                  return (
-                                    <div
-                                      key={item.id}
-                                      className="calendar-day__event"
-                                      style={{ top: `${top}px`, height: `${height}px` }}
-                                    >
+                              {items.map((item) => {
+                                const [sh, sm] = item.start.split(':').map(Number);
+                                const [eh, em] = item.end.split(':').map(Number);
+                                const startMinutes = sh * 60 + sm;
+                                const endMinutes = eh * 60 + em;
+                                const duration = Math.max(endMinutes - startMinutes, 15);
+                                const top = (startMinutes / 60) * 48 + 2;
+                                const height = (duration / 60) * 48 - 4;
+                                const title = me?.role === 'ROLE_BUSINESS' ? item.customerName : item.businessName;
+                                return (
+                                  <div
+                                    key={item.id}
+                                    className="calendar-day__event"
+                                    style={{ top: `${top}px`, height: `${height}px`, background: item.color, borderLeftColor: item.color }}
+                                  >
                                     <div className="calendar-day__event-title">{title} · {item.service}</div>
-                                      <div className="calendar-day__event-time">
-                                        {formatHM(item.start)} - {formatHM(item.end)}
+                                    <div className="calendar-day__event-time">
+                                      {formatHM(item.start)} - {formatHM(item.end)}
                                       </div>
                                     </div>
                                   );
@@ -468,16 +519,16 @@ export default function HomePage() {
                                   const startMinutes = sh * 60 + sm;
                                   const endMinutes = eh * 60 + em;
                                   const duration = Math.max(endMinutes - startMinutes, 15);
-                                  const top = (startMinutes / 60) * 48;
-                                  const height = (duration / 60) * 48;
+                                  const top = (startMinutes / 60) * 48 + 2;
+                                  const height = (duration / 60) * 48 - 4;
                                   const title = me?.role === 'ROLE_BUSINESS' ? item.customerName : item.businessName;
                                   return (
                                     <div
                                       key={item.id}
                                       className="calendar-day__event"
-                                      style={{ top: `${top}px`, height: `${height}px` }}
+                                      style={{ top: `${top}px`, height: `${height}px`, background: item.color, borderLeftColor: item.color }}
                                     >
-                                    <div className="calendar-day__event-title">{title} · {item.service}</div>
+                                      <div className="calendar-day__event-title">{title} · {item.service}</div>
                                       <div className="calendar-day__event-time">
                                         {formatHM(item.start)} - {formatHM(item.end)}
                                       </div>
@@ -520,7 +571,7 @@ export default function HomePage() {
                         {isMobile ? (
                           <div className="calendar-month-grid__dots">
                             {items.slice(0, 6).map((item) => (
-                              <span key={item.id} className="calendar-month-grid__dot"></span>
+                              <span key={item.id} className="calendar-month-grid__dot" style={{ background: item.color }}></span>
                             ))}
                             {items.length > 6 ? <span className="calendar-month-grid__more">+{items.length - 6}</span> : null}
                           </div>
@@ -528,14 +579,14 @@ export default function HomePage() {
                           <div className="calendar-month-grid__bars">
                             {items.length <= 3
                               ? items.map((item) => (
-                                  <div key={item.id} className="calendar-month-grid__bar">
+                                  <div key={item.id} className="calendar-month-grid__bar" style={{ background: item.color }}>
                                   {formatHM(item.start)} {item.service}
                                   </div>
                                 ))
                               : (
                                 <>
                                   {items.slice(0, 2).map((item) => (
-                                    <div key={item.id} className="calendar-month-grid__bar">
+                                    <div key={item.id} className="calendar-month-grid__bar" style={{ background: item.color }}>
                                     {formatHM(item.start)} {item.service}
                                     </div>
                                   ))}

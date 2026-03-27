@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -194,41 +195,44 @@ public class ReservationApiController {
     }
 
     @GetMapping("/reservations/today")
-    public ResponseEntity<ApiResponse<List<ReservationDTO>>> getTodayReservations() {
+    public ResponseEntity<ApiResponse<CalendarDTO>> getTodayReservations() {
         List<ReservationDTO> reservations = reservationService.getTodayReservations()
                 .stream()
                 .map(this::toReservationDTO)
                 .toList();
-        return ResponseEntity.ok(ApiResponse.<List<ReservationDTO>>builder()
+        CalendarDTO calendar = reservationService.buildCalendarDTO(reservations);
+        return ResponseEntity.ok(ApiResponse.<CalendarDTO>builder()
                 .success(true)
                 .message(OK.getMessage())
-                .data(reservations)
+                .data(calendar)
                 .build());
     }
 
     @GetMapping("reservations/week")
-    public ResponseEntity<ApiResponse<List<ReservationDTO>>> getWeekReservations() {
+    public ResponseEntity<ApiResponse<CalendarDTO>> getWeekReservations() {
         List<ReservationDTO> reservations = reservationService.getWeekReservations()
                 .stream()
                 .map(this::toReservationDTO)
                 .toList();
-        return ResponseEntity.ok(ApiResponse.<List<ReservationDTO>>builder()
+        CalendarDTO calendar = reservationService.buildCalendarDTO(reservations);
+        return ResponseEntity.ok(ApiResponse.<CalendarDTO>builder()
                 .success(true)
                 .message(OK.getMessage())
-                .data(reservations)
+                .data(calendar)
                 .build());
     }
 
     @GetMapping("reservations/month")
-    public ResponseEntity<ApiResponse<List<ReservationDTO>>> getMonthReservations() {
+    public ResponseEntity<ApiResponse<CalendarDTO>> getMonthReservations() {
         List<ReservationDTO> reservations = reservationService.getMonthReservations()
                 .stream()
                 .map(this::toReservationDTO)
                 .toList();
-        return ResponseEntity.ok(ApiResponse.<List<ReservationDTO>>builder()
+        CalendarDTO calendar = reservationService.buildCalendarDTO(reservations);
+        return ResponseEntity.ok(ApiResponse.<CalendarDTO>builder()
                 .success(true)
                 .message(OK.getMessage())
-                .data(reservations)
+                .data(calendar)
                 .build());
     }
 
