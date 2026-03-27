@@ -148,6 +148,12 @@ export default function HomePage() {
     []
   );
 
+  const formatHM = (value) => {
+    if (!value) return '';
+    const parts = value.split(':');
+    return parts.length >= 2 ? `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}` : value;
+  };
+
   const weekDates = useMemo(() => {
     const base = new Date();
     const day = base.getDay();
@@ -357,7 +363,7 @@ export default function HomePage() {
                         >
                           <div className="calendar-day__event-title">{title}</div>
                           <div className="calendar-day__event-sub">
-                            {item.service} · {item.start} - {item.end}
+                            {item.service} · {formatHM(item.start)} - {formatHM(item.end)}
                           </div>
                         </div>
                       );
@@ -414,7 +420,7 @@ export default function HomePage() {
                                     >
                                       <div className="calendar-day__event-title">{title}</div>
                                       <div className="calendar-day__event-sub">
-                                        {item.service} · {item.start} - {item.end}
+                                    {item.service} · {formatHM(item.start)} - {formatHM(item.end)}
                                       </div>
                                     </div>
                                   );
@@ -473,7 +479,7 @@ export default function HomePage() {
                                     >
                                       <div className="calendar-day__event-title">{title}</div>
                                       <div className="calendar-day__event-sub">
-                                        {item.service} · {item.start} - {item.end}
+                                      {item.service} · {formatHM(item.start)} - {formatHM(item.end)}
                                       </div>
                                     </div>
                                   );
@@ -523,14 +529,14 @@ export default function HomePage() {
                             {items.length <= 3
                               ? items.map((item) => (
                                   <div key={item.id} className="calendar-month-grid__bar">
-                                    {item.start} {item.service}
+                                  {formatHM(item.start)} {item.service}
                                   </div>
                                 ))
                               : (
                                 <>
                                   {items.slice(0, 2).map((item) => (
                                     <div key={item.id} className="calendar-month-grid__bar">
-                                      {item.start} {item.service}
+                                    {formatHM(item.start)} {item.service}
                                     </div>
                                   ))}
                                   <div className="calendar-month-grid__more">+{items.length - 2}</div>
