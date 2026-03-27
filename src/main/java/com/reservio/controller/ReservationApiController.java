@@ -156,10 +156,11 @@ public class ReservationApiController {
     @GetMapping("/reservations/slots")
     public ResponseEntity<ApiResponse<List<TimeSlotDTO>>> getTimeSlotsForDate(
             @RequestParam("date") String dateStr,
-            @RequestParam("duration") int duration) {
+            @RequestParam("duration") int duration,
+            @RequestParam(value = "businessId", required = false) Long businessId) {
         try {
             LocalDate date = LocalDate.parse(dateStr);
-            List<TimeSlotDTO> slots = reservationTimeService.getTimeSlotsForDate(date, duration);
+            List<TimeSlotDTO> slots = reservationTimeService.getTimeSlotsForDate(date, duration, businessId);
             return ResponseEntity.ok(ApiResponse.<List<TimeSlotDTO>>builder()
                     .success(true)
                     .message(OK.getMessage())
@@ -176,11 +177,12 @@ public class ReservationApiController {
     }
 
     @GetMapping("/reservations/disabled-dates")
-    public ResponseEntity<ApiResponse<List<String>>> getDisabledDates() {
+    public ResponseEntity<ApiResponse<List<String>>> getDisabledDates(
+            @RequestParam(value = "businessId", required = false) Long businessId) {
         return ResponseEntity.ok(ApiResponse.<List<String>>builder()
                 .success(true)
                 .message(OK.getMessage())
-                .data(reservationTimeService.getDisabledDates())
+                .data(reservationTimeService.getDisabledDates(businessId))
                 .build());
     }
 

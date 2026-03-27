@@ -10,7 +10,12 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
-@Table(name = "date_available_hours")
+@Table(
+        name = "date_available_hours",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"business_id", "date"})
+        }
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,8 +26,11 @@ public class DateAvailableHours {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "business_id", nullable = false)
+    private Long businessId;
+
     // 調整的日期
-    @Column(nullable = false, unique = true) // 確保 per date 唯一
+    @Column(nullable = false)
     private LocalDate date;
 
     // 調整後的起始時間 (如果非關閉)
@@ -34,12 +42,4 @@ public class DateAvailableHours {
     // 是否完全關閉該日 (true 則忽略 start/end)
     @Column(nullable = false)
     private boolean isClosed = false;
-
-    // 時間槽間隔 (可繼承預設或自訂)
-    private int slotInterval = 30;
-
-    // 關聯到預設時段
-    @ManyToOne
-    @JoinColumn(name = "default_hours_id", nullable = false)
-    private DefaultAvailableHours defaultHours;
 }

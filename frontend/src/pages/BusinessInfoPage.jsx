@@ -305,21 +305,6 @@ export default function BusinessInfoPage() {
                 placeholder="地址"
               />
             </div>
-            <div className="col-md-6">
-              <label className="small text-muted form-label" htmlFor="biz-slot">預設時段間隔 (分鐘)</label>
-              <input
-                id="biz-slot"
-                name="slotInterval"
-                type="number"
-                className="form-control"
-                min="5"
-                step="5"
-                value={infoForm.slotInterval}
-                onChange={handleInfoChange}
-                placeholder="30"
-              />
-              <div className="form-text">會影響服務時長可選項與可預約的時段切分。</div>
-            </div>
           </div>
           <div className="text-end mt-4">
             <button
@@ -340,6 +325,23 @@ export default function BusinessInfoPage() {
           <span className="text-white-strong small">（待串接 API）</span>
         </div>
         <div className="card-body p-4">
+          <div className="row g-3 align-items-end mb-3">
+            <div className="col-md-4">
+              <label className="small text-muted form-label" htmlFor="biz-slot">預設時段間隔 (分鐘)</label>
+              <input
+                id="biz-slot"
+                name="slotInterval"
+                type="number"
+                className="form-control"
+                min="5"
+                step="5"
+                value={infoForm.slotInterval}
+                onChange={handleInfoChange}
+                placeholder="30"
+              />
+              <div className="form-text">會影響服務時長可選項與可預約的時段切分。</div>
+            </div>
+          </div>
           {weekDays.map((day) => (
             <div key={day.key} className="d-flex flex-wrap align-items-center gap-3 border-bottom py-3">
               <div className="fw-bold" style={{ width: '90px' }}>{day.label}</div>

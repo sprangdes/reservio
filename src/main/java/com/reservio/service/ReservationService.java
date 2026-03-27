@@ -485,6 +485,7 @@ public class ReservationService {
                 .category(data.getCategory())
                 .phone(data.getPhone())
                 .address(data.getAddress())
+                .slotInterval(data.getSlotInterval())
                 .build();
     }
 

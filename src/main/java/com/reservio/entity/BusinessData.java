@@ -31,6 +31,10 @@ public class BusinessData {
     @Column(nullable = false)
     private String address;
 
+    // 時間槽間隔 (分鐘, 預設 30)
+    @Column(nullable = false)
+    private int slotInterval = 30;
+
     @JsonIgnore
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false)

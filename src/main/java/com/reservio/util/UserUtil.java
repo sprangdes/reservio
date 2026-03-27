@@ -20,6 +20,7 @@ public class UserUtil {
                     .category(user.getBusinessData().getCategory())
                     .phone(user.getBusinessData().getPhone())
                     .address(user.getBusinessData().getAddress())
+                    .slotInterval(user.getBusinessData().getSlotInterval())
                     .build();
         }
         return UserDTO.builder()

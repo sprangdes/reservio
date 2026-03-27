@@ -4,6 +4,8 @@ import com.reservio.dto.TimeSlotDTO;
 import com.reservio.entity.DateAvailableHours;
 import com.reservio.entity.DefaultAvailableHours;
 import com.reservio.entity.Reservation;
+import com.reservio.entity.BusinessData;
+import com.reservio.repo.BusinessDataRepo;
 import com.reservio.repo.DateAvailableHoursRepo;
 import com.reservio.repo.DefaultAvailableHoursRepo;
 import com.reservio.repo.ReservationRepo;
@@ -21,14 +23,17 @@ public class ReservationTimeService {
     private final DateAvailableHoursRepo dateAvailableHoursRepo;
     private final DefaultAvailableHoursRepo defaultAvailableHoursRepo;
     private final ReservationRepo reservationRepo;
+    private final BusinessDataRepo businessDataRepo;
 
     public ReservationTimeService(
             DateAvailableHoursRepo dateAvailableHoursRepo,
             DefaultAvailableHoursRepo defaultAvailableHoursRepo,
-            ReservationRepo reservationRepo) {
+            ReservationRepo reservationRepo,
+            BusinessDataRepo businessDataRepo) {
         this.dateAvailableHoursRepo = dateAvailableHoursRepo;
         this.defaultAvailableHoursRepo = defaultAvailableHoursRepo;
         this.reservationRepo = reservationRepo;
+        this.businessDataRepo = businessDataRepo;
     }
 
     private List<String> generateSlots(LocalTime start, LocalTime end, int interval) {
@@ -42,21 +47,26 @@ public class ReservationTimeService {
     }
 
     public List<TimeSlotDTO> getTimeSlotsForDate(LocalDate date, int durationMinutes) {
+        return getTimeSlotsForDate(date, durationMinutes, 1L);
+    }
+
+    public List<TimeSlotDTO> getTimeSlotsForDate(LocalDate date, int durationMinutes, Long businessId) {
         List<String> allSlots;
 
-        int interval;
+        Long resolvedBusinessId = businessId != null ? businessId : 1L;
+        int interval = resolveSlotInterval(resolvedBusinessId);
 
         // 1. 取得該日原始的所有時段
-        Optional<DateAvailableHours> dateHoursOpt = dateAvailableHoursRepo.findByDate(date);
+        Optional<DateAvailableHours> dateHoursOpt = dateAvailableHoursRepo.findByBusinessIdAndDate(resolvedBusinessId, date);
         if (dateHoursOpt.isPresent()) {
             DateAvailableHours dateHours = dateHoursOpt.get();
             if (dateHours.isClosed()) return Collections.emptyList();
-            interval = dateHours.getSlotInterval();
             allSlots = generateSlots(dateHours.getStartTime(), dateHours.getEndTime(), interval);
         } else {
-            DefaultAvailableHours defaultHours = defaultAvailableHoursRepo.findByShopId(1L).orElse(null);
-            if (defaultHours == null) return Collections.emptyList();
-            interval = defaultHours.getSlotInterval();
+            DefaultAvailableHours defaultHours = defaultAvailableHoursRepo
+                    .findByBusinessIdAndDayOfWeek(resolvedBusinessId, date.getDayOfWeek())
+                    .orElse(null);
+            if (defaultHours == null || !defaultHours.isOpen()) return Collections.emptyList();
             allSlots = generateSlots(defaultHours.getStartTime(), defaultHours.getEndTime(), interval);
         }
 
@@ -84,13 +94,25 @@ public class ReservationTimeService {
     }
 
     public List<String> getDisabledDates() {
+        return getDisabledDates(1L);
+    }
+
+    public List<String> getDisabledDates(Long businessId) {
+        Long resolvedBusinessId = businessId != null ? businessId : 1L;
         LocalDate today = LocalDate.now();
         LocalDate threeMonthLater = today.plusMonths(3);
 
         List<DateAvailableHours> closeDates = dateAvailableHoursRepo
-                .findAllByIsClosedTrueAndDateBetween(today, threeMonthLater);
+                .findAllByBusinessIdAndIsClosedTrueAndDateBetween(resolvedBusinessId, today, threeMonthLater);
         return closeDates.stream()
                 .map(dateHour -> dateHour.getDate().toString())
                 .toList();
+    }
+
+    private int resolveSlotInterval(Long businessId) {
+        return businessDataRepo.findById(businessId)
+                .map(BusinessData::getSlotInterval)
+                .filter(interval -> interval != null && interval > 0)
+                .orElse(30);
     }
 }

@@ -213,6 +213,7 @@ public class BusinessApiController {
                 .category(data.getCategory())
                 .phone(data.getPhone())
                 .address(data.getAddress())
+                .slotInterval(data.getSlotInterval())
                 .build();
     }
 

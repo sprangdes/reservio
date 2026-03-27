@@ -15,4 +15,5 @@ public class BusinessDTO {
     private String category;
     private String phone;
     private String address;
+    private Integer slotInterval;
 }

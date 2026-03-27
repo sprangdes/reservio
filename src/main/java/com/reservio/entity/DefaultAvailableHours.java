@@ -6,10 +6,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.DayOfWeek;
 import java.time.LocalTime;
 
 @Entity
-@Table(name = "default_available_hours")
+@Table(
+        name = "default_available_hours",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"business_id", "day_of_week"})
+        }
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,18 +26,19 @@ public class DefaultAvailableHours {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "business_id", nullable = false)
+    private Long businessId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "day_of_week", nullable = false, length = 10)
+    private DayOfWeek dayOfWeek;
+
     @Column(nullable = false)
-    private Long shopId;
+    private boolean isOpen = true;
 
     // 起始時間
-    @Column(nullable = false)
     private LocalTime startTime;
 
     // 結束時間
-    @Column(nullable = false)
     private LocalTime endTime;
-
-    // 時間槽間隔 (分鐘, 預設 30)
-    @Column(nullable = false)
-    private int slotInterval = 30;
 }

@@ -22,4 +22,7 @@ public class UpdateBusinessInfoRequest {
 
     @Nullable
     private String address;
+
+    @Nullable
+    private Integer slotInterval;
 }
