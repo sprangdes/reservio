@@ -139,26 +139,74 @@ export default function HomePage() {
     return `#${f(0)}${f(8)}${f(4)}`;
   };
 
-  const COLOR_PALETTE = useMemo(() => {
+  const generatePalette = (count) => {
     const colors = [];
-    const count = 100;
-    for (let i = 0; i < count; i += 1) {
-      const hue = (i * 137.508) % 360;
-      colors.push(hslToHex(hue, 0.35, 0.78));
+    const safeCount = Math.max(count, 1);
+    const hueStart = 210;
+    const hueEnd = 320;
+    const saturation = 0.38;
+    const lightness = 0.74;
+    if (safeCount === 1) {
+      const hue = (hueStart + hueEnd) / 2;
+      return [hslToHex(hue, saturation, lightness)];
+    }
+    const step = (hueEnd - hueStart) / (safeCount - 1);
+    for (let i = 0; i < safeCount; i += 1) {
+      const hue = hueStart + step * i;
+      colors.push(hslToHex(hue, saturation, lightness));
     }
     return colors;
-  }, []);
-
-  const colorForName = (name, list) => {
-    if (!name) return COLOR_PALETTE[0];
-    const idx = list.indexOf(name);
-    if (idx >= 0) return COLOR_PALETTE[idx % COLOR_PALETTE.length];
-    let hash = 0;
-    for (let i = 0; i < name.length; i += 1) {
-      hash = (hash * 31 + name.charCodeAt(i)) % COLOR_PALETTE.length;
-    }
-    return COLOR_PALETTE[hash];
   };
+
+  const normalizeName = (value) => (value ? String(value).trim() : '');
+
+  const getCustomerName = (item) =>
+    item.username || item.userName || item.customerName || item.name || '';
+
+  const getBusinessName = (item) =>
+    item.businessName || item.business?.name || item.shopName || '';
+
+  const getColorKey = (item, role) =>
+    role === 'ROLE_BUSINESS' ? getCustomerName(item) : getBusinessName(item);
+
+  const buildColorMap = (list, palette) => {
+    const map = new Map();
+    list.forEach((name, idx) => {
+      const key = normalizeName(name);
+      if (key && !map.has(key)) {
+        map.set(key, palette[idx % palette.length]);
+      }
+    });
+    return map;
+  };
+
+  const extractNames = (reservations, role) => {
+    const list = reservations
+      .map((item) => getColorKey(item, role))
+      .filter(Boolean);
+    return Array.from(new Set(list));
+  };
+
+  const effectiveTodayUsers = useMemo(() => {
+    const extracted = extractNames(todayReservations, me?.role);
+    return extracted.length ? extracted : todayUsers;
+  }, [todayUsers, todayReservations, me]);
+  const effectiveWeekUsers = useMemo(() => {
+    const extracted = extractNames(weekReservations, me?.role);
+    return extracted.length ? extracted : weekUsers;
+  }, [weekUsers, weekReservations, me]);
+  const effectiveMonthUsers = useMemo(() => {
+    const extracted = extractNames(monthReservations, me?.role);
+    return extracted.length ? extracted : monthUsers;
+  }, [monthUsers, monthReservations, me]);
+
+  const weekPalette = useMemo(() => generatePalette(effectiveWeekUsers.length || 1), [effectiveWeekUsers.length]);
+  const monthPalette = useMemo(() => generatePalette(effectiveMonthUsers.length || 1), [effectiveMonthUsers.length]);
+  const todayPalette = useMemo(() => generatePalette(effectiveTodayUsers.length || 1), [effectiveTodayUsers.length]);
+
+  const weekColorMap = useMemo(() => buildColorMap(effectiveWeekUsers, weekPalette), [effectiveWeekUsers, weekPalette]);
+  const monthColorMap = useMemo(() => buildColorMap(effectiveMonthUsers, monthPalette), [effectiveMonthUsers, monthPalette]);
+  const todayColorMap = useMemo(() => buildColorMap(effectiveTodayUsers, todayPalette), [effectiveTodayUsers, todayPalette]);
 
   const calendarItems = useMemo(() => {
     if (calendarView === 'week') {
@@ -168,9 +216,9 @@ export default function HomePage() {
         start: item.startTime || item.start,
         end: item.endTime || item.end,
         service: item.title,
-        customerName: item.username,
-        businessName: item.businessName,
-        color: colorForName(me?.role === 'ROLE_BUSINESS' ? item.username : item.businessName, weekUsers)
+        customerName: getCustomerName(item),
+        businessName: getBusinessName(item),
+        color: weekColorMap.get(normalizeName(getColorKey(item, me?.role))) || weekPalette[0]
       }));
     }
     if (calendarView === 'month') {
@@ -180,13 +228,13 @@ export default function HomePage() {
         start: item.startTime || item.start,
         end: item.endTime || item.end,
         service: item.title,
-        customerName: item.username,
-        businessName: item.businessName,
-        color: colorForName(me?.role === 'ROLE_BUSINESS' ? item.username : item.businessName, monthUsers)
+        customerName: getCustomerName(item),
+        businessName: getBusinessName(item),
+        color: monthColorMap.get(normalizeName(getColorKey(item, me?.role))) || monthPalette[0]
       }));
     }
     return [];
-  }, [calendarView, monthReservations, weekReservations, monthUsers, weekUsers, me, COLOR_PALETTE]);
+  }, [calendarView, monthReservations, weekReservations, monthUsers, weekUsers, me, monthPalette, weekPalette]);
 
   const timeLabels = useMemo(
     () => Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`),
@@ -240,9 +288,9 @@ export default function HomePage() {
         start: item.startTime || item.start,
         end: item.endTime || item.end,
         service: item.title,
-        customerName: item.username,
-        businessName: item.businessName,
-        color: colorForName(me?.role === 'ROLE_BUSINESS' ? item.username : item.businessName, todayUsers)
+        customerName: getCustomerName(item),
+        businessName: getBusinessName(item),
+        color: todayColorMap.get(normalizeName(getColorKey(item, me?.role))) || todayPalette[0]
       };
       if (!mapped.start || !mapped.end) {
         return null;
