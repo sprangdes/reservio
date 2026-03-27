@@ -14,6 +14,7 @@ import java.util.Optional;
 
 @Repository
 public interface ReservationRepo extends JpaRepository<Reservation, Long>, JpaSpecificationExecutor<Reservation> {
+
     List<Reservation> findAllByReservationDateAndStatusNot(LocalDate date, ReservationStatus status);
 
     long countByUserAndReservationDateAndStatusNot(UserData user, LocalDate date, ReservationStatus status);
@@ -28,13 +29,17 @@ public interface ReservationRepo extends JpaRepository<Reservation, Long>, JpaSp
 
     long countByUserAndStatus(UserData user, ReservationStatus reservationStatus);
 
+    long countByBusinessAndTitleAndStatusIn(BusinessData businessData, String title, List<ReservationStatus> statuses);
+
     List<Reservation> findAllByStatusIn(List<ReservationStatus> statuses);
 
     List<Reservation> findAllByUser(UserData user);
 
-    long countByBusinessAndTitleAndStatusIn(BusinessData businessData, String title, List<ReservationStatus> statuses);
+    List<Reservation> getAllByUserAndReservationDateAndStatusIn(UserData user, LocalDate date, List<ReservationStatus> statuses);
 
-    List<Reservation> getAllByUserAndReservationDate(UserData user, LocalDate date);
+    List<Reservation> getAllByBusinessAndReservationDateAndStatusIn(BusinessData businessData, LocalDate today, List<ReservationStatus> statuses);
 
-    List<Reservation> getAllByBusinessAndReservationDateAndStatus(BusinessData businessData, LocalDate today, ReservationStatus status);
+    List<Reservation> getAllByBusinessAndReservationDateBetweenAndStatusIn(BusinessData businessData, LocalDate startOfWeek, LocalDate endOfWeek, List<ReservationStatus> statuses);
+
+    List<Reservation> getAllByUserAndReservationDateBetweenAndStatusIn(UserData currentUser, LocalDate startOfWeek, LocalDate endOfWeek, List<ReservationStatus> statuses);
 }

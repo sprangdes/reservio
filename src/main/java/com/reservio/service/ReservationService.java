@@ -19,6 +19,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -300,13 +301,59 @@ public class ReservationService {
         UserData currentUser = userDataService.getCurrentUser();
         LocalDate today = LocalDate.now();
         if (currentUser.getRole().equals(ROLE_BUSINESS.name())) {
-            return reservationRepo.getAllByBusinessAndReservationDateAndStatus(
+            return reservationRepo.getAllByBusinessAndReservationDateAndStatusIn(
                     currentUser.getBusinessData(),
                     today,
-                    CONFIRMED
+                    List.of(CONFIRMED, COMPLETED)
             );
         }
-        return reservationRepo.getAllByUserAndReservationDate(currentUser, today);
+        return reservationRepo.getAllByUserAndReservationDateAndStatusIn(
+                currentUser,
+                today,
+                List.of(CONFIRMED, COMPLETED)
+        );
+    }
+
+    public List<Reservation> getWeekReservations() {
+        UserData currentUser = userDataService.getCurrentUser();
+        LocalDate today = LocalDate.now();
+        LocalDate startOfWeek = today.with(DayOfWeek.MONDAY);
+        LocalDate endOfWeek = today.with(DayOfWeek.SUNDAY);
+        if (currentUser.getRole().equals(ROLE_BUSINESS.name())) {
+            return reservationRepo.getAllByBusinessAndReservationDateBetweenAndStatusIn(
+                    currentUser.getBusinessData(),
+                    startOfWeek,
+                    endOfWeek,
+                    List.of(CONFIRMED, COMPLETED)
+            );
+        }
+        return reservationRepo.getAllByUserAndReservationDateBetweenAndStatusIn(
+                currentUser,
+                startOfWeek,
+                endOfWeek,
+                List.of(CONFIRMED, COMPLETED)
+        );
+    }
+
+    public List<Reservation> getMonthReservations() {
+        UserData currentUser = userDataService.getCurrentUser();
+        LocalDate today = LocalDate.now();
+        LocalDate startOfMonth = today.withDayOfMonth(1);
+        LocalDate endOfMonth = today.withDayOfMonth(today.lengthOfMonth());
+        if (currentUser.getRole().equals(ROLE_BUSINESS.name())) {
+            return reservationRepo.getAllByBusinessAndReservationDateBetweenAndStatusIn(
+                    currentUser.getBusinessData(),
+                    startOfMonth,
+                    endOfMonth,
+                    List.of(CONFIRMED, COMPLETED)
+            );
+        }
+        return reservationRepo.getAllByUserAndReservationDateBetweenAndStatusIn(
+                currentUser,
+                startOfMonth,
+                endOfMonth,
+                List.of(CONFIRMED, COMPLETED)
+        );
     }
 
     private void markCompleted(Reservation reservation) {

@@ -206,6 +206,32 @@ public class ReservationApiController {
                 .build());
     }
 
+    @GetMapping("reservations/week")
+    public ResponseEntity<ApiResponse<List<ReservationDTO>>> getWeekReservations() {
+        List<ReservationDTO> reservations = reservationService.getWeekReservations()
+                .stream()
+                .map(this::toReservationDTO)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.<List<ReservationDTO>>builder()
+                .success(true)
+                .message(OK.getMessage())
+                .data(reservations)
+                .build());
+    }
+
+    @GetMapping("reservations/month")
+    public ResponseEntity<ApiResponse<List<ReservationDTO>>> getMonthReservations() {
+        List<ReservationDTO> reservations = reservationService.getMonthReservations()
+                .stream()
+                .map(this::toReservationDTO)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.<List<ReservationDTO>>builder()
+                .success(true)
+                .message(OK.getMessage())
+                .data(reservations)
+                .build());
+    }
+
     private ReservationDTO toReservationDTO(Reservation reservation) {
         UserData user = reservation.getUser();
         BusinessData business = reservation.getBusiness();
