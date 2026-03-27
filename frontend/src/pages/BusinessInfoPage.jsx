@@ -28,7 +28,8 @@ export default function BusinessInfoPage() {
     name: '',
     category: '',
     phone: '',
-    address: ''
+    address: '',
+    slotInterval: ''
   });
   const didLoadRef = useRef(false);
 
@@ -38,6 +39,13 @@ export default function BusinessInfoPage() {
       return acc;
     }, {})
   );
+  const [dateOverride, setDateOverride] = useState({
+    date: '',
+    isClosed: false,
+    start: '09:00',
+    end: '18:00'
+  });
+  const [overrides, setOverrides] = useState([]);
 
   useEffect(() => {
     if (!me?.business) return;
@@ -45,7 +53,8 @@ export default function BusinessInfoPage() {
       name: me.business.name || '',
       category: me.business.category || '',
       phone: me.business.phone || '',
-      address: me.business.address || ''
+      address: me.business.address || '',
+      slotInterval: me.business.slotInterval ?? ''
     });
   }, [me]);
 
@@ -77,11 +86,13 @@ export default function BusinessInfoPage() {
   const handleInfoSave = async () => {
     try {
       setSavingInfo(true);
+      const intervalValue = infoForm.slotInterval === '' ? null : Number(infoForm.slotInterval);
       const payload = {
         name: infoForm.name.trim() || null,
         category: infoForm.category.trim() || null,
         phone: infoForm.phone.trim() || null,
-        address: infoForm.address.trim() || null
+        address: infoForm.address.trim() || null,
+        slotInterval: Number.isFinite(intervalValue) ? intervalValue : null
       };
       await api.updateBusinessInfo(payload);
       await refresh();
@@ -190,6 +201,46 @@ export default function BusinessInfoPage() {
     }));
   };
 
+  const handleOverrideChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setDateOverride((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const addOverride = () => {
+    if (!dateOverride.date) return;
+    setOverrides((prev) => {
+      const rest = prev.filter((item) => item.date !== dateOverride.date);
+      return [
+        ...rest,
+        {
+          date: dateOverride.date,
+          isClosed: dateOverride.isClosed,
+          start: dateOverride.start,
+          end: dateOverride.end
+        }
+      ].sort((a, b) => a.date.localeCompare(b.date));
+    });
+  };
+
+  const removeOverride = (date) => {
+    setOverrides((prev) => prev.filter((item) => item.date !== date));
+  };
+
+  const resolvedInterval = Number(infoForm.slotInterval || me?.business?.slotInterval || 30) || 30;
+  const buildDurationOptions = (interval, maxMinutes = 480) => {
+    const safe = Number.isFinite(interval) && interval > 0 ? interval : 30;
+    const values = [];
+    for (let value = safe; value <= maxMinutes; value += safe) {
+      values.push(value);
+    }
+    return values;
+  };
+
+  const durationOptions = buildDurationOptions(resolvedInterval);
+
   if (!me?.business) {
     return (
       <main className="container list-page">
@@ -254,6 +305,21 @@ export default function BusinessInfoPage() {
                 placeholder="地址"
               />
             </div>
+            <div className="col-md-6">
+              <label className="small text-muted form-label" htmlFor="biz-slot">預設時段間隔 (分鐘)</label>
+              <input
+                id="biz-slot"
+                name="slotInterval"
+                type="number"
+                className="form-control"
+                min="5"
+                step="5"
+                value={infoForm.slotInterval}
+                onChange={handleInfoChange}
+                placeholder="30"
+              />
+              <div className="form-text">會影響服務時長可選項與可預約的時段切分。</div>
+            </div>
           </div>
           <div className="text-end mt-4">
             <button
@@ -270,7 +336,7 @@ export default function BusinessInfoPage() {
 
       <div className="card shadow-sm border-0 overflow-hidden mb-4">
         <div className="card-header bg-gradient text-white text-white-strong p-4 d-flex justify-content-between align-items-center">
-          <h4 className="mb-0 fw-bold"><i className="bi bi-clock-history me-2"></i>營業時間 / 服務時段</h4>
+          <h4 className="mb-0 fw-bold"><i className="bi bi-calendar-week me-2"></i>預設營業時間（每週）</h4>
           <span className="text-white-strong small">（待串接 API）</span>
         </div>
         <div className="card-body p-4">
@@ -311,7 +377,108 @@ export default function BusinessInfoPage() {
             </div>
           ))}
           <div className="mt-3 text-end">
-            <button className="btn btn-gradient fw-bold shadow-sm">儲存營業時間</button>
+            <button className="btn btn-gradient fw-bold shadow-sm">儲存預設營業時間</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="card shadow-sm border-0 overflow-hidden mb-4">
+        <div className="card-header bg-gradient text-white text-white-strong p-4 d-flex justify-content-between align-items-center">
+          <h4 className="mb-0 fw-bold"><i className="bi bi-calendar-event me-2"></i>指定日期調整</h4>
+          <span className="text-white-strong small">（待串接 API）</span>
+        </div>
+        <div className="card-body p-4">
+          <div className="row g-3 align-items-end">
+            <div className="col-md-3">
+              <label className="form-label fw-bold small text-muted">日期</label>
+              <input
+                type="date"
+                className="form-control"
+                name="date"
+                value={dateOverride.date}
+                onChange={handleOverrideChange}
+              />
+            </div>
+            <div className="col-md-2">
+              <label className="form-label fw-bold small text-muted">是否營業</label>
+              <div className="form-check form-switch">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  name="isClosed"
+                  checked={!dateOverride.isClosed}
+                  onChange={(e) =>
+                    handleOverrideChange({
+                      target: { name: 'isClosed', type: 'checkbox', checked: !e.target.checked }
+                    })
+                  }
+                />
+                <label className="form-check-label text-muted small">營業</label>
+              </div>
+            </div>
+            <div className="col-md-3">
+              <label className="form-label fw-bold small text-muted">開始時間</label>
+              <input
+                type="time"
+                className="form-control"
+                name="start"
+                value={dateOverride.start}
+                onChange={handleOverrideChange}
+                disabled={dateOverride.isClosed}
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label fw-bold small text-muted">結束時間</label>
+              <input
+                type="time"
+                className="form-control"
+                name="end"
+                value={dateOverride.end}
+                onChange={handleOverrideChange}
+                disabled={dateOverride.isClosed}
+              />
+            </div>
+            <div className="col-md-1 d-grid">
+              <button type="button" className="btn btn-outline-primary" onClick={addOverride}>
+                新增
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            {overrides.length === 0 ? (
+              <div className="text-muted small">尚無指定日期調整。</div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table table-sm align-middle">
+                  <thead className="table-light">
+                    <tr>
+                      <th>日期</th>
+                      <th>狀態</th>
+                      <th>時間</th>
+                      <th className="text-end">管理</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {overrides.map((item) => (
+                      <tr key={item.date}>
+                        <td>{item.date}</td>
+                        <td>{item.isClosed ? '休息' : '營業'}</td>
+                        <td>{item.isClosed ? '—' : `${item.start} - ${item.end}`}</td>
+                        <td className="text-end">
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => removeOverride(item.date)}>
+                            移除
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+          <div className="mt-3 text-end">
+            <button className="btn btn-gradient fw-bold shadow-sm">儲存指定日期調整</button>
           </div>
         </div>
       </div>
@@ -340,19 +507,23 @@ export default function BusinessInfoPage() {
                 <div className="mb-4">
                   <label htmlFor="duration" className="form-label fw-bold small text-muted">服務時長 (分鐘)</label>
                   <div className="input-group">
-                    <input
-                      type="number"
-                      className="form-control border-light bg-light"
+                    <select
+                      className="form-select border-light bg-light"
                       id="duration"
                       name="duration"
-                      min="5"
-                      step="5"
                       value={form.duration}
                       onChange={handleChange}
-                      placeholder="30"
                       required
-                    />
-                    <span className="input-group-text border-light bg-light text-muted small">min</span>
+                    >
+                      <option value="">請選擇時長</option>
+                      {!durationOptions.includes(Number(form.duration)) && form.duration ? (
+                        <option value={form.duration}>{form.duration}</option>
+                      ) : null}
+                      {durationOptions.map((value) => (
+                        <option key={value} value={String(value)}>{value}</option>
+                      ))}
+                    </select>
+                    <span className="input-group-text border-light bg-light text-muted small">分鐘</span>
                   </div>
                 </div>
                 <div className="d-grid">
@@ -402,17 +573,21 @@ export default function BusinessInfoPage() {
                         <td className="text-center">
                           {editingId === s.id ? (
                             <div className="input-group input-group-sm">
-                              <input
-                                type="number"
-                                className="form-control"
+                              <select
+                                className="form-select"
                                 name="duration"
-                                min="5"
-                                step="5"
                                 value={editForm.duration}
                                 onChange={handleEditChange}
                                 required
-                              />
-                              <span className="input-group-text">min</span>
+                              >
+                                {!durationOptions.includes(Number(editForm.duration)) && editForm.duration ? (
+                                  <option value={editForm.duration}>{editForm.duration}</option>
+                                ) : null}
+                                {durationOptions.map((value) => (
+                                  <option key={value} value={String(value)}>{value}</option>
+                                ))}
+                              </select>
+                              <span className="input-group-text">分鐘</span>
                             </div>
                           ) : (
                             <span className="badge rounded-pill bg-light text-primary border border-primary border-opacity-25 px-3 py-2">
@@ -498,17 +673,21 @@ export default function BusinessInfoPage() {
                             required
                           />
                           <div className="input-group input-group-sm">
-                            <input
-                              type="number"
-                              className="form-control"
+                            <select
+                              className="form-select"
                               name="duration"
-                              min="5"
-                              step="5"
                               value={editForm.duration}
                               onChange={handleEditChange}
                               required
-                            />
-                            <span className="input-group-text">min</span>
+                            >
+                              {!durationOptions.includes(Number(editForm.duration)) && editForm.duration ? (
+                                <option value={editForm.duration}>{editForm.duration}</option>
+                              ) : null}
+                              {durationOptions.map((value) => (
+                                <option key={value} value={String(value)}>{value}</option>
+                              ))}
+                            </select>
+                            <span className="input-group-text">分鐘</span>
                           </div>
                         </div>
                       ) : null}

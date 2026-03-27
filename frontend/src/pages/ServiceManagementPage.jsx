@@ -107,6 +107,17 @@ export default function ServiceManagementPage() {
     }
   };
 
+  const resolvedInterval = Number(me?.business?.slotInterval || 30) || 30;
+  const buildDurationOptions = (interval, maxMinutes = 480) => {
+    const safe = Number.isFinite(interval) && interval > 0 ? interval : 30;
+    const values = [];
+    for (let value = safe; value <= maxMinutes; value += safe) {
+      values.push(value);
+    }
+    return values;
+  };
+  const durationOptions = buildDurationOptions(resolvedInterval);
+
   if (!me?.business) {
     return (
       <main className="container list-page">
@@ -141,19 +152,23 @@ export default function ServiceManagementPage() {
                 <div className="mb-4">
                   <label htmlFor="duration" className="form-label fw-bold small text-muted">服務時長 (分鐘)</label>
                   <div className="input-group">
-                    <input
-                      type="number"
-                      className="form-control border-light bg-light"
+                    <select
+                      className="form-select border-light bg-light"
                       id="duration"
                       name="duration"
-                      min="5"
-                      step="5"
                       value={form.duration}
                       onChange={handleChange}
-                      placeholder="30"
                       required
-                    />
-                    <span className="input-group-text border-light bg-light text-muted small">min</span>
+                    >
+                      <option value="">請選擇時長</option>
+                      {!durationOptions.includes(Number(form.duration)) && form.duration ? (
+                        <option value={form.duration}>{form.duration}</option>
+                      ) : null}
+                      {durationOptions.map((value) => (
+                        <option key={value} value={String(value)}>{value}</option>
+                      ))}
+                    </select>
+                    <span className="input-group-text border-light bg-light text-muted small">分鐘</span>
                   </div>
                 </div>
                 <div className="d-grid">
@@ -203,17 +218,21 @@ export default function ServiceManagementPage() {
                         <td className="text-center">
                           {editingId === s.id ? (
                             <div className="input-group input-group-sm">
-                              <input
-                                type="number"
-                                className="form-control"
+                              <select
+                                className="form-select"
                                 name="duration"
-                                min="5"
-                                step="5"
                                 value={editForm.duration}
                                 onChange={handleEditChange}
                                 required
-                              />
-                              <span className="input-group-text">min</span>
+                              >
+                                {!durationOptions.includes(Number(editForm.duration)) && editForm.duration ? (
+                                  <option value={editForm.duration}>{editForm.duration}</option>
+                                ) : null}
+                                {durationOptions.map((value) => (
+                                  <option key={value} value={String(value)}>{value}</option>
+                                ))}
+                              </select>
+                              <span className="input-group-text">分鐘</span>
                             </div>
                           ) : (
                             <span className="badge rounded-pill bg-light text-primary border border-primary border-opacity-25 px-3 py-2">
@@ -299,17 +318,21 @@ export default function ServiceManagementPage() {
                             required
                           />
                           <div className="input-group input-group-sm">
-                            <input
-                              type="number"
-                              className="form-control"
+                            <select
+                              className="form-select"
                               name="duration"
-                              min="5"
-                              step="5"
                               value={editForm.duration}
                               onChange={handleEditChange}
                               required
-                            />
-                            <span className="input-group-text">min</span>
+                            >
+                              {!durationOptions.includes(Number(editForm.duration)) && editForm.duration ? (
+                                <option value={editForm.duration}>{editForm.duration}</option>
+                              ) : null}
+                              {durationOptions.map((value) => (
+                                <option key={value} value={String(value)}>{value}</option>
+                              ))}
+                            </select>
+                            <span className="input-group-text">分鐘</span>
                           </div>
                         </div>
                       ) : null}
