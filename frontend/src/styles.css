@@ -305,6 +305,10 @@ main {
     font-size: 0.8rem;
     color: #495057;
 }
+.calendar-day__event-time {
+    font-size: 0.75rem;
+    color: #495057;
+}
 .calendar-week-simple {
     display: grid;
     gap: 12px;

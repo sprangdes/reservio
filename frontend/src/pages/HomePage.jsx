@@ -361,10 +361,10 @@ export default function HomePage() {
                           className="calendar-day__event"
                           style={{ top: `${top}px`, height: `${height}px` }}
                         >
-                          <div className="calendar-day__event-title">{title}</div>
-                          <div className="calendar-day__event-sub">
-                            {item.service} · {formatHM(item.start)} - {formatHM(item.end)}
-                          </div>
+                                    <div className="calendar-day__event-title">{title} · {item.service}</div>
+                                    <div className="calendar-day__event-time">
+                                      {formatHM(item.start)} - {formatHM(item.end)}
+                                    </div>
                         </div>
                       );
                     })}
@@ -418,9 +418,9 @@ export default function HomePage() {
                                       className="calendar-day__event"
                                       style={{ top: `${top}px`, height: `${height}px` }}
                                     >
-                                      <div className="calendar-day__event-title">{title}</div>
-                                      <div className="calendar-day__event-sub">
-                                    {item.service} · {formatHM(item.start)} - {formatHM(item.end)}
+                                    <div className="calendar-day__event-title">{title} · {item.service}</div>
+                                      <div className="calendar-day__event-time">
+                                        {formatHM(item.start)} - {formatHM(item.end)}
                                       </div>
                                     </div>
                                   );
@@ -477,9 +477,9 @@ export default function HomePage() {
                                       className="calendar-day__event"
                                       style={{ top: `${top}px`, height: `${height}px` }}
                                     >
-                                      <div className="calendar-day__event-title">{title}</div>
-                                      <div className="calendar-day__event-sub">
-                                      {item.service} · {formatHM(item.start)} - {formatHM(item.end)}
+                                    <div className="calendar-day__event-title">{title} · {item.service}</div>
+                                      <div className="calendar-day__event-time">
+                                        {formatHM(item.start)} - {formatHM(item.end)}
                                       </div>
                                     </div>
                                   );
