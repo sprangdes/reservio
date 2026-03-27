@@ -438,6 +438,11 @@ main {
 .calendar-week-grid__daycol:last-child {
     border-right: 0;
 }
+.service-section .table th,
+.service-section .table td {
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
 .calendar-month-grid {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));

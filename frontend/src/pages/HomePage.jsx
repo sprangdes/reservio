@@ -364,8 +364,8 @@ export default function HomePage() {
                       </Link>
                       <div className="col-sm-4">
                         <div className="d-grid gap-2">
-                          <Link to="/service/manage" className="btn btn-warning fw-bold shadow-sm no-text-shadow">
-                            管理服務項目
+                          <Link to="/business/info" className="btn btn-warning fw-bold shadow-sm no-text-shadow">
+                            管理商家資訊
                           </Link>
                           <Link to="/reservation/manage" className="btn btn-light fw-bold shadow-sm no-text-shadow">
                             查看所有預約

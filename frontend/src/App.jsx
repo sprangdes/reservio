@@ -10,6 +10,7 @@ import ManageTodayPage from './pages/ManageTodayPage.jsx';
 import ManageAllPage from './pages/ManageAllPage.jsx';
 import ManagePendingPage from './pages/ManagePendingPage.jsx';
 import ServiceManagementPage from './pages/ServiceManagementPage.jsx';
+import BusinessInfoPage from './pages/BusinessInfoPage.jsx';
 
 export default function App() {
   return (
@@ -91,6 +92,14 @@ export default function App() {
         element={
           <Layout>
             <ServiceManagementPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/business/info"
+        element={
+          <Layout>
+            <BusinessInfoPage />
           </Layout>
         }
       />

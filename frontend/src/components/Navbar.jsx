@@ -60,11 +60,20 @@ export default function Navbar() {
           <div className={`collapse navbar-collapse ${open ? 'show' : ''}`} id="navbarNav">
             <ul className="navbar-nav me-auto">
               {me ? (
-                <li className="nav-item">
-                  <Link className="nav-link" to="/my/reservations">
-                    我的預約
-                  </Link>
-                </li>
+                <>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/my/reservations">
+                      我的預約
+                    </Link>
+                  </li>
+                  {me.role === 'ROLE_BUSINESS' ? (
+                    <li className="nav-item">
+                      <Link className="nav-link" to="/business/info">
+                        商家資訊
+                      </Link>
+                    </li>
+                  ) : null}
+                </>
               ) : null}
             </ul>
 
