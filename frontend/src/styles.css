@@ -281,6 +281,7 @@ main {
 }
 .calendar-day__slots {
     position: relative;
+    padding-top: 48px;
 }
 .calendar-day__row {
     height: 48px;

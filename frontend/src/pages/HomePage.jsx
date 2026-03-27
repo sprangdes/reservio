@@ -455,7 +455,7 @@ export default function HomePage() {
                       <div key={label} className="calendar-day__row" />
                     ))}
                     {dayItems.map((item) => {
-                      const top = (item.startMinutes / 60) * 48 + (item.topOffset || 0);
+                      const top = 48 + (item.startMinutes / 60) * 48 + (item.topOffset || 0);
                       const height = (item.duration / 60) * 48 - (item.heightOffset || 0);
                       const title = me?.role === 'ROLE_BUSINESS' ? item.customerName : item.businessName;
                       return (
