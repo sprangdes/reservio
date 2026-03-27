@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../state/AuthContext.jsx';
@@ -15,7 +15,7 @@ const weekDays = [
 ];
 
 export default function BusinessInfoPage() {
-  const { me } = useAuth();
+  const { me, refresh } = useAuth();
   const { setSuccessMessage, setErrorMessage } = useToast();
 
   const [services, setServices] = useState([]);
@@ -23,6 +23,13 @@ export default function BusinessInfoPage() {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', duration: '' });
   const [busyId, setBusyId] = useState(null);
+  const [savingInfo, setSavingInfo] = useState(false);
+  const [infoForm, setInfoForm] = useState({
+    name: '',
+    category: '',
+    phone: '',
+    address: ''
+  });
   const didLoadRef = useRef(false);
 
   const [hours, setHours] = useState(() =>
@@ -32,15 +39,15 @@ export default function BusinessInfoPage() {
     }, {})
   );
 
-  const businessInfo = useMemo(
-    () => ({
-      name: me?.business?.name || '—',
-      category: me?.business?.category || '—',
-      phone: me?.business?.phone || '—',
-      address: me?.business?.address || '—'
-    }),
-    [me]
-  );
+  useEffect(() => {
+    if (!me?.business) return;
+    setInfoForm({
+      name: me.business.name || '',
+      category: me.business.category || '',
+      phone: me.business.phone || '',
+      address: me.business.address || ''
+    });
+  }, [me]);
 
   const load = async () => {
     if (!me?.business?.id) {
@@ -60,6 +67,30 @@ export default function BusinessInfoPage() {
   const handleChange = (event) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleInfoChange = (event) => {
+    const { name, value } = event.target;
+    setInfoForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleInfoSave = async () => {
+    try {
+      setSavingInfo(true);
+      const payload = {
+        name: infoForm.name.trim() || null,
+        category: infoForm.category.trim() || null,
+        phone: infoForm.phone.trim() || null,
+        address: infoForm.address.trim() || null
+      };
+      await api.updateBusinessInfo(payload);
+      await refresh();
+      setSuccessMessage('商家資訊更新成功');
+    } catch (err) {
+      setErrorMessage(err.message || '商家資訊更新失敗');
+    } finally {
+      setSavingInfo(false);
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -176,21 +207,63 @@ export default function BusinessInfoPage() {
         <div className="card-body p-4">
           <div className="row g-3">
             <div className="col-md-6">
-              <div className="small text-muted">商家名稱</div>
-              <div className="fw-bold">{businessInfo.name}</div>
+              <label className="small text-muted form-label" htmlFor="biz-name">商家名稱</label>
+              <input
+                id="biz-name"
+                name="name"
+                type="text"
+                className="form-control"
+                value={infoForm.name}
+                onChange={handleInfoChange}
+                placeholder="商家名稱"
+              />
             </div>
             <div className="col-md-6">
-              <div className="small text-muted">商家類別</div>
-              <div className="fw-bold">{businessInfo.category}</div>
+              <label className="small text-muted form-label" htmlFor="biz-category">商家類別</label>
+              <input
+                id="biz-category"
+                name="category"
+                type="text"
+                className="form-control"
+                value={infoForm.category}
+                onChange={handleInfoChange}
+                placeholder="商家類別"
+              />
             </div>
             <div className="col-md-6">
-              <div className="small text-muted">聯絡電話</div>
-              <div className="fw-bold">{businessInfo.phone}</div>
+              <label className="small text-muted form-label" htmlFor="biz-phone">聯絡電話</label>
+              <input
+                id="biz-phone"
+                name="phone"
+                type="text"
+                className="form-control"
+                value={infoForm.phone}
+                onChange={handleInfoChange}
+                placeholder="聯絡電話"
+              />
             </div>
             <div className="col-md-6">
-              <div className="small text-muted">地址</div>
-              <div className="fw-bold">{businessInfo.address}</div>
+              <label className="small text-muted form-label" htmlFor="biz-address">地址</label>
+              <input
+                id="biz-address"
+                name="address"
+                type="text"
+                className="form-control"
+                value={infoForm.address}
+                onChange={handleInfoChange}
+                placeholder="地址"
+              />
             </div>
+          </div>
+          <div className="text-end mt-4">
+            <button
+              type="button"
+              className="btn btn-gradient fw-bold shadow-sm"
+              onClick={handleInfoSave}
+              disabled={savingInfo}
+            >
+              {savingInfo ? '儲存中...' : '儲存商家資訊'}
+            </button>
           </div>
         </div>
       </div>

@@ -6,6 +6,7 @@ import lombok.Getter;
 public enum ApiResponseMessageEnum {
 
     OK("OK"),
+    ERROR("系統忙碌中，請稍後再嘗試"),
 
     // 註冊/登入
     REGISTER("註冊成功"),
@@ -30,7 +31,11 @@ public enum ApiResponseMessageEnum {
     CONFIRM_CANCEL("確認取消預約"),
     REJECT_CANCEL("駁回取消預約"),
     RESERVATION_CANCELED("預約已取消"),
-    RESERVATION_CONFIRMED("預約已確認");
+    RESERVATION_CONFIRMED("預約已確認"),
+
+    // 商家資訊
+    UPDATE_BUSINESS_INFO("商家資訊更新成功"),
+    UPDATE_BUSINESS_INFO_ERROR("商家資訊更新失敗");
 
     private final String message;
 

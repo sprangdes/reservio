@@ -78,6 +78,10 @@ export const api = {
     body: JSON.stringify(payload)
   }),
   businessActiveServices: (id) => request(`/api/businesses/${id}/services/active`),
+  updateBusinessInfo: (payload) => request('/api/businesses/info/update', {
+    method: 'POST',
+    body: JSON.stringify(payload || {})
+  }),
   addServiceItem: (payload) => request('/api/businesses/services', {
     method: 'POST',
     body: JSON.stringify(payload)

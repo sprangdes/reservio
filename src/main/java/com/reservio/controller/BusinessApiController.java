@@ -4,6 +4,7 @@ import com.reservio.dto.*;
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.ServiceItem;
 import com.reservio.entity.UserData;
+import com.reservio.exception.NotBusinessAccountException;
 import com.reservio.exception.ServiceNotEditableException;
 import com.reservio.service.BusinessDataService;
 import com.reservio.service.ServiceItemService;
@@ -177,6 +178,32 @@ public class BusinessApiController {
                         .success(true)
                         .message(SERVICE_UPDATE.getMessage())
                         .build());
+    }
+
+    @PostMapping("/businesses/info/update")
+    public ResponseEntity<ApiResponse<BusinessDTO>> updateBusinessInfo(
+            @RequestBody UpdateBusinessInfoRequest request) {
+        try {
+            BusinessData businessData = businessDataService.updateBusinessInfo(request);
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.<BusinessDTO>builder()
+                            .success(true)
+                            .message(UPDATE_BUSINESS_INFO.getMessage())
+                            .data(toBusinessDTO(businessData))
+                            .build());
+        } catch (NotBusinessAccountException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.<BusinessDTO>builder()
+                            .success(false)
+                            .message(UPDATE_BUSINESS_INFO_ERROR.getMessage())
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.<BusinessDTO>builder()
+                            .success(false)
+                            .message(ERROR.getMessage())
+                            .build());
+        }
     }
 
     private BusinessDTO toBusinessDTO(BusinessData data) {
