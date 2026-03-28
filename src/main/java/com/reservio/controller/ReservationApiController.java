@@ -14,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -38,6 +37,16 @@ public class ReservationApiController {
         this.businessDataService = businessDataService;
     }
 
+    /**
+     * Query reservations for a customer with pagination and sorting.
+     *
+     * @param condition Query condition for reservations.
+     * @param page      Page number for pagination.
+     * @param size      Number of items per page.
+     * @param sortBy    Field to sort by.
+     * @param sortDir   Sorting direction (asc/desc).
+     * @return ResponseEntity containing ApiResponse with PageResponse of ReservationDTO.
+     */
     @PostMapping("/reservations/customer/query")
     public ResponseEntity<ApiResponse<PageResponse<ReservationDTO>>> queryReservationForCustomer(
             @RequestBody QueryReservationCondition condition,
@@ -59,6 +68,16 @@ public class ReservationApiController {
                 .build());
     }
 
+    /**
+     * Query reservations for a business with pagination and sorting.
+     *
+     * @param condition Query condition for reservations.
+     * @param page      Page number for pagination.
+     * @param size      Number of items per page.
+     * @param sortBy    Field to sort by.
+     * @param sortDir   Sorting direction (asc/desc).
+     * @return ResponseEntity containing ApiResponse with PageResponse of ReservationDTO.
+     */
     @PostMapping("/reservations/business/query")
     public ResponseEntity<ApiResponse<PageResponse<ReservationDTO>>> queryReservationsForBusiness(
             @RequestBody QueryReservationCondition condition,
@@ -80,8 +99,15 @@ public class ReservationApiController {
                 .build());
     }
 
+    /**
+     * Create a new reservation.
+     *
+     * @param request Reservation creation request.
+     * @return ResponseEntity containing ApiResponse with ReservationDTO.
+     */
     @PostMapping("/reservations")
-    public ResponseEntity<ApiResponse<ReservationDTO>> createReservation(@RequestBody ReservationCreateRequest request) {
+    public ResponseEntity<ApiResponse<ReservationDTO>> createReservation(
+            @RequestBody ReservationCreateRequest request) {
         BusinessData business = businessDataService.getBusinessById(request.getBusinessId());
         Reservation reservation = Reservation.builder()
                 .business(business)
@@ -104,6 +130,13 @@ public class ReservationApiController {
                         .build());
     }
 
+    /**
+     * Cancel a reservation.
+     *
+     * @param id      Reservation ID.
+     * @param request Cancel the request with an optional reason.
+     * @return ResponseEntity containing ApiResponse with Void.
+     */
     @PostMapping("/reservations/{id}/cancel")
     public ResponseEntity<ApiResponse<Void>> cancelReservation(
             @PathVariable Long id,
@@ -116,6 +149,13 @@ public class ReservationApiController {
                 .build());
     }
 
+    /**
+     * Update the status of a reservation.
+     *
+     * @param id      Reservation ID.
+     * @param request Status update request.
+     * @return ResponseEntity containing ApiResponse with Void.
+     */
     @PostMapping("/reservations/{id}/status")
     public ResponseEntity<ApiResponse<Void>> updateStatus(
             @PathVariable Long id,
@@ -153,6 +193,14 @@ public class ReservationApiController {
                 .build());
     }
 
+    /**
+     * Get available time slots for a specific date and duration.
+     *
+     * @param dateStr   Date in string format (e.g., "2023-09-25").
+     * @param duration  Duration in minutes.
+     * @param businessId Optional business ID for filtering slots.
+     * @return ResponseEntity containing ApiResponse with List of TimeSlotDTO.
+     */
     @GetMapping("/reservations/slots")
     public ResponseEntity<ApiResponse<List<TimeSlotDTO>>> getTimeSlotsForDate(
             @RequestParam("date") String dateStr,
@@ -176,6 +224,12 @@ public class ReservationApiController {
         }
     }
 
+    /**
+     * Retrieves a list of disabled dates for a given business.
+     *
+     * @param businessId The ID of the business to retrieve disabled dates for.
+     * @return ResponseEntity containing ApiResponse with success status, message, and a list of disabled dates.
+     */
     @GetMapping("/reservations/disabled-dates")
     public ResponseEntity<ApiResponse<List<String>>> getDisabledDates(
             @RequestParam(value = "businessId", required = false) Long businessId) {
@@ -186,6 +240,11 @@ public class ReservationApiController {
                 .build());
     }
 
+    /**
+     * Retrieves a list of businesses reserved by the authenticated customer.
+     *
+     * @return ResponseEntity containing ApiResponse with success status, message, and a list of reserved businesses.
+     */
     @GetMapping("/reservations/customer/reserved-businesses")
     public ResponseEntity<ApiResponse<List<BusinessDTO>>> getReservedBusinesses() {
         List<BusinessDTO> reservedBusinesses = reservationService.getReservedBusinesses();
@@ -196,6 +255,11 @@ public class ReservationApiController {
                 .build());
     }
 
+    /**
+     * Retrieves a list of today's reservations for the user.
+     *
+     * @return ResponseEntity containing ApiResponse with success status, message, and a list of reservations.
+     */
     @GetMapping("/reservations/today")
     public ResponseEntity<ApiResponse<CalendarDTO>> getTodayReservations() {
         List<ReservationDTO> reservations = reservationService.getTodayReservations()
@@ -210,6 +274,11 @@ public class ReservationApiController {
                 .build());
     }
 
+    /**
+     * Retrieves a list of current week reservations for the user.
+     *
+     * @return ResponseEntity containing ApiResponse with success status, message, and a list of reservations.
+     */
     @GetMapping("reservations/week")
     public ResponseEntity<ApiResponse<CalendarDTO>> getWeekReservations() {
         List<ReservationDTO> reservations = reservationService.getWeekReservations()
@@ -224,6 +293,11 @@ public class ReservationApiController {
                 .build());
     }
 
+    /**
+     * Retrieves a list of current month reservations for the user.
+     *
+     * @return ResponseEntity containing ApiResponse with success status, message, and a list of reservations.
+     */
     @GetMapping("reservations/month")
     public ResponseEntity<ApiResponse<CalendarDTO>> getMonthReservations() {
         List<ReservationDTO> reservations = reservationService.getMonthReservations()
