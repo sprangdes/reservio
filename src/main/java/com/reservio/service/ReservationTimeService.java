@@ -112,7 +112,7 @@ public class ReservationTimeService {
     private int resolveSlotInterval(Long businessId) {
         return businessDataRepo.findById(businessId)
                 .map(BusinessData::getSlotInterval)
-                .filter(interval -> interval != null && interval > 0)
+                .filter(interval -> interval > 0)
                 .orElse(30);
     }
 }
