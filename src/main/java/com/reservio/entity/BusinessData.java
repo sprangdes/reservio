@@ -1,18 +1,18 @@
 package com.reservio.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Table(name = "business_data")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString
+@EqualsAndHashCode
 public class BusinessData {
 
     @Id
@@ -35,7 +35,9 @@ public class BusinessData {
     @Column(nullable = false)
     private int slotInterval = 30;
 
-    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @JsonBackReference
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false)
     private UserData user;

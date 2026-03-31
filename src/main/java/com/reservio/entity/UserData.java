@@ -1,20 +1,21 @@
 package com.reservio.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 
 @Entity
 @Table(name = "user_data")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString
+@EqualsAndHashCode
 public class UserData {
 
     @Id
@@ -33,10 +34,15 @@ public class UserData {
     @Column(nullable = false)
     private String role;
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @JsonManagedReference
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private BusinessData businessData;
 
     @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @OneToMany(
             mappedBy = "user",
             fetch = FetchType.LAZY,

@@ -11,6 +11,8 @@ import com.reservio.repo.BusinessDataRepo;
 import com.reservio.repo.DefaultAvailableHoursRepo;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -65,18 +67,34 @@ public class BusinessDataService {
     public void setDefaultSlot(DefaultSlotRequest request) {
         BusinessData businessData = userDataService.getCurrentUser().getBusinessData();
         if (businessData != null) {
+            Long businessId = businessData.getId();
             List<DefaultWeekSlot> defaultWeekSlots = request.getDefaultWeekSlots();
+            List<DefaultAvailableHour> defaultAvailableHours = defaultAvailableHoursRepo.findAllByBusinessId(businessId);
+            if (request.getDefaultInterval() != null) {
+                businessData.setSlotInterval(request.getDefaultInterval());
+            }
             if (defaultWeekSlots != null) {
-                for (DefaultWeekSlot weekSlot : defaultWeekSlots) {
-                    DefaultAvailableHour defaultHours = DefaultAvailableHour.builder()
-                            .businessId(businessData.getId())
-                            .dayOfWeek(weekSlot.getDayOfWeek())
-                            .isOpen(true)
-                            .startTime(weekSlot.getStartTime())
-                            .endTime(weekSlot.getEndTime())
-                            .build();
-                    defaultAvailableHoursRepo.save(defaultHours);
-                }
+                defaultWeekSlots.forEach(weekSlot -> defaultAvailableHours.stream()
+                        .filter(defaultAvailableHour -> defaultAvailableHour.getDayOfWeek().equals(weekSlot.getDayOfWeek()))
+                        .findFirst()
+                        .ifPresentOrElse(
+                                availableHour -> {
+                            availableHour.setStartTime(weekSlot.getStartTime());
+                            availableHour.setEndTime(weekSlot.getEndTime());
+                            availableHour.setOpen(openCheck(weekSlot));
+                            defaultAvailableHoursRepo.save(availableHour);
+                        },
+                        () -> {
+                            DefaultAvailableHour newAvailableHour = DefaultAvailableHour.builder()
+                                    .businessId(businessId)
+                                    .dayOfWeek(weekSlot.getDayOfWeek())
+                                    .startTime(weekSlot.getStartTime())
+                                    .endTime(weekSlot.getEndTime())
+                                    .isOpen(openCheck(weekSlot))
+                                    .build();
+                            defaultAvailableHoursRepo.save(newAvailableHour);
+                        })
+                );
             }
         } else {
             throw new NotBusinessAccountException("用戶為非商家帳號");
@@ -107,6 +125,12 @@ public class BusinessDataService {
 
     private boolean intervalCheck(Integer interval) {
         return interval != null && interval > 0;
+    }
+
+    private boolean openCheck(DefaultWeekSlot weekSlot) {
+        LocalTime startTime = weekSlot.getStartTime();
+        LocalTime endTime = weekSlot.getEndTime();
+        return startTime != null && endTime != null;
     }
 
     private DefaultWeekSlot toDefaultWeekSlot(DefaultAvailableHour defaultAvailableHour) {

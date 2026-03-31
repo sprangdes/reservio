@@ -37,8 +37,10 @@ public class DefaultAvailableHour {
     private boolean isOpen = true;
 
     // 起始時間
+    @Column(nullable = true)
     private LocalTime startTime;
 
     // 結束時間
+    @Column(nullable = true)
     private LocalTime endTime;
 }
