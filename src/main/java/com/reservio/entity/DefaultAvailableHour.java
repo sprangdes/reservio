@@ -20,7 +20,7 @@ import java.time.LocalTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DefaultAvailableHours {
+public class DefaultAvailableHour {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

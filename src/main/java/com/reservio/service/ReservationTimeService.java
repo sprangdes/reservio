@@ -2,7 +2,7 @@ package com.reservio.service;
 
 import com.reservio.dto.TimeSlotDTO;
 import com.reservio.entity.DateAvailableHours;
-import com.reservio.entity.DefaultAvailableHours;
+import com.reservio.entity.DefaultAvailableHour;
 import com.reservio.entity.Reservation;
 import com.reservio.entity.BusinessData;
 import com.reservio.repo.BusinessDataRepo;
@@ -63,7 +63,7 @@ public class ReservationTimeService {
             if (dateHours.isClosed()) return Collections.emptyList();
             allSlots = generateSlots(dateHours.getStartTime(), dateHours.getEndTime(), interval);
         } else {
-            DefaultAvailableHours defaultHours = defaultAvailableHoursRepo
+            DefaultAvailableHour defaultHours = defaultAvailableHoursRepo
                     .findByBusinessIdAndDayOfWeek(resolvedBusinessId, date.getDayOfWeek())
                     .orElse(null);
             if (defaultHours == null || !defaultHours.isOpen()) return Collections.emptyList();

@@ -206,6 +206,41 @@ public class BusinessApiController {
         }
     }
 
+    @PostMapping("/businesses/slot/default")
+    public ResponseEntity<ApiResponse<Void>> setDefaultSlot(@RequestBody DefaultSlotRequest request) {
+        try {
+            businessDataService.setDefaultSlot(request);
+            return ResponseEntity.ok(ApiResponse.<Void>builder()
+                    .success(true)
+                    .message(UPDATE_BUSINESS_INFO.getMessage())
+                    .build());
+        } catch (NotBusinessAccountException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.<Void>builder()
+                            .success(false)
+                            .message(UPDATE_BUSINESS_INFO_ERROR.getMessage())
+                            .build());
+        }
+    }
+
+    @GetMapping("/businesses/slot/default")
+    public ResponseEntity<ApiResponse<DefaultSlotResponse>> getDefaultSlot() {
+        try {
+            DefaultSlotResponse response = businessDataService.getDefaultSlot();
+            return ResponseEntity.ok(ApiResponse.<DefaultSlotResponse>builder()
+                    .success(true)
+                    .message(UPDATE_BUSINESS_INFO.getMessage())
+                    .data(response)
+                    .build());
+        } catch (NotBusinessAccountException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.<DefaultSlotResponse>builder()
+                            .success(false)
+                            .message(UPDATE_BUSINESS_INFO_ERROR.getMessage())
+                            .build());
+        }
+    }
+
     private BusinessDTO toBusinessDTO(BusinessData data) {
         return BusinessDTO.builder()
                 .id(data.getId())
