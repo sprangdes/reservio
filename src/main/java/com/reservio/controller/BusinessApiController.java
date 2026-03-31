@@ -181,8 +181,7 @@ public class BusinessApiController {
     }
 
     @PostMapping("/businesses/info/update")
-    public ResponseEntity<ApiResponse<BusinessDTO>> updateBusinessInfo(
-            @RequestBody UpdateBusinessInfoRequest request) {
+    public ResponseEntity<ApiResponse<BusinessDTO>> updateBusinessInfo(@RequestBody UpdateBusinessInfoRequest request) {
         try {
             BusinessData businessData = businessDataService.updateBusinessInfo(request);
             return ResponseEntity.status(HttpStatus.OK)

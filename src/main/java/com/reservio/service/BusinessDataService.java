@@ -11,9 +11,9 @@ import com.reservio.repo.BusinessDataRepo;
 import com.reservio.repo.DefaultAvailableHoursRepo;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class BusinessDataService {
@@ -36,8 +36,7 @@ public class BusinessDataService {
     }
 
     public BusinessData getBusinessById(Long id) {
-        return businessDataRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("找不到店家: " + id));
+        return businessDataRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("找不到店家: " + id));
     }
 
     public BusinessData updateBusinessInfo(UpdateBusinessInfoRequest request) {
@@ -74,27 +73,13 @@ public class BusinessDataService {
                 businessData.setSlotInterval(request.getDefaultInterval());
             }
             if (defaultWeekSlots != null) {
-                defaultWeekSlots.forEach(weekSlot -> defaultAvailableHours.stream()
-                        .filter(defaultAvailableHour -> defaultAvailableHour.getDayOfWeek().equals(weekSlot.getDayOfWeek()))
-                        .findFirst()
-                        .ifPresentOrElse(
-                                availableHour -> {
-                            availableHour.setStartTime(weekSlot.getStartTime());
-                            availableHour.setEndTime(weekSlot.getEndTime());
-                            availableHour.setOpen(openCheck(weekSlot));
-                            defaultAvailableHoursRepo.save(availableHour);
-                        },
-                        () -> {
-                            DefaultAvailableHour newAvailableHour = DefaultAvailableHour.builder()
-                                    .businessId(businessId)
-                                    .dayOfWeek(weekSlot.getDayOfWeek())
-                                    .startTime(weekSlot.getStartTime())
-                                    .endTime(weekSlot.getEndTime())
-                                    .isOpen(openCheck(weekSlot))
-                                    .build();
-                            defaultAvailableHoursRepo.save(newAvailableHour);
-                        })
-                );
+                defaultWeekSlots.forEach(weekSlot -> {
+                    Optional<DefaultAvailableHour> existingHour = findDefaultAvailableHour(defaultAvailableHours, weekSlot);
+                    existingHour.ifPresentOrElse(
+                            availableHour -> updateDefaultAvailableHour(availableHour, weekSlot),
+                            () -> createDefaultAvailableHour(businessId, weekSlot)
+                    );
+                });
             }
         } else {
             throw new NotBusinessAccountException("用戶為非商家帳號");
@@ -125,6 +110,33 @@ public class BusinessDataService {
 
     private boolean intervalCheck(Integer interval) {
         return interval != null && interval > 0;
+    }
+
+    private Optional<DefaultAvailableHour> findDefaultAvailableHour(
+            List<DefaultAvailableHour> availableHours,
+            DefaultWeekSlot weekSlot) {
+        return availableHours.stream()
+                .filter(defaultAvailableHour ->
+                        defaultAvailableHour.getDayOfWeek().equals(weekSlot.getDayOfWeek()))
+                .findFirst();
+    }
+
+    private void updateDefaultAvailableHour(DefaultAvailableHour availableHour, DefaultWeekSlot weekSlot) {
+        availableHour.setStartTime(weekSlot.getStartTime());
+        availableHour.setEndTime(weekSlot.getEndTime());
+        availableHour.setOpen(openCheck(weekSlot));
+        defaultAvailableHoursRepo.save(availableHour);
+    }
+
+    private void createDefaultAvailableHour(Long businessId, DefaultWeekSlot weekSlot) {
+        DefaultAvailableHour newAvailableHour = DefaultAvailableHour.builder()
+                .businessId(businessId)
+                .dayOfWeek(weekSlot.getDayOfWeek())
+                .startTime(weekSlot.getStartTime())
+                .endTime(weekSlot.getEndTime())
+                .isOpen(openCheck(weekSlot))
+                .build();
+        defaultAvailableHoursRepo.save(newAvailableHour);
     }
 
     private boolean openCheck(DefaultWeekSlot weekSlot) {
