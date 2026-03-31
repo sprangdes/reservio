@@ -41,7 +41,7 @@ export default function BusinessInfoPage() {
   );
   const [dateOverride, setDateOverride] = useState({
     date: '',
-    isClosed: false,
+    open: true,
     start: '09:00',
     end: '18:00'
   });
@@ -95,11 +95,36 @@ export default function BusinessInfoPage() {
     }
   };
 
+  const getTodayString = () => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const loadDateSlot = async (date) => {
+    try {
+      const targetDate = date || getTodayString();
+      const res = await api.getDateSlot({ date: targetDate });
+      const data = res.data || {};
+      setDateOverride({
+        date: data.date || targetDate,
+        open: data.open !== false,
+        start: data.startTime ? String(data.startTime).slice(0, 5) : '09:00',
+        end: data.endTime ? String(data.endTime).slice(0, 5) : '18:00'
+      });
+    } catch (err) {
+      setErrorMessage(err.message || '取得當日營業時間失敗');
+    }
+  };
+
   useEffect(() => {
     if (didLoadRef.current) return;
     didLoadRef.current = true;
     load();
     loadDefaultSlots();
+    loadDateSlot();
   }, [me]);
 
   const handleChange = (event) => {
@@ -246,6 +271,14 @@ export default function BusinessInfoPage() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+  };
+
+  const handleDateChange = (event) => {
+    const nextDate = event.target.value;
+    setDateOverride((prev) => ({ ...prev, date: nextDate }));
+    if (nextDate) {
+      loadDateSlot(nextDate);
+    }
   };
 
   const addOverride = () => {
@@ -436,7 +469,7 @@ export default function BusinessInfoPage() {
                 className="form-control"
                 name="date"
                 value={dateOverride.date}
-                onChange={handleOverrideChange}
+                onChange={handleDateChange}
               />
             </div>
             <div className="col-md-2">
@@ -445,13 +478,9 @@ export default function BusinessInfoPage() {
                 <input
                   className="form-check-input"
                   type="checkbox"
-                  name="isClosed"
-                  checked={!dateOverride.isClosed}
-                  onChange={(e) =>
-                    handleOverrideChange({
-                      target: { name: 'isClosed', type: 'checkbox', checked: !e.target.checked }
-                    })
-                  }
+                  name="open"
+                  checked={dateOverride.open}
+                  onChange={handleOverrideChange}
                 />
                 <label className="form-check-label text-muted small">營業</label>
               </div>
@@ -464,7 +493,7 @@ export default function BusinessInfoPage() {
                 name="start"
                 value={dateOverride.start}
                 onChange={handleOverrideChange}
-                disabled={dateOverride.isClosed}
+                disabled={!dateOverride.open}
               />
             </div>
             <div className="col-md-3">
@@ -475,7 +504,7 @@ export default function BusinessInfoPage() {
                 name="end"
                 value={dateOverride.end}
                 onChange={handleOverrideChange}
-                disabled={dateOverride.isClosed}
+                disabled={!dateOverride.open}
               />
             </div>
             <div className="col-md-1 d-grid">

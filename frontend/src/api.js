@@ -83,6 +83,10 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(payload || {})
   }),
+  getDateSlot: (payload) => request('/api/businesses/slot/date', {
+    method: 'POST',
+    body: JSON.stringify(payload || {})
+  }),
   updateBusinessInfo: (payload) => request('/api/businesses/info/update', {
     method: 'POST',
     body: JSON.stringify(payload || {})
