@@ -78,6 +78,11 @@ export const api = {
     body: JSON.stringify(payload)
   }),
   businessActiveServices: (id) => request(`/api/businesses/${id}/services/active`),
+  getDefaultSlots: () => request('/api/businesses/slot/default'),
+  setDefaultSlots: (payload) => request('/api/businesses/slot/default', {
+    method: 'POST',
+    body: JSON.stringify(payload || {})
+  }),
   updateBusinessInfo: (payload) => request('/api/businesses/info/update', {
     method: 'POST',
     body: JSON.stringify(payload || {})

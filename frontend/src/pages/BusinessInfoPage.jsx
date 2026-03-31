@@ -5,13 +5,13 @@ import { useAuth } from '../state/AuthContext.jsx';
 import { useToast } from '../state/ToastContext.jsx';
 
 const weekDays = [
-  { key: 'mon', label: '星期一' },
-  { key: 'tue', label: '星期二' },
-  { key: 'wed', label: '星期三' },
-  { key: 'thu', label: '星期四' },
-  { key: 'fri', label: '星期五' },
-  { key: 'sat', label: '星期六' },
-  { key: 'sun', label: '星期日' }
+  { key: 'mon', label: '星期一', dayOfWeek: 'MONDAY' },
+  { key: 'tue', label: '星期二', dayOfWeek: 'TUESDAY' },
+  { key: 'wed', label: '星期三', dayOfWeek: 'WEDNESDAY' },
+  { key: 'thu', label: '星期四', dayOfWeek: 'THURSDAY' },
+  { key: 'fri', label: '星期五', dayOfWeek: 'FRIDAY' },
+  { key: 'sat', label: '星期六', dayOfWeek: 'SATURDAY' },
+  { key: 'sun', label: '星期日', dayOfWeek: 'SUNDAY' }
 ];
 
 export default function BusinessInfoPage() {
@@ -35,7 +35,7 @@ export default function BusinessInfoPage() {
 
   const [hours, setHours] = useState(() =>
     weekDays.reduce((acc, day) => {
-      acc[day.key] = [];
+      acc[day.key] = { open: false, start: '09:00', end: '18:00' };
       return acc;
     }, {})
   );
@@ -67,10 +67,39 @@ export default function BusinessInfoPage() {
     setServices(res.data || []);
   };
 
+  const loadDefaultSlots = async () => {
+    try {
+      const res = await api.getDefaultSlots();
+      const data = res.data || {};
+      if (data.defaultInterval != null && data.defaultInterval !== '') {
+        setInfoForm((prev) => ({ ...prev, slotInterval: String(data.defaultInterval) }));
+      }
+      if (Array.isArray(data.defaultWeekSlots)) {
+        const slotMap = weekDays.reduce((acc, day) => {
+          acc[day.key] = { open: false, start: '09:00', end: '18:00' };
+          return acc;
+        }, {});
+        data.defaultWeekSlots.forEach((slot) => {
+          const dayKey = weekDays.find((item) => item.dayOfWeek === slot.dayOfWeek)?.key;
+          if (!dayKey) return;
+          slotMap[dayKey] = {
+            open: !!slot.startTime && !!slot.endTime,
+            start: slot.startTime ? String(slot.startTime).slice(0, 5) : '09:00',
+            end: slot.endTime ? String(slot.endTime).slice(0, 5) : '18:00'
+          };
+        });
+        setHours(slotMap);
+      }
+    } catch (err) {
+      setErrorMessage(err.message || '取得預設營業時間失敗');
+    }
+  };
+
   useEffect(() => {
     if (didLoadRef.current) return;
     didLoadRef.current = true;
     load();
+    loadDefaultSlots();
   }, [me]);
 
   const handleChange = (event) => {
@@ -180,25 +209,35 @@ export default function BusinessInfoPage() {
     }
   };
 
-  const addSlot = (dayKey) => {
+  const toggleDay = (dayKey) => {
     setHours((prev) => ({
       ...prev,
-      [dayKey]: [...prev[dayKey], { start: '09:00', end: '18:00' }]
+      [dayKey]: { ...prev[dayKey], open: !prev[dayKey].open }
     }));
   };
 
-  const updateSlot = (dayKey, index, field, value) => {
+  const updateDayTime = (dayKey, field, value) => {
     setHours((prev) => ({
       ...prev,
-      [dayKey]: prev[dayKey].map((slot, idx) => (idx === index ? { ...slot, [field]: value } : slot))
+      [dayKey]: { ...prev[dayKey], [field]: value }
     }));
   };
 
-  const removeSlot = (dayKey, index) => {
-    setHours((prev) => ({
-      ...prev,
-      [dayKey]: prev[dayKey].filter((_, idx) => idx !== index)
-    }));
+  const handleSaveDefaultSlots = async () => {
+    try {
+      const payload = {
+        defaultInterval: infoForm.slotInterval === '' ? null : Number(infoForm.slotInterval),
+        defaultWeekSlots: weekDays.map((day) => ({
+          dayOfWeek: day.dayOfWeek,
+          startTime: hours[day.key].open ? hours[day.key].start : null,
+          endTime: hours[day.key].open ? hours[day.key].end : null
+        }))
+      };
+      await api.setDefaultSlots(payload);
+      setSuccessMessage('預設營業時間已更新');
+    } catch (err) {
+      setErrorMessage(err.message || '儲存預設營業時間失敗');
+    }
   };
 
   const handleOverrideChange = (event) => {
@@ -345,41 +384,40 @@ export default function BusinessInfoPage() {
           {weekDays.map((day) => (
             <div key={day.key} className="d-flex flex-wrap align-items-center gap-3 border-bottom py-3">
               <div className="fw-bold" style={{ width: '90px' }}>{day.label}</div>
-              <div className="flex-grow-1 d-flex flex-column gap-2">
-                {hours[day.key].length === 0 ? (
-                  <div className="text-muted small">尚未設定時段</div>
-                ) : (
-                  hours[day.key].map((slot, index) => (
-                    <div key={`${day.key}-${index}`} className="d-flex align-items-center gap-2">
-                      <input
-                        type="time"
-                        className="form-control form-control-sm"
-                        value={slot.start}
-                        onChange={(e) => updateSlot(day.key, index, 'start', e.target.value)}
-                        style={{ maxWidth: '140px' }}
-                      />
-                      <span className="text-muted">至</span>
-                      <input
-                        type="time"
-                        className="form-control form-control-sm"
-                        value={slot.end}
-                        onChange={(e) => updateSlot(day.key, index, 'end', e.target.value)}
-                        style={{ maxWidth: '140px' }}
-                      />
-                      <button className="btn btn-sm btn-outline-danger" onClick={() => removeSlot(day.key, index)}>
-                        移除
-                      </button>
-                    </div>
-                  ))
-                )}
+              <div className="form-check form-switch">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={hours[day.key].open}
+                  onChange={() => toggleDay(day.key)}
+                />
+                <label className="form-check-label text-muted small">營業</label>
               </div>
-              <button className="btn btn-sm btn-outline-primary" onClick={() => addSlot(day.key)}>
-                新增時段
-              </button>
+              <div className="d-flex align-items-center gap-2 flex-wrap">
+                <input
+                  type="time"
+                  className="form-control form-control-sm"
+                  value={hours[day.key].start}
+                  onChange={(e) => updateDayTime(day.key, 'start', e.target.value)}
+                  style={{ maxWidth: '140px' }}
+                  disabled={!hours[day.key].open}
+                />
+                <span className="text-muted">至</span>
+                <input
+                  type="time"
+                  className="form-control form-control-sm"
+                  value={hours[day.key].end}
+                  onChange={(e) => updateDayTime(day.key, 'end', e.target.value)}
+                  style={{ maxWidth: '140px' }}
+                  disabled={!hours[day.key].open}
+                />
+              </div>
             </div>
           ))}
           <div className="mt-3 text-end">
-            <button className="btn btn-gradient fw-bold shadow-sm">儲存預設營業時間</button>
+            <button className="btn btn-gradient fw-bold shadow-sm" onClick={handleSaveDefaultSlots}>
+              儲存預設營業時間
+            </button>
           </div>
         </div>
       </div>
