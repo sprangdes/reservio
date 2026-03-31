@@ -119,12 +119,30 @@ export default function BusinessInfoPage() {
     }
   };
 
+  const loadAdjustedSlots = async () => {
+    try {
+      const res = await api.getAdjustedSlots();
+      const data = Array.isArray(res.data) ? res.data : [];
+      const mapped = data.map((item) => ({
+        date: item.date,
+        open: item.open !== false,
+        start: item.startTime ? String(item.startTime).slice(0, 5) : '09:00',
+        end: item.endTime ? String(item.endTime).slice(0, 5) : '18:00'
+      }));
+      mapped.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      setOverrides(mapped);
+    } catch (err) {
+      setErrorMessage(err.message || '取得已調整時段失敗');
+    }
+  };
+
   useEffect(() => {
     if (didLoadRef.current) return;
     didLoadRef.current = true;
     load();
     loadDefaultSlots();
     loadDateSlot();
+    loadAdjustedSlots();
   }, [me]);
 
   const handleChange = (event) => {
@@ -289,7 +307,7 @@ export default function BusinessInfoPage() {
         ...rest,
         {
           date: dateOverride.date,
-          isClosed: dateOverride.isClosed,
+          open: dateOverride.open,
           start: dateOverride.start,
           end: dateOverride.end
         }
@@ -532,8 +550,8 @@ export default function BusinessInfoPage() {
                     {overrides.map((item) => (
                       <tr key={item.date}>
                         <td>{item.date}</td>
-                        <td>{item.isClosed ? '休息' : '營業'}</td>
-                        <td>{item.isClosed ? '—' : `${item.start} - ${item.end}`}</td>
+                        <td>{item.open ? '營業' : '休息'}</td>
+                        <td>{item.open ? `${item.start} - ${item.end}` : '—'}</td>
                         <td className="text-end">
                           <button className="btn btn-sm btn-outline-danger" onClick={() => removeOverride(item.date)}>
                             移除

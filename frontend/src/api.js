@@ -87,6 +87,7 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(payload || {})
   }),
+  getAdjustedSlots: () => request('/api/businesses/slot/adjusted'),
   updateBusinessInfo: (payload) => request('/api/businesses/info/update', {
     method: 'POST',
     body: JSON.stringify(payload || {})
