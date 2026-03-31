@@ -64,8 +64,7 @@ public class ReservationTimeService {
             allSlots = generateSlots(dateHours.getStartTime(), dateHours.getEndTime(), interval);
         } else {
             DefaultAvailableHour defaultHours = defaultAvailableHoursRepo
-                    .findByBusinessIdAndDayOfWeek(resolvedBusinessId, date.getDayOfWeek())
-                    .orElse(null);
+                    .findByBusinessIdAndDayOfWeek(resolvedBusinessId, date.getDayOfWeek()).get(0);
             if (defaultHours == null || !defaultHours.isOpen()) return Collections.emptyList();
             allSlots = generateSlots(defaultHours.getStartTime(), defaultHours.getEndTime(), interval);
         }

@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface DateAvailableHoursRepo extends JpaRepository<DateAvailableHours, Long> {
     Optional<DateAvailableHours> findByBusinessIdAndDate(Long businessId, LocalDate date);
     List<DateAvailableHours> findAllByBusinessIdAndIsClosedTrueAndDateBetween(Long businessId, LocalDate startDate, LocalDate endDate);
+    List<DateAvailableHours> findAllByBusinessIdAndDate(Long businessId, LocalDate date);
 }

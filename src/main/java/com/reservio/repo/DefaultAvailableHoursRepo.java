@@ -10,6 +10,6 @@ import java.util.List;
 
 @Repository
 public interface DefaultAvailableHoursRepo extends JpaRepository<DefaultAvailableHour, Long> {
-    Optional<DefaultAvailableHour> findByBusinessIdAndDayOfWeek(Long businessId, DayOfWeek dayOfWeek);
+    List<DefaultAvailableHour> findByBusinessIdAndDayOfWeek(Long businessId, DayOfWeek dayOfWeek);
     List<DefaultAvailableHour> findAllByBusinessId(Long businessId);
 }

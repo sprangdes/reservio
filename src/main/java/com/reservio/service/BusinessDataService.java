@@ -1,16 +1,16 @@
 package com.reservio.service;
 
-import com.reservio.dto.DefaultSlotRequest;
-import com.reservio.dto.DefaultSlotResponse;
-import com.reservio.dto.DefaultWeekSlot;
-import com.reservio.dto.UpdateBusinessInfoRequest;
+import com.reservio.dto.*;
 import com.reservio.entity.BusinessData;
+import com.reservio.entity.DateAvailableHours;
 import com.reservio.entity.DefaultAvailableHour;
 import com.reservio.exception.NotBusinessAccountException;
 import com.reservio.repo.BusinessDataRepo;
+import com.reservio.repo.DateAvailableHoursRepo;
 import com.reservio.repo.DefaultAvailableHoursRepo;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -21,14 +21,17 @@ public class BusinessDataService {
     private final BusinessDataRepo businessDataRepo;
     private final UserDataService userDataService;
     private final DefaultAvailableHoursRepo defaultAvailableHoursRepo;
+    private final DateAvailableHoursRepo dateAvailableHoursRepo;
 
     public BusinessDataService(
             BusinessDataRepo businessDataRepo,
             UserDataService userDataService,
-            DefaultAvailableHoursRepo defaultAvailableHoursRepo) {
+            DefaultAvailableHoursRepo defaultAvailableHoursRepo,
+            DateAvailableHoursRepo dateAvailableHoursRepo) {
         this.businessDataRepo = businessDataRepo;
         this.userDataService = userDataService;
         this.defaultAvailableHoursRepo = defaultAvailableHoursRepo;
+        this.dateAvailableHoursRepo = dateAvailableHoursRepo;
     }
 
     public List<BusinessData> getAllBusinesses() {
@@ -104,6 +107,26 @@ public class BusinessDataService {
         }
     }
 
+    public DateSlotResponse getDateSlot(LocalDate date) {
+        BusinessData businessData = userDataService.getCurrentUser().getBusinessData();
+        if (businessData == null) {
+            throw new NotBusinessAccountException("用戶為非商家帳號");
+        }
+        Long businessId = businessData.getId();
+        List<DateAvailableHours> dateAvailableHours = dateAvailableHoursRepo.findAllByBusinessIdAndDate(businessId, date);
+        if (!dateAvailableHours.isEmpty()) {
+            return toDateSlotResponse(dateAvailableHours.get(0));
+        }
+        List<DefaultAvailableHour> defaultAvailableHours = defaultAvailableHoursRepo.findByBusinessIdAndDayOfWeek(businessId, date.getDayOfWeek());
+        if (!defaultAvailableHours.isEmpty()) {
+            return toDateSlotResponse(date, defaultAvailableHours.get(0));
+        }
+        return DateSlotResponse.builder()
+                .date(date)
+                .open(false)
+                .build();
+    }
+
     private boolean contentCheck(String content) {
         return content != null && !content.isEmpty();
     }
@@ -148,6 +171,24 @@ public class BusinessDataService {
     private DefaultWeekSlot toDefaultWeekSlot(DefaultAvailableHour defaultAvailableHour) {
         return DefaultWeekSlot.builder()
                 .dayOfWeek(defaultAvailableHour.getDayOfWeek())
+                .startTime(defaultAvailableHour.getStartTime())
+                .endTime(defaultAvailableHour.getEndTime())
+                .build();
+    }
+
+    private DateSlotResponse toDateSlotResponse(DateAvailableHours dateAvailableHours) {
+        return DateSlotResponse.builder()
+                .date(dateAvailableHours.getDate())
+                .open(!dateAvailableHours.isClosed())
+                .startTime(dateAvailableHours.getStartTime())
+                .endTime(dateAvailableHours.getEndTime())
+                .build();
+    }
+
+    private DateSlotResponse toDateSlotResponse(LocalDate date, DefaultAvailableHour defaultAvailableHour) {
+        return DateSlotResponse.builder()
+                .date(date)
+                .open(defaultAvailableHour.isOpen())
                 .startTime(defaultAvailableHour.getStartTime())
                 .endTime(defaultAvailableHour.getEndTime())
                 .build();

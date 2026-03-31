@@ -240,6 +240,25 @@ public class BusinessApiController {
         }
     }
 
+    @PostMapping("/businesses/slot/date")
+    public ResponseEntity<ApiResponse<DateSlotResponse>> getDateSlot(DateSlotRequest request) {
+        try {
+            DateSlotResponse response = businessDataService.getDateSlot(request.getDate());
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.<DateSlotResponse>builder()
+                            .success(true)
+                            .message(null)
+                            .data(response)
+                            .build());
+        } catch (NotBusinessAccountException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.<DateSlotResponse>builder()
+                            .success(false)
+                            .message(NOT_BUSINESS_ACCOUNT_CANT_ADJUST_INFO.getMessage())
+                            .build());
+        }
+    }
+
     private BusinessDTO toBusinessDTO(BusinessData data) {
         return BusinessDTO.builder()
                 .id(data.getId())

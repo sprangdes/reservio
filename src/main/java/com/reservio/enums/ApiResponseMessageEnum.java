@@ -35,7 +35,8 @@ public enum ApiResponseMessageEnum {
 
     // 商家資訊
     UPDATE_BUSINESS_INFO("商家資訊更新成功"),
-    UPDATE_BUSINESS_INFO_ERROR("商家資訊更新失敗");
+    UPDATE_BUSINESS_INFO_ERROR("商家資訊更新失敗"),
+    NOT_BUSINESS_ACCOUNT_CANT_ADJUST_INFO("非商家帳號無法更新商家資料");
 
     private final String message;
 
