@@ -259,6 +259,25 @@ public class BusinessApiController {
         }
     }
 
+    @GetMapping("/businesses/slot/adjusted")
+    public ResponseEntity<ApiResponse<List<DateSlotResponse>>> getDateSlots() {
+        try {
+            List<DateSlotResponse> response = businessDataService.getDateSlots();
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.<List<DateSlotResponse>>builder()
+                            .success(true)
+                            .message(null)
+                            .data(response)
+                            .build());
+        } catch (NotBusinessAccountException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.<List<DateSlotResponse>>builder()
+                            .success(false)
+                            .message(null)
+                            .build());
+        }
+    }
+
     private BusinessDTO toBusinessDTO(BusinessData data) {
         return BusinessDTO.builder()
                 .id(data.getId())

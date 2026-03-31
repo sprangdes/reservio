@@ -13,4 +13,5 @@ public interface DateAvailableHoursRepo extends JpaRepository<DateAvailableHours
     Optional<DateAvailableHours> findByBusinessIdAndDate(Long businessId, LocalDate date);
     List<DateAvailableHours> findAllByBusinessIdAndIsClosedTrueAndDateBetween(Long businessId, LocalDate startDate, LocalDate endDate);
     List<DateAvailableHours> findAllByBusinessIdAndDate(Long businessId, LocalDate date);
+    List<DateAvailableHours> findAllByBusinessIdAndDateAfter(Long businessId, LocalDate today);
 }

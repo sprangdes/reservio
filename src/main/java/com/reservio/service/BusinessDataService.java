@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -125,6 +126,21 @@ public class BusinessDataService {
                 .date(date)
                 .open(false)
                 .build();
+    }
+
+    public List<DateSlotResponse> getDateSlots() {
+        BusinessData businessData = userDataService.getCurrentUser().getBusinessData();
+        if (businessData == null) {
+            throw new NotBusinessAccountException("用戶為非商家帳號");
+        }
+        Long businessId = businessData.getId();
+        LocalDate today = LocalDate.now();
+        List<DateAvailableHours> dateAvailableHours = dateAvailableHoursRepo.findAllByBusinessIdAndDateAfter(businessId, today);
+        List<DateSlotResponse> dateSlotResponses = new ArrayList<>();
+        for (DateAvailableHours dateAvailableHour : dateAvailableHours) {
+            dateSlotResponses.add(toDateSlotResponse(dateAvailableHour));
+        }
+        return dateSlotResponses;
     }
 
     private boolean contentCheck(String content) {
