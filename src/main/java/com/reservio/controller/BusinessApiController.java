@@ -241,7 +241,7 @@ public class BusinessApiController {
     }
 
     @PostMapping("/businesses/slot/date")
-    public ResponseEntity<ApiResponse<DateSlotResponse>> getDateSlot(DateSlotRequest request) {
+    public ResponseEntity<ApiResponse<DateSlotResponse>> getDateSlot(@RequestBody DateSlotRequest request) {
         try {
             DateSlotResponse response = businessDataService.getDateSlot(request.getDate());
             return ResponseEntity.status(HttpStatus.OK)
