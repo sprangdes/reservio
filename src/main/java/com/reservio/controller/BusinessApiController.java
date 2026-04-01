@@ -7,6 +7,7 @@ import com.reservio.entity.UserData;
 import com.reservio.exception.DateSlotNotFoundException;
 import com.reservio.exception.NotBusinessAccountException;
 import com.reservio.exception.ServiceNotEditableException;
+import com.reservio.service.BusinessCategoryService;
 import com.reservio.service.BusinessDataService;
 import com.reservio.service.ServiceItemService;
 import com.reservio.service.UserDataService;
@@ -26,14 +27,17 @@ public class BusinessApiController {
     private final BusinessDataService businessDataService;
     private final ServiceItemService serviceItemService;
     private final UserDataService userDataService;
+    private final BusinessCategoryService businessCategoryService;
 
     public BusinessApiController(
             BusinessDataService businessDataService,
             ServiceItemService serviceItemService,
-            UserDataService userDataService) {
+            UserDataService userDataService,
+            BusinessCategoryService businessCategoryService) {
         this.businessDataService = businessDataService;
         this.serviceItemService = serviceItemService;
         this.userDataService = userDataService;
+        this.businessCategoryService = businessCategoryService;
     }
 
     @GetMapping("/businesses")
@@ -45,6 +49,15 @@ public class BusinessApiController {
                 .success(true)
                 .message(OK.getMessage())
                 .data(items)
+                .build());
+    }
+
+    @GetMapping("/businesses/category")
+    public ResponseEntity<ApiResponse<List<String>>> getCategories() {
+        return ResponseEntity.ok(ApiResponse.<List<String>>builder()
+                .success(true)
+                .message(OK.getMessage())
+                .data(businessCategoryService.getCategories())
                 .build());
     }
 

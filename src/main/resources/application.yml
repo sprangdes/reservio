@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/reservio
+    username: postgres
+    password: ""
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+  level:
+    org.hibernate: ERROR
+    org.hibernate.type.descriptor.sql.BasicBinder: ERROR
+
+server:
+  servlet:
+    session:
+      timeout: 5m
+      cookie:
+        max-age: 5m
+
+business:
+  category: "美容美髮,診所醫療,餐飲服務,其他諮詢"
