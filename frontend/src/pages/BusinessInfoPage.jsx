@@ -415,8 +415,8 @@ export default function BusinessInfoPage() {
           <span className="text-white-strong small">（待串接 API）</span>
         </div>
         <div className="card-body p-4">
-          <div className="row g-3 align-items-end mb-3">
-            <div className="col-md-4">
+          <div className="row g-3 align-items-end mb-4">
+            <div className="col-md-5 col-lg-4">
               <label className="small text-muted form-label" htmlFor="biz-slot">預設時段間隔 (分鐘)</label>
               <input
                 id="biz-slot"
@@ -432,39 +432,45 @@ export default function BusinessInfoPage() {
               <div className="form-text">會影響服務時長可選項與可預約的時段切分。</div>
             </div>
           </div>
-          {weekDays.map((day) => (
-            <div key={day.key} className="d-flex flex-wrap align-items-center gap-3 border-bottom py-3">
-              <div className="fw-bold" style={{ width: '90px' }}>{day.label}</div>
-              <div className="form-check form-switch">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  checked={hours[day.key].open}
-                  onChange={() => toggleDay(day.key)}
-                />
-                <label className="form-check-label text-muted small">營業</label>
+          <div className="row g-3">
+            {weekDays.map((day) => (
+              <div key={day.key} className="col-12 col-md-6">
+                <div className="border rounded-3 p-3 h-100 d-flex flex-column gap-3">
+                  <div className="d-flex align-items-center justify-content-between">
+                    <div className="fw-bold">{day.label}</div>
+                    <div className="form-check form-switch mb-0">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={hours[day.key].open}
+                        onChange={() => toggleDay(day.key)}
+                      />
+                      <label className="form-check-label text-muted small">營業</label>
+                    </div>
+                  </div>
+                  <div className="d-flex align-items-center gap-2 flex-wrap">
+                    <input
+                      type="time"
+                      className="form-control form-control-sm"
+                      value={hours[day.key].start}
+                      onChange={(e) => updateDayTime(day.key, 'start', e.target.value)}
+                      style={{ maxWidth: '140px' }}
+                      disabled={!hours[day.key].open}
+                    />
+                    <span className="text-muted">至</span>
+                    <input
+                      type="time"
+                      className="form-control form-control-sm"
+                      value={hours[day.key].end}
+                      onChange={(e) => updateDayTime(day.key, 'end', e.target.value)}
+                      style={{ maxWidth: '140px' }}
+                      disabled={!hours[day.key].open}
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="d-flex align-items-center gap-2 flex-wrap">
-                <input
-                  type="time"
-                  className="form-control form-control-sm"
-                  value={hours[day.key].start}
-                  onChange={(e) => updateDayTime(day.key, 'start', e.target.value)}
-                  style={{ maxWidth: '140px' }}
-                  disabled={!hours[day.key].open}
-                />
-                <span className="text-muted">至</span>
-                <input
-                  type="time"
-                  className="form-control form-control-sm"
-                  value={hours[day.key].end}
-                  onChange={(e) => updateDayTime(day.key, 'end', e.target.value)}
-                  style={{ maxWidth: '140px' }}
-                  disabled={!hours[day.key].open}
-                />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
           <div className="mt-3 text-end">
             <button className="btn btn-gradient fw-bold shadow-sm" onClick={handleSaveDefaultSlots}>
               儲存預設營業時間
