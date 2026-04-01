@@ -17,11 +17,7 @@ export default function HomePage() {
   const [monthReservations, setMonthReservations] = useState([]);
   const [monthUsers, setMonthUsers] = useState([]);
 
-  useEffect(() => {
-    if (!me) {
-      refresh();
-    }
-  }, [me, refresh]);
+  // AuthProvider 已在全域載入 me，這裡不重複刷新以避免多次呼叫 /api/me
 
   useEffect(() => {
     const load = async () => {
