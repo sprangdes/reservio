@@ -442,7 +442,6 @@ export default function BusinessInfoPage() {
       <div className="card shadow-sm border-0 overflow-hidden mb-4">
         <div className="card-header bg-gradient text-white text-white-strong p-4 d-flex justify-content-between align-items-center">
           <h4 className="mb-0 fw-bold"><i className="bi bi-calendar-week me-2"></i>預設營業時間（每週）</h4>
-          <span className="text-white-strong small">（待串接 API）</span>
         </div>
         <div className="card-body p-4">
           <div className="row g-3 align-items-end mb-4">
@@ -512,7 +511,6 @@ export default function BusinessInfoPage() {
       <div className="card shadow-sm border-0 overflow-hidden mb-4">
         <div className="card-header bg-gradient text-white text-white-strong p-4 d-flex justify-content-between align-items-center">
           <h4 className="mb-0 fw-bold"><i className="bi bi-calendar-event me-2"></i>指定日期調整</h4>
-          <span className="text-white-strong small">（待串接 API）</span>
         </div>
         <div className="card-body p-4">
           <div className="row g-3 align-items-end">
