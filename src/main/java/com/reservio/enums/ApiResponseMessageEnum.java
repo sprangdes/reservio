@@ -36,7 +36,8 @@ public enum ApiResponseMessageEnum {
     // 商家資訊
     UPDATE_BUSINESS_INFO("商家資訊更新成功"),
     UPDATE_BUSINESS_INFO_ERROR("商家資訊更新失敗"),
-    NOT_BUSINESS_ACCOUNT_CANT_ADJUST_INFO("非商家帳號無法更新商家資料");
+    NOT_BUSINESS_ACCOUNT_CANT_ADJUST_INFO("非商家帳號無法更新商家資料"),
+    DELETE_ADJUSTED_DATE_SLOT("已刪除該日營業時間調整");
 
     private final String message;
 

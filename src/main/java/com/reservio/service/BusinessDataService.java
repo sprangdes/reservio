@@ -4,6 +4,7 @@ import com.reservio.dto.*;
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.DateAvailableHours;
 import com.reservio.entity.DefaultAvailableHour;
+import com.reservio.exception.DateSlotNotFoundException;
 import com.reservio.exception.NotBusinessAccountException;
 import com.reservio.repo.BusinessDataRepo;
 import com.reservio.repo.DateAvailableHoursRepo;
@@ -171,6 +172,23 @@ public class BusinessDataService {
             dateAvailableHours.get().setClosed(!request.isOpen());
             dateAvailableHoursRepo.save(dateAvailableHours.get());
         }
+    }
+
+    public void deleteAdjustedDateSlot(DeleteAdjustedDateSlotRequest request) {
+        BusinessData businessData = userDataService.getCurrentUser().getBusinessData();
+        if (businessData == null) {
+            throw new NotBusinessAccountException("用戶為非商家帳號");
+        }
+        Optional<DateAvailableHours> dateAvailableHours =
+                dateAvailableHoursRepo.findByBusinessIdAndDate(
+                        businessData.getId(),
+                        request.getDate()
+                );
+        dateAvailableHours.ifPresentOrElse(
+                dateAvailableHoursRepo::delete,
+                () -> {
+                    throw new DateSlotNotFoundException("找不到指定日期的調整時間段");
+                });
     }
 
     private boolean contentCheck(String content) {

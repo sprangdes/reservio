@@ -4,6 +4,7 @@ import com.reservio.dto.*;
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.ServiceItem;
 import com.reservio.entity.UserData;
+import com.reservio.exception.DateSlotNotFoundException;
 import com.reservio.exception.NotBusinessAccountException;
 import com.reservio.exception.ServiceNotEditableException;
 import com.reservio.service.BusinessDataService;
@@ -291,6 +292,29 @@ public class BusinessApiController {
                     .body(ApiResponse.<Void>builder()
                             .success(false)
                             .message(NOT_BUSINESS_ACCOUNT_CANT_ADJUST_INFO.getMessage())
+                            .build());
+        }
+    }
+
+    @PostMapping("/businesses/slot/date/delete")
+    public ResponseEntity<ApiResponse<Void>> deleteAdjustedDateSlot(@RequestBody DeleteAdjustedDateSlotRequest request) {
+        try {
+            businessDataService.deleteAdjustedDateSlot(request);
+            return ResponseEntity.ok(ApiResponse.<Void>builder()
+                    .success(true)
+                    .message(DELETE_ADJUSTED_DATE_SLOT.getMessage())
+                    .build());
+        } catch (NotBusinessAccountException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.<Void>builder()
+                            .success(false)
+                            .message(NOT_BUSINESS_ACCOUNT_CANT_ADJUST_INFO.getMessage())
+                            .build());
+        } catch (DateSlotNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.<Void>builder()
+                            .success(false)
+                            .message(e.getMessage())
                             .build());
         }
     }
