@@ -31,6 +31,7 @@ export default function BusinessInfoPage() {
     address: '',
     slotInterval: ''
   });
+  const [categories, setCategories] = useState([]);
   const didLoadRef = useRef(false);
 
   const [hours, setHours] = useState(() =>
@@ -65,6 +66,16 @@ export default function BusinessInfoPage() {
     }
     const res = await api.businessServices(me.business.id);
     setServices(res.data || []);
+  };
+
+  const loadCategories = async () => {
+    try {
+      const res = await api.businessCategories();
+      const items = Array.isArray(res.data) ? res.data : [];
+      setCategories(items);
+    } catch (err) {
+      setErrorMessage(err.message || '載入商家類別失敗');
+    }
   };
 
   const loadDefaultSlots = async () => {
@@ -140,6 +151,7 @@ export default function BusinessInfoPage() {
     if (didLoadRef.current) return;
     didLoadRef.current = true;
     load();
+    loadCategories();
     loadDefaultSlots();
     loadDateSlot();
     loadAdjustedSlots();
@@ -391,15 +403,18 @@ export default function BusinessInfoPage() {
             </div>
             <div className="col-md-6">
               <label className="small text-muted form-label" htmlFor="biz-category">商家類別</label>
-              <input
+              <select
                 id="biz-category"
                 name="category"
-                type="text"
-                className="form-control"
+                className="form-select"
                 value={infoForm.category}
                 onChange={handleInfoChange}
-                placeholder="商家類別"
-              />
+              >
+                <option value="">請選擇</option>
+                {categories.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
             </div>
             <div className="col-md-6">
               <label className="small text-muted form-label" htmlFor="biz-phone">聯絡電話</label>

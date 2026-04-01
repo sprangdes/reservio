@@ -78,6 +78,7 @@ export const api = {
     body: JSON.stringify(payload)
   }),
   businessActiveServices: (id) => request(`/api/businesses/${id}/services/active`),
+  businessCategories: () => request('/api/businesses/category'),
   getDefaultSlots: () => request('/api/businesses/slot/default'),
   setDefaultSlots: (payload) => request('/api/businesses/slot/default', {
     method: 'POST',

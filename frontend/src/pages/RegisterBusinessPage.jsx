@@ -5,6 +5,7 @@ import { useToast } from '../state/ToastContext.jsx';
 
 export default function RegisterBusinessPage() {
   const { setErrorMessage } = useToast();
+  const [categories, setCategories] = useState([]);
   const [form, setForm] = useState({
     username: '',
     email: '',
@@ -16,6 +17,19 @@ export default function RegisterBusinessPage() {
   });
   const [localError, setLocalError] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const res = await api.businessCategories();
+        const items = Array.isArray(res.data) ? res.data : [];
+        setCategories(items);
+      } catch (err) {
+        setLocalError(err.message || '載入服務類別失敗');
+      }
+    };
+    loadCategories();
+  }, []);
 
   useEffect(() => {
     const draft = sessionStorage.getItem('businessRegisterDraft');
@@ -91,10 +105,9 @@ export default function RegisterBusinessPage() {
                       <label htmlFor="category" className="form-label">服務類別</label>
                       <select className="form-select" id="category" name="category" value={form.category} onChange={handleChange} required>
                         <option value="" disabled>請選擇</option>
-                        <option value="beauty">美容美髮</option>
-                        <option value="medical">診所醫療</option>
-                        <option value="restaurant">餐飲服務</option>
-                        <option value="other">其他諮詢</option>
+                        {categories.map((item) => (
+                          <option key={item} value={item}>{item}</option>
+                        ))}
                       </select>
                     </div>
                     <div className="col-md-6 mb-3">
