@@ -11,6 +11,7 @@ import com.reservio.repo.DefaultAvailableHoursRepo;
 import com.reservio.repo.ReservationRepo;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
@@ -101,11 +102,24 @@ public class ReservationTimeService {
         LocalDate today = LocalDate.now();
         LocalDate threeMonthLater = today.plusMonths(3);
 
-        List<DateAvailableHours> closeDates = dateAvailableHoursRepo
-                .findAllByBusinessIdAndIsClosedTrueAndDateBetween(resolvedBusinessId, today, threeMonthLater);
-        return closeDates.stream()
+        List<String> disableDates = new ArrayList<>(dateAvailableHoursRepo
+                .findAllByBusinessIdAndIsClosedTrueAndDateBetween(resolvedBusinessId, today, threeMonthLater).stream()
                 .map(dateHour -> dateHour.getDate().toString())
+                .toList());
+
+        List<DayOfWeek> disableDayOfWeek = defaultAvailableHoursRepo
+                .findAllByBusinessIdAndIsOpenFalse(resolvedBusinessId).stream()
+                .filter(defaultAvailableHour -> !defaultAvailableHour.isOpen())
+                .map(DefaultAvailableHour::getDayOfWeek)
                 .toList();
+
+        for(LocalDate start = today; !start.isAfter(threeMonthLater); start = start.plusDays(1)) {
+            if(disableDayOfWeek.contains(start.getDayOfWeek())) {
+                disableDates.add(start.toString());
+            }
+        }
+
+        return disableDates;
     }
 
     private int resolveSlotInterval(Long businessId) {
