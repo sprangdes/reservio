@@ -135,7 +135,10 @@ public class BusinessDataService {
         }
         Long businessId = businessData.getId();
         LocalDate today = LocalDate.now();
-        List<DateAvailableHours> dateAvailableHours = dateAvailableHoursRepo.findAllByBusinessIdAndDateAfter(businessId, today);
+        List<DateAvailableHours> dateAvailableHours = dateAvailableHoursRepo.findAllByBusinessIdAndDateAfter(
+                businessId,
+                today
+        );
         List<DateSlotResponse> dateSlotResponses = new ArrayList<>();
         for (DateAvailableHours dateAvailableHour : dateAvailableHours) {
             dateSlotResponses.add(toDateSlotResponse(dateAvailableHour));
