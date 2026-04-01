@@ -25,10 +25,7 @@ public class UserDataService {
     }
 
     @Transactional
-    public UserData registerUser(
-            String username,
-            String email,
-            String password) {
+    public UserData registerUser(String username, String email, String password) throws UserAlreadyExistsException {
         accountExistCheck(username, email);
 
         UserData user = UserData.builder()
@@ -48,7 +45,7 @@ public class UserDataService {
             String businessName,
             String category,
             String phone,
-            String address) {
+            String address) throws UserAlreadyExistsException {
         accountExistCheck(username, email);
 
         UserData user = UserData.builder()
@@ -70,7 +67,7 @@ public class UserDataService {
         return userDataRepo.save(user);
     }
 
-    public UserData getCurrentUser() {
+    public UserData getCurrentUser() throws UserNotFoundException {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String username;
 
