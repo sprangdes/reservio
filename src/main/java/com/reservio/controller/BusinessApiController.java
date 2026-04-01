@@ -278,6 +278,23 @@ public class BusinessApiController {
         }
     }
 
+    @PostMapping("/businesses/slot/date/adjust")
+    public ResponseEntity<ApiResponse<Void>> saveDateSlot(@RequestBody SaveDateSlotRequest request) {
+        try {
+            businessDataService.saveDateSlot(request);
+            return ResponseEntity.ok(ApiResponse.<Void>builder()
+                    .success(true)
+                    .message(UPDATE_BUSINESS_INFO.getMessage())
+                    .build());
+        } catch (NotBusinessAccountException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.<Void>builder()
+                            .success(false)
+                            .message(NOT_BUSINESS_ACCOUNT_CANT_ADJUST_INFO.getMessage())
+                            .build());
+        }
+    }
+
     private BusinessDTO toBusinessDTO(BusinessData data) {
         return BusinessDTO.builder()
                 .id(data.getId())

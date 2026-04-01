@@ -143,6 +143,33 @@ public class BusinessDataService {
         return dateSlotResponses;
     }
 
+    public void saveDateSlot(SaveDateSlotRequest request) {
+        BusinessData businessData = userDataService.getCurrentUser().getBusinessData();
+        if (businessData == null) {
+            throw new NotBusinessAccountException("用戶為非商家帳號");
+        }
+        Optional<DateAvailableHours> dateAvailableHours =
+                dateAvailableHoursRepo.findByBusinessIdAndDate(
+                        businessData.getId(),
+                        request.getDate()
+                );
+        if (dateAvailableHours.isEmpty()) {
+            DateAvailableHours newDateAvailableHours = DateAvailableHours.builder()
+                    .businessId(businessData.getId())
+                    .date(request.getDate())
+                    .startTime(request.getStartTime())
+                    .endTime(request.getEndTime())
+                    .isClosed(!request.isOpen())
+                    .build();
+            dateAvailableHoursRepo.save(newDateAvailableHours);
+        } else {
+            dateAvailableHours.get().setStartTime(request.getStartTime());
+            dateAvailableHours.get().setEndTime(request.getEndTime());
+            dateAvailableHours.get().setClosed(!request.isOpen());
+            dateAvailableHoursRepo.save(dateAvailableHours.get());
+        }
+    }
+
     private boolean contentCheck(String content) {
         return content != null && !content.isEmpty();
     }
