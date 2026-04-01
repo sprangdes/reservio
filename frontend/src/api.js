@@ -88,6 +88,10 @@ export const api = {
     body: JSON.stringify(payload || {})
   }),
   getAdjustedSlots: () => request('/api/businesses/slot/adjusted'),
+  adjustDateSlot: (payload) => request('/api/businesses/slot/date/adjust', {
+    method: 'POST',
+    body: JSON.stringify(payload || {})
+  }),
   updateBusinessInfo: (payload) => request('/api/businesses/info/update', {
     method: 'POST',
     body: JSON.stringify(payload || {})

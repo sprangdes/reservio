@@ -319,6 +319,26 @@ export default function BusinessInfoPage() {
     setOverrides((prev) => prev.filter((item) => item.date !== date));
   };
 
+  const handleSaveDateAdjust = async () => {
+    try {
+      if (!dateOverride.date) {
+        setErrorMessage('請先選擇日期');
+        return;
+      }
+      const payload = {
+        date: dateOverride.date,
+        open: dateOverride.open,
+        startTime: dateOverride.open ? dateOverride.start : null,
+        endTime: dateOverride.open ? dateOverride.end : null
+      };
+      await api.adjustDateSlot(payload);
+      setSuccessMessage('指定日期調整已儲存');
+      await loadAdjustedSlots();
+    } catch (err) {
+      setErrorMessage(err.message || '儲存指定日期調整失敗');
+    }
+  };
+
   const resolvedInterval = Number(infoForm.slotInterval || me?.business?.slotInterval || 30) || 30;
   const buildDurationOptions = (interval, maxMinutes = 480) => {
     const safe = Number.isFinite(interval) && interval > 0 ? interval : 30;
@@ -531,11 +551,6 @@ export default function BusinessInfoPage() {
                 disabled={!dateOverride.open}
               />
             </div>
-            <div className="col-md-1 d-grid">
-              <button type="button" className="btn btn-outline-primary" onClick={addOverride}>
-                新增
-              </button>
-            </div>
           </div>
 
           <div className="mt-4">
@@ -571,7 +586,9 @@ export default function BusinessInfoPage() {
             )}
           </div>
           <div className="mt-3 text-end">
-            <button className="btn btn-gradient fw-bold shadow-sm">儲存指定日期調整</button>
+            <button className="btn btn-gradient fw-bold shadow-sm" onClick={handleSaveDateAdjust}>
+              儲存指定日期調整
+            </button>
           </div>
         </div>
       </div>
