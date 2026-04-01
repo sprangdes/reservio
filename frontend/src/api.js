@@ -92,6 +92,10 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(payload || {})
   }),
+  deleteDateSlot: (payload) => request('/api/businesses/slot/date/delete', {
+    method: 'POST',
+    body: JSON.stringify(payload || {})
+  }),
   updateBusinessInfo: (payload) => request('/api/businesses/info/update', {
     method: 'POST',
     body: JSON.stringify(payload || {})

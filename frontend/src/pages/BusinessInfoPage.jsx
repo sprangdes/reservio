@@ -319,6 +319,16 @@ export default function BusinessInfoPage() {
     setOverrides((prev) => prev.filter((item) => item.date !== date));
   };
 
+  const handleDeleteOverride = async (date) => {
+    try {
+      await api.deleteDateSlot({ date });
+      setSuccessMessage('已刪除指定日期調整');
+      await loadAdjustedSlots();
+    } catch (err) {
+      setErrorMessage(err.message || '刪除指定日期調整失敗');
+    }
+  };
+
   const handleSaveDateAdjust = async () => {
     try {
       if (!dateOverride.date) {
@@ -574,7 +584,7 @@ export default function BusinessInfoPage() {
                         <td>{item.open ? '營業' : '休息'}</td>
                         <td>{item.open ? `${item.start} - ${item.end}` : '—'}</td>
                         <td className="text-end">
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => removeOverride(item.date)}>
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteOverride(item.date)}>
                             移除
                           </button>
                         </td>
