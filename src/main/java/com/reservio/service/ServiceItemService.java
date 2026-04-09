@@ -2,7 +2,6 @@ package com.reservio.service;
 
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.ServiceItem;
-import com.reservio.entity.UserData;
 import com.reservio.exception.ServiceNotEditableException;
 import com.reservio.repo.ReservationRepo;
 import com.reservio.repo.ServiceItemRepo;
@@ -79,12 +78,9 @@ public class ServiceItemService {
         serviceItemRepo.save(item);
     }
 
-    private UserData getCurrentUser() {
-        return userDataService.getCurrentUser();
-    }
-
     private boolean isServiceOwnedByBusiness(ServiceItem item) {
-        return item.getBusiness().equals(getCurrentUser().getBusinessData());
+        BusinessData businessData = userDataService.getCurrentUser().getBusinessData();
+        return item.getBusiness().equals(businessData);
     }
 
     private boolean isServiceEditable(ServiceItem item) throws ServiceNotEditableException {
