@@ -270,7 +270,7 @@ public class BusinessApiController {
                             .message(SERVICE_OFF.getMessage())
                             .build()
                     );
-        }  catch (NotBusinessAccountException e) {
+        } catch (NotBusinessAccountException e) {
             // 非商家帳號無法修改服務
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.<Void>builder()
