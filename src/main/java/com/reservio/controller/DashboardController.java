@@ -5,6 +5,7 @@ import com.reservio.dto.DashboardDTO;
 import com.reservio.entity.UserData;
 import com.reservio.service.ReservationService;
 import com.reservio.service.UserDataService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,17 +28,27 @@ public class DashboardController {
 
     @GetMapping("/dashboard")
     public ResponseEntity<ApiResponse<DashboardDTO>> dashboard() {
-        UserData user = userDataService.getCurrentUser();
-        DashboardDTO dashboard = DashboardDTO.builder()
-                .user(toUserDTO(user))
-                .todayCount(reservationService.countTodayReservations())
-                .pendingCount(reservationService.countPendingReservations())
-                .build();
-
-        return ResponseEntity.ok(ApiResponse.<DashboardDTO>builder()
-                .success(true)
-                .message(OK.getMessage())
-                .data(dashboard)
-                .build());
+        try {
+            // 正常流程
+            UserData currentUser = userDataService.getCurrentUser();
+            DashboardDTO dashboard = DashboardDTO.builder()
+                    .user(toUserDTO(currentUser))
+                    .todayCount(reservationService.countTodayReservations())
+                    .pendingCount(reservationService.countPendingReservations())
+                    .build();
+            return ResponseEntity.ok(ApiResponse.<DashboardDTO>builder()
+                    .success(true)
+                    .message(OK.getMessage())
+                    .data(dashboard)
+                    .build());
+        } catch (Exception e) {
+            // 系統錯誤
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.<DashboardDTO>builder()
+                            .success(false)
+                            .message(ERROR.getMessage())
+                            .build()
+                    );
+        }
     }
 }
