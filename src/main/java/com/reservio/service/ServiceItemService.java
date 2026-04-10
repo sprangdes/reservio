@@ -2,6 +2,8 @@ package com.reservio.service;
 
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.ServiceItem;
+import com.reservio.entity.UserData;
+import com.reservio.exception.NotBusinessAccountException;
 import com.reservio.exception.ServiceNotEditableException;
 import com.reservio.repo.ReservationRepo;
 import com.reservio.repo.ServiceItemRepo;
@@ -39,7 +41,13 @@ public class ServiceItemService {
     }
 
     @Transactional
-    public ServiceItem saveServiceItem(BusinessData businessData, String name, Integer duration) {
+    public ServiceItem saveServiceItem(String name, Integer duration)
+            throws NotBusinessAccountException {
+        UserData currentUser = userDataService.getCurrentUser();
+        BusinessData businessData = currentUser.getBusinessData();
+        if (currentUser.getBusinessData() == null) {
+            throw new NotBusinessAccountException("用戶為非商家帳號");
+        }
         ServiceItem item = ServiceItem.builder()
                 .name(name)
                 .duration(duration)
@@ -51,8 +59,8 @@ public class ServiceItemService {
     @Transactional
     public void deleteServiceItem(Long id) throws NoSuchElementException, ServiceNotEditableException{
         serviceItemRepo.findById(id)
-                .filter(this::isServiceOwnedByBusiness)
-                .filter(this::isServiceEditable)
+                .filter(this::serviceOwnedByBusiness)
+                .filter(this::serviceEditable)
                 .orElseThrow();
         serviceItemRepo.deleteById(id);
     }
@@ -61,8 +69,8 @@ public class ServiceItemService {
     public void modifyServiceItem(Long id, String name, Integer duration)
             throws NoSuchElementException , ServiceNotEditableException{
         ServiceItem item = serviceItemRepo.findById(id)
-                .filter(this::isServiceOwnedByBusiness)
-                .filter(this::isServiceEditable)
+                .filter(this::serviceOwnedByBusiness)
+                .filter(this::serviceEditable)
                 .orElseThrow();
         item.setName(name);
         item.setDuration(duration);
@@ -71,19 +79,23 @@ public class ServiceItemService {
 
     @Transactional
     public void switchServiceItem(Long id, boolean status) throws NoSuchElementException {
+        UserData currentUser = userDataService.getCurrentUser();
+        if (currentUser.getBusinessData() == null) {
+            throw new NotBusinessAccountException("用戶為非商家帳號");
+        }
         ServiceItem item = serviceItemRepo.findById(id)
-                .filter(this::isServiceOwnedByBusiness)
+                .filter(this::serviceOwnedByBusiness)
                 .orElseThrow();
         item.setActive(status);
         serviceItemRepo.save(item);
     }
 
-    private boolean isServiceOwnedByBusiness(ServiceItem item) {
+    private boolean serviceOwnedByBusiness(ServiceItem item) {
         BusinessData businessData = userDataService.getCurrentUser().getBusinessData();
         return item.getBusiness().equals(businessData);
     }
 
-    private boolean isServiceEditable(ServiceItem item) throws ServiceNotEditableException {
+    private boolean serviceEditable(ServiceItem item) throws ServiceNotEditableException {
         long editableServices = reservationRepo.countByBusinessAndTitleAndStatusIn(
                 item.getBusiness(), item.getName(), List.of(PENDING, CONFIRMED));
         if (editableServices > 0 ) {
