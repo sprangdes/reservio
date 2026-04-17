@@ -150,11 +150,11 @@ export default function BusinessInfoPage() {
   useEffect(() => {
     if (didLoadRef.current) return;
     didLoadRef.current = true;
-    load();
-    loadCategories();
-    loadDefaultSlots();
-    loadDateSlot();
-    loadAdjustedSlots();
+    void load();
+    void loadCategories();
+    void loadDefaultSlots();
+    void loadDateSlot();
+    void loadAdjustedSlots();
   }, [me]);
 
   const handleChange = (event) => {
@@ -230,7 +230,7 @@ export default function BusinessInfoPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('確定要刪除此服務項目嗎？')) {
+    if (!globalThis.confirm('確定要刪除此服務項目嗎？')) {
       return;
     }
     try {
@@ -307,28 +307,8 @@ export default function BusinessInfoPage() {
     const nextDate = event.target.value;
     setDateOverride((prev) => ({ ...prev, date: nextDate }));
     if (nextDate) {
-      loadDateSlot(nextDate);
+      void loadDateSlot(nextDate);
     }
-  };
-
-  const addOverride = () => {
-    if (!dateOverride.date) return;
-    setOverrides((prev) => {
-      const rest = prev.filter((item) => item.date !== dateOverride.date);
-      return [
-        ...rest,
-        {
-          date: dateOverride.date,
-          open: dateOverride.open,
-          start: dateOverride.start,
-          end: dateOverride.end
-        }
-      ].sort((a, b) => a.date.localeCompare(b.date));
-    });
-  };
-
-  const removeOverride = (date) => {
-    setOverrides((prev) => prev.filter((item) => item.date !== date));
   };
 
   const handleDeleteOverride = async (date) => {
@@ -372,16 +352,77 @@ export default function BusinessInfoPage() {
   };
 
   const durationOptions = buildDurationOptions(resolvedInterval);
+  const hasCustomDurationOption = (value) =>
+    !durationOptions.includes(Number(value)) && Boolean(value);
 
-  if (!me?.business) {
+  const renderDurationOptionItems = (currentValue) => (
+    <>
+      {hasCustomDurationOption(currentValue) ? (
+        <option value={currentValue}>{currentValue}</option>
+      ) : null}
+      {durationOptions.map((value) => (
+        <option key={value} value={String(value)}>{value}</option>
+      ))}
+    </>
+  );
+
+  const renderEditDurationInput = () => (
+    <div className="input-group input-group-sm">
+      <select className="form-select" name="duration" value={editForm.duration} onChange={handleEditChange} required>
+        {renderDurationOptionItems(editForm.duration)}
+      </select>
+      <span className="input-group-text">分鐘</span>
+    </div>
+  );
+
+  const renderDurationBadge = (duration) => (
+    <span className="badge rounded-pill bg-light text-primary border border-primary border-opacity-25 px-3 py-2">
+      <i className="bi bi-stopwatch me-1"></i> {duration} 分鐘
+    </span>
+  );
+
+  const renderServiceToggle = (service, withTitle = false) => (
+    <label className="switch" title={withTitle ? (service.active ? '已啟用' : '已停用') : undefined}>
+      <input type="checkbox" checked={!!service.active} disabled={busyId === service.id} onChange={() => handleToggle(service)}/>
+      <span className="slider"></span>
+    </label>
+  );
+
+  const renderEditingActions = (serviceId, mobile = false) => {
+    if (mobile) {
+      return (
+        <>
+          <button className="btn btn-sm btn-outline-success" onClick={() => handleSave(serviceId)} disabled={busyId === serviceId}>儲存</button>
+          <button className="btn btn-sm btn-outline-secondary" onClick={cancelEdit} disabled={busyId === serviceId}>取消</button>
+        </>
+      );
+    }
     return (
-      <main className="container list-page">
-        <div className="alert alert-warning">非商家帳號無法管理商家資訊。</div>
-      </main>
+      <div className="btn-group">
+        <button className="btn btn-sm btn-outline-success" onClick={() => handleSave(serviceId)} disabled={busyId === serviceId}><i className="bi bi-check-lg"></i>儲存</button>
+        <button className="btn btn-sm btn-outline-secondary" onClick={cancelEdit} disabled={busyId === serviceId}>取消</button>
+      </div>
     );
-  }
+  };
 
-  return (
+  const renderDisplayActions = (service, mobile = false) => {
+    if (mobile) {
+      return (
+        <>
+          <button className="btn btn-sm btn-outline-primary" onClick={() => startEdit(service)} disabled={busyId === service.id}>編輯</button>
+          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(service.id)} disabled={busyId === service.id}>移除</button>
+        </>
+      );
+    }
+    return (
+      <div className="btn-group">
+        <button className="btn btn-sm btn-link text-primary text-decoration-none" onClick={() => startEdit(service)} disabled={busyId === service.id}><i className="bi bi-pencil-square"></i> 編輯</button>
+        <button className="btn btn-sm btn-link text-danger text-decoration-none" onClick={() => handleDelete(service.id)} disabled={busyId === service.id}><i className="bi bi-trash3"></i> 移除</button>
+      </div>
+    );
+  };
+
+  const renderMainContent = () => (
     <main className="container list-page">
       <div className="card shadow-sm border-0 overflow-hidden mb-4">
         <div className="card-header bg-gradient text-white text-white-strong p-4">
@@ -391,25 +432,11 @@ export default function BusinessInfoPage() {
           <div className="row g-3">
             <div className="col-md-6">
               <label className="small text-muted form-label" htmlFor="biz-name">商家名稱</label>
-              <input
-                id="biz-name"
-                name="name"
-                type="text"
-                className="form-control"
-                value={infoForm.name}
-                onChange={handleInfoChange}
-                placeholder="商家名稱"
-              />
+              <input id="biz-name" name="name" type="text" className="form-control" value={infoForm.name} onChange={handleInfoChange} placeholder="商家名稱"/>
             </div>
             <div className="col-md-6">
               <label className="small text-muted form-label" htmlFor="biz-category">商家類別</label>
-              <select
-                id="biz-category"
-                name="category"
-                className="form-select"
-                value={infoForm.category}
-                onChange={handleInfoChange}
-              >
+              <select id="biz-category" name="category" className="form-select" value={infoForm.category} onChange={handleInfoChange}>
                 <option value="">請選擇</option>
                 {categories.map((item) => (
                   <option key={item} value={item}>{item}</option>
@@ -418,36 +445,15 @@ export default function BusinessInfoPage() {
             </div>
             <div className="col-md-6">
               <label className="small text-muted form-label" htmlFor="biz-phone">聯絡電話</label>
-              <input
-                id="biz-phone"
-                name="phone"
-                type="text"
-                className="form-control"
-                value={infoForm.phone}
-                onChange={handleInfoChange}
-                placeholder="聯絡電話"
-              />
+              <input id="biz-phone" name="phone" type="text" className="form-control" value={infoForm.phone} onChange={handleInfoChange} placeholder="聯絡電話"/>
             </div>
             <div className="col-md-6">
               <label className="small text-muted form-label" htmlFor="biz-address">地址</label>
-              <input
-                id="biz-address"
-                name="address"
-                type="text"
-                className="form-control"
-                value={infoForm.address}
-                onChange={handleInfoChange}
-                placeholder="地址"
-              />
+              <input id="biz-address" name="address" type="text" className="form-control" value={infoForm.address} onChange={handleInfoChange} placeholder="地址"/>
             </div>
           </div>
           <div className="text-end mt-4">
-            <button
-              type="button"
-              className="btn btn-gradient fw-bold shadow-sm"
-              onClick={handleInfoSave}
-              disabled={savingInfo}
-            >
+            <button type="button" className="btn btn-gradient fw-bold shadow-sm" onClick={handleInfoSave} disabled={savingInfo}>
               {savingInfo ? '儲存中...' : '儲存商家資訊'}
             </button>
           </div>
@@ -462,17 +468,7 @@ export default function BusinessInfoPage() {
           <div className="row g-3 align-items-end mb-4">
             <div className="col-md-5 col-lg-4">
               <label className="small text-muted form-label" htmlFor="biz-slot">預設時段間隔 (分鐘)</label>
-              <input
-                id="biz-slot"
-                name="slotInterval"
-                type="number"
-                className="form-control"
-                min="5"
-                step="5"
-                value={infoForm.slotInterval}
-                onChange={handleInfoChange}
-                placeholder="30"
-              />
+              <input id="biz-slot" name="slotInterval" type="number" className="form-control" min="5" step="5" value={infoForm.slotInterval} onChange={handleInfoChange} placeholder="30"/>
               <div className="form-text">會影響服務時長可選項與可預約的時段切分。</div>
             </div>
           </div>
@@ -483,42 +479,21 @@ export default function BusinessInfoPage() {
                   <div className="d-flex align-items-center justify-content-between">
                     <div className="fw-bold">{day.label}</div>
                     <div className="form-check form-switch mb-0">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={hours[day.key].open}
-                        onChange={() => toggleDay(day.key)}
-                      />
+                      <input className="form-check-input" type="checkbox" checked={hours[day.key].open} onChange={() => toggleDay(day.key)}/>
                       <label className="form-check-label text-muted small">營業</label>
                     </div>
                   </div>
                   <div className="d-flex align-items-center gap-2 flex-wrap">
-                    <input
-                      type="time"
-                      className="form-control form-control-sm"
-                      value={hours[day.key].start}
-                      onChange={(e) => updateDayTime(day.key, 'start', e.target.value)}
-                      style={{ maxWidth: '140px' }}
-                      disabled={!hours[day.key].open}
-                    />
+                    <input type="time" className="form-control form-control-sm" value={hours[day.key].start} onChange={(e) => updateDayTime(day.key, 'start', e.target.value)} style={{ maxWidth: '140px' }} disabled={!hours[day.key].open}/>
                     <span className="text-muted">至</span>
-                    <input
-                      type="time"
-                      className="form-control form-control-sm"
-                      value={hours[day.key].end}
-                      onChange={(e) => updateDayTime(day.key, 'end', e.target.value)}
-                      style={{ maxWidth: '140px' }}
-                      disabled={!hours[day.key].open}
-                    />
+                    <input type="time" className="form-control form-control-sm" value={hours[day.key].end} onChange={(e) => updateDayTime(day.key, 'end', e.target.value)} style={{ maxWidth: '140px' }} disabled={!hours[day.key].open}/>
                   </div>
                 </div>
               </div>
             ))}
           </div>
           <div className="mt-3 text-end">
-            <button className="btn btn-gradient fw-bold shadow-sm" onClick={handleSaveDefaultSlots}>
-              儲存預設營業時間
-            </button>
+            <button className="btn btn-gradient fw-bold shadow-sm" onClick={handleSaveDefaultSlots}>儲存預設營業時間</button>
           </div>
         </div>
       </div>
@@ -531,48 +506,22 @@ export default function BusinessInfoPage() {
           <div className="row g-3 align-items-end">
             <div className="col-md-3">
               <label className="form-label fw-bold small text-muted">日期</label>
-              <input
-                type="date"
-                className="form-control"
-                name="date"
-                value={dateOverride.date}
-                onChange={handleDateChange}
-              />
+              <input type="date" className="form-control" name="date" value={dateOverride.date} onChange={handleDateChange}/>
             </div>
             <div className="col-md-2">
               <label className="form-label fw-bold small text-muted">是否營業</label>
               <div className="form-check form-switch">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  name="open"
-                  checked={dateOverride.open}
-                  onChange={handleOverrideChange}
-                />
+                <input className="form-check-input" type="checkbox" name="open" checked={dateOverride.open} onChange={handleOverrideChange}/>
                 <label className="form-check-label text-muted small">營業</label>
               </div>
             </div>
             <div className="col-md-3">
               <label className="form-label fw-bold small text-muted">開始時間</label>
-              <input
-                type="time"
-                className="form-control"
-                name="start"
-                value={dateOverride.start}
-                onChange={handleOverrideChange}
-                disabled={!dateOverride.open}
-              />
+              <input type="time" className="form-control" name="start" value={dateOverride.start} onChange={handleOverrideChange} disabled={!dateOverride.open}/>
             </div>
             <div className="col-md-3">
               <label className="form-label fw-bold small text-muted">結束時間</label>
-              <input
-                type="time"
-                className="form-control"
-                name="end"
-                value={dateOverride.end}
-                onChange={handleOverrideChange}
-                disabled={!dateOverride.open}
-              />
+              <input type="time" className="form-control" name="end" value={dateOverride.end} onChange={handleOverrideChange} disabled={!dateOverride.open}/>
             </div>
           </div>
 
@@ -597,9 +546,7 @@ export default function BusinessInfoPage() {
                         <td>{item.open ? '營業' : '休息'}</td>
                         <td>{item.open ? `${item.start} - ${item.end}` : '—'}</td>
                         <td className="text-end">
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteOverride(item.date)}>
-                            移除
-                          </button>
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteOverride(item.date)}>移除</button>
                         </td>
                       </tr>
                     ))}
@@ -626,35 +573,14 @@ export default function BusinessInfoPage() {
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                   <label htmlFor="name" className="form-label fw-bold small text-muted">服務名稱</label>
-                  <input
-                    type="text"
-                    className="form-control border-light bg-light"
-                    id="name"
-                    name="name"
-                    value={form.name}
-                    onChange={handleChange}
-                    placeholder="例如：精緻剪髮"
-                    required
-                  />
+                  <input type="text" className="form-control border-light bg-light" id="name" name="name" value={form.name} onChange={handleChange} placeholder="例如：精緻剪髮" required/>
                 </div>
                 <div className="mb-4">
                   <label htmlFor="duration" className="form-label fw-bold small text-muted">服務時長 (分鐘)</label>
                   <div className="input-group">
-                    <select
-                      className="form-select border-light bg-light"
-                      id="duration"
-                      name="duration"
-                      value={form.duration}
-                      onChange={handleChange}
-                      required
-                    >
+                    <select className="form-select border-light bg-light" id="duration" name="duration" value={form.duration} onChange={handleChange} required>
                       <option value="">請選擇時長</option>
-                      {!durationOptions.includes(Number(form.duration)) && form.duration ? (
-                        <option value={form.duration}>{form.duration}</option>
-                      ) : null}
-                      {durationOptions.map((value) => (
-                        <option key={value} value={String(value)}>{value}</option>
-                      ))}
+                      {renderDurationOptionItems(form.duration)}
                     </select>
                     <span className="input-group-text border-light bg-light text-muted small">分鐘</span>
                   </div>
@@ -691,73 +617,26 @@ export default function BusinessInfoPage() {
                       <tr key={s.id}>
                         <td className="ps-4 fw-bold text-dark">
                           {editingId === s.id ? (
-                            <input
-                              type="text"
-                              className="form-control form-control-sm"
-                              name="name"
-                              value={editForm.name}
-                              onChange={handleEditChange}
-                              required
-                            />
+                            <input type="text" className="form-control form-control-sm" name="name" value={editForm.name} onChange={handleEditChange} required/>
                           ) : (
                             s.name
                           )}
                         </td>
                         <td className="text-center">
                           {editingId === s.id ? (
-                            <div className="input-group input-group-sm">
-                              <select
-                                className="form-select"
-                                name="duration"
-                                value={editForm.duration}
-                                onChange={handleEditChange}
-                                required
-                              >
-                                {!durationOptions.includes(Number(editForm.duration)) && editForm.duration ? (
-                                  <option value={editForm.duration}>{editForm.duration}</option>
-                                ) : null}
-                                {durationOptions.map((value) => (
-                                  <option key={value} value={String(value)}>{value}</option>
-                                ))}
-                              </select>
-                              <span className="input-group-text">分鐘</span>
-                            </div>
+                            renderEditDurationInput()
                           ) : (
-                            <span className="badge rounded-pill bg-light text-primary border border-primary border-opacity-25 px-3 py-2">
-                              <i className="bi bi-stopwatch me-1"></i> {s.duration} 分鐘
-                            </span>
+                            renderDurationBadge(s.duration)
                           )}
                         </td>
                         <td className="text-center">
-                          <label className="switch" title={s.active ? '已啟用' : '已停用'}>
-                            <input
-                              type="checkbox"
-                              checked={!!s.active}
-                              disabled={busyId === s.id}
-                              onChange={() => handleToggle(s)}
-                            />
-                            <span className="slider"></span>
-                          </label>
+                          {renderServiceToggle(s, true)}
                         </td>
                         <td className="text-center pe-4">
                           {editingId === s.id ? (
-                            <div className="btn-group">
-                              <button className="btn btn-sm btn-outline-success" onClick={() => handleSave(s.id)} disabled={busyId === s.id}>
-                                <i className="bi bi-check-lg"></i> 儲存
-                              </button>
-                              <button className="btn btn-sm btn-outline-secondary" onClick={cancelEdit} disabled={busyId === s.id}>
-                                取消
-                              </button>
-                            </div>
+                            renderEditingActions(s.id)
                           ) : (
-                            <div className="btn-group">
-                              <button className="btn btn-sm btn-link text-primary text-decoration-none" onClick={() => startEdit(s)} disabled={busyId === s.id}>
-                                <i className="bi bi-pencil-square"></i> 編輯
-                              </button>
-                              <button className="btn btn-sm btn-link text-danger text-decoration-none" onClick={() => handleDelete(s.id)} disabled={busyId === s.id}>
-                                <i className="bi bi-trash3"></i> 移除
-                              </button>
-                            </div>
+                            renderDisplayActions(s)
                           )}
                         </td>
                       </tr>
@@ -779,70 +658,23 @@ export default function BusinessInfoPage() {
                     <div className="card-body">
                       <div className="d-flex justify-content-between align-items-center mb-2">
                         <div className="fw-bold">{s.name}</div>
-                        <span className="badge rounded-pill bg-light text-primary border border-primary border-opacity-25 px-3 py-2">
-                          <i className="bi bi-stopwatch me-1"></i> {s.duration} 分鐘
-                        </span>
+                        {renderDurationBadge(s.duration)}
                       </div>
                       <div className="d-flex justify-content-between align-items-center mb-3">
                         <span className="text-muted small">啟用</span>
-                        <label className="switch">
-                          <input
-                            type="checkbox"
-                            checked={!!s.active}
-                            disabled={busyId === s.id}
-                            onChange={() => handleToggle(s)}
-                          />
-                          <span className="slider"></span>
-                        </label>
+                        {renderServiceToggle(s)}
                       </div>
                       {editingId === s.id ? (
                         <div className="mb-3">
-                          <input
-                            type="text"
-                            className="form-control form-control-sm mb-2"
-                            name="name"
-                            value={editForm.name}
-                            onChange={handleEditChange}
-                            required
-                          />
-                          <div className="input-group input-group-sm">
-                            <select
-                              className="form-select"
-                              name="duration"
-                              value={editForm.duration}
-                              onChange={handleEditChange}
-                              required
-                            >
-                              {!durationOptions.includes(Number(editForm.duration)) && editForm.duration ? (
-                                <option value={editForm.duration}>{editForm.duration}</option>
-                              ) : null}
-                              {durationOptions.map((value) => (
-                                <option key={value} value={String(value)}>{value}</option>
-                              ))}
-                            </select>
-                            <span className="input-group-text">分鐘</span>
-                          </div>
+                          <input type="text" className="form-control form-control-sm mb-2" name="name" value={editForm.name} onChange={handleEditChange} required/>
+                          {renderEditDurationInput()}
                         </div>
                       ) : null}
                       <div className="d-flex gap-2">
                         {editingId === s.id ? (
-                          <>
-                            <button className="btn btn-sm btn-outline-success" onClick={() => handleSave(s.id)} disabled={busyId === s.id}>
-                              儲存
-                            </button>
-                            <button className="btn btn-sm btn-outline-secondary" onClick={cancelEdit} disabled={busyId === s.id}>
-                              取消
-                            </button>
-                          </>
+                          renderEditingActions(s.id, true)
                         ) : (
-                          <>
-                            <button className="btn btn-sm btn-outline-primary" onClick={() => startEdit(s)} disabled={busyId === s.id}>
-                              編輯
-                            </button>
-                            <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(s.id)} disabled={busyId === s.id}>
-                              移除
-                            </button>
-                          </>
+                          renderDisplayActions(s, true)
                         )}
                       </div>
                     </div>
@@ -866,4 +698,14 @@ export default function BusinessInfoPage() {
       </div>
     </main>
   );
+
+  if (!me?.business) {
+    return (
+      <main className="container list-page">
+        <div className="alert alert-warning">非商家帳號無法管理商家資訊。</div>
+      </main>
+    );
+  }
+
+  return renderMainContent();
 }
