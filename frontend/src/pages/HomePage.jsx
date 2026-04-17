@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { useAuth } from '../state/AuthContext.jsx';
 import { useToast } from '../state/ToastContext.jsx';
 
-function HeroContent({ isLoggedIn, isBusiness, me, dashboard }) {
+function renderHeroContent(isLoggedIn, isBusiness, me, dashboard) {
   if (!isLoggedIn) {
     return (
       <div>
@@ -86,7 +86,7 @@ function HeroContent({ isLoggedIn, isBusiness, me, dashboard }) {
   );
 }
 
-function GuestFeaturesSection() {
+function renderGuestFeaturesSection() {
   return (
     <section className="container my-5">
       <div className="row g-4">
@@ -122,7 +122,7 @@ function GuestFeaturesSection() {
   );
 }
 
-function CalendarSection({
+function renderCalendarSection({
   me,
   calendarView,
   setCalendarView,
@@ -655,30 +655,30 @@ export default function HomePage() {
     <main>
       <header className="hero-section text-center">
         <div className="container">
-          <HeroContent isLoggedIn={isLoggedIn} isBusiness={isBusiness} me={me} dashboard={dashboard} />
+          {renderHeroContent(isLoggedIn, isBusiness, me, dashboard)}
         </div>
       </header>
 
       {isLoggedIn ? (
-        <CalendarSection
-          me={me}
-          calendarView={calendarView}
-          setCalendarView={setCalendarView}
-          today={today}
-          timeLabels={timeLabels}
-          nowMinutes={nowMinutes}
-          dayItems={dayItems}
-          weekDates={weekDates}
-          weekDayLabels={weekDayLabels}
-          calendarItems={calendarItems}
-          currentMonthLabel={currentMonthLabel}
-          isMobile={isMobile}
-          monthDays={monthDays}
-          formatHM={formatHM}
-        />
+        renderCalendarSection({
+          me,
+          calendarView,
+          setCalendarView,
+          today,
+          timeLabels,
+          nowMinutes,
+          dayItems,
+          weekDates,
+          weekDayLabels,
+          calendarItems,
+          currentMonthLabel,
+          isMobile,
+          monthDays,
+          formatHM
+        })
       ) : null}
 
-      {isLoggedIn ? null : <GuestFeaturesSection />}
+      {isLoggedIn ? null : renderGuestFeaturesSection()}
       {errorMessage ? <div className="visually-hidden">{errorMessage}</div> : null}
     </main>
   );
