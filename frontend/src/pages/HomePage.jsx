@@ -4,6 +4,317 @@ import { api } from '../api.js';
 import { useAuth } from '../state/AuthContext.jsx';
 import { useToast } from '../state/ToastContext.jsx';
 
+function HeroContent({ isLoggedIn, isBusiness, me, dashboard }) {
+  if (!isLoggedIn) {
+    return (
+      <div>
+        <h1 className="display-3 fw-bold mb-4 text-white-strong">歡迎來到 Reservio</h1>
+        <p className="lead mb-5 text-white-strong">最直覺、最快速的預約系統，讓管理預約不再是難事。</p>
+        <div className="d-grid gap-2 d-sm-flex justify-content-sm-center">
+          <Link to="/register" className="btn btn-light btn-lg px-4 gap-3 fw-bold text-primary">
+            開始使用
+          </Link>
+          <Link to="/login" className="btn btn-outline-light btn-lg px-4">
+            立即登入
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (isBusiness) {
+    return (
+      <div>
+        <h1 className="display-4 fw-bold mb-3 text-white-strong">
+          店長<span className="text-warning">{me.business?.name}</span>，你好！
+        </h1>
+        <p className="lead mb-4 text-white-strong">歡迎回來，這是您今日的營運概況。</p>
+        <div className="row justify-content-center mt-4">
+          <div className="col-md-10">
+            <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white text-white-strong p-4 dashboard-card" style={{ backdropFilter: 'blur(10px)' }}>
+              <div className="row align-items-center">
+                <Link to="/reservation/today/manage" className="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link">
+                  <h5 className="small text-uppercase opacity-75">今日預約</h5>
+                  <p className="h2 mb-0">{dashboard?.todayCount ?? 0}</p>
+                </Link>
+                <Link to="/reservation/pending/manage" className="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link">
+                  <h5 className="small text-uppercase opacity-75">待處理預約</h5>
+                  <p className="h2 mb-0">{dashboard?.pendingCount ?? 0}</p>
+                </Link>
+                <div className="col-sm-4">
+                  <div className="d-grid gap-2">
+                    <Link to="/business/info" className="btn btn-warning fw-bold shadow-sm no-text-shadow">
+                      管理商家資訊
+                    </Link>
+                    <Link to="/reservation/manage" className="btn btn-light fw-bold shadow-sm no-text-shadow">
+                      查看所有預約
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h1 className="display-4 fw-bold mb-3 text-white-strong">
+        你好，<span className="text-warning">{me.username}</span>！
+      </h1>
+      <p className="lead mb-4 text-white-strong">歡迎回來，今天想預約哪些服務呢？</p>
+      <div className="row justify-content-center mt-4">
+        <div className="col-md-8">
+          <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white text-white-strong p-4 dashboard-card dashboard-card--customer" style={{ backdropFilter: 'blur(10px)' }}>
+            <div className="row align-items-center">
+              <div className="col-sm-6 border-end border-white border-opacity-25">
+                <h5 className="small text-uppercase opacity-75">我的今日預約</h5>
+                <p className="h2 mb-0">{dashboard?.todayCount ?? 0}</p>
+              </div>
+              <div className="col-sm-6 text-center">
+                <Link to="/reservation/new" className="btn btn-light fw-bold px-4 shadow-sm no-text-shadow">
+                  <i className="bi bi-calendar-plus me-1"></i> 立即預約
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GuestFeaturesSection() {
+  return (
+    <section className="container my-5">
+      <div className="row g-4">
+        <div className="col-md-4">
+          <div className="card h-100 feature-card p-4">
+            <div className="card-body text-center">
+              <div className="display-6 text-primary mb-3">📅</div>
+              <h3 className="card-title h5 fw-bold">快速預約</h3>
+              <p className="card-text text-muted">只需幾秒鐘，即可完成繁瑣的預約流程，提升工作效率。</p>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-4">
+          <div className="card h-100 feature-card p-4">
+            <div className="card-body text-center">
+              <div className="display-6 text-success mb-3">🔔</div>
+              <h3 className="card-title h5 fw-bold">自動通知</h3>
+              <p className="card-text text-muted">系統自動發送提醒，降低爽約率，維持良好的服務品質。</p>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-4">
+          <div className="card h-100 feature-card p-4">
+            <div className="card-body text-center">
+              <div className="display-6 text-info mb-3">📊</div>
+              <h3 className="card-title h5 fw-bold">數據分析</h3>
+              <p className="card-text text-muted">掌握預約趨勢，透過報表優化您的業務資源分配。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CalendarSection({
+  me,
+  calendarView,
+  setCalendarView,
+  today,
+  timeLabels,
+  nowMinutes,
+  dayItems,
+  weekDates,
+  weekDayLabels,
+  calendarItems,
+  currentMonthLabel,
+  isMobile,
+  monthDays,
+  formatHM
+}) {
+  const renderCalendarEvent = (item, top, height) => {
+    const title = me?.role === 'ROLE_BUSINESS' ? item.customerName : item.businessName;
+    return (
+      <div
+        key={item.id}
+        className={`calendar-day__event${item.isCompleted ? ' calendar-event--completed' : ''}`}
+        style={{ top: `${top}px`, height: `${height}px`, background: item.color, borderLeftColor: item.color }}
+      >
+        <div className="calendar-day__event-title">{title} · {item.service}</div>
+        <div className="calendar-day__event-time">
+          {formatHM(item.start)} - {formatHM(item.end)}
+        </div>
+      </div>
+    );
+  };
+
+  const weekCalendarContent = calendarView === 'week' ? (
+    <div className="calendar-week-grid calendar-week-grid--scroll">
+      <div className="calendar-week-grid__fixed-col">
+        <div className="calendar-week-grid__corner"></div>
+        <div className="calendar-week-grid__timescol">
+          {timeLabels.map((label) => (
+            <div key={label} className="calendar-week-grid__time">
+              {label}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="calendar-week-grid__scroll">
+        <div className="calendar-week-grid__scroll-inner">
+          <div className="calendar-week-grid__header">
+            {weekDates.map((date, idx) => (
+              <div key={date} className="calendar-week-grid__dayhead">
+                <div className="calendar-week-grid__dayname">星期{weekDayLabels[idx]}</div>
+                <div className="calendar-week-grid__date">{date}</div>
+              </div>
+            ))}
+          </div>
+          <div className="calendar-week-grid__weekcols">
+            {weekDates.map((date) => {
+              const items = calendarItems.filter((item) => item.date === date);
+              const showNow = date === today;
+              return (
+                <div key={date} className="calendar-week-grid__daycol">
+                  {showNow ? (
+                    <div className="calendar-now-line" style={{ top: `${(nowMinutes / 60) * 48 + 2}px` }} />
+                  ) : null}
+                  {timeLabels.map((label) => (
+                    <div key={label} className="calendar-day__row" />
+                  ))}
+                  {items.map((item) => {
+                    const [sh, sm] = item.start.split(':').map(Number);
+                    const [eh, em] = item.end.split(':').map(Number);
+                    const startMinutes = sh * 60 + sm;
+                    const endMinutes = eh * 60 + em;
+                    const duration = Math.max(endMinutes - startMinutes, 15);
+                    const top = (startMinutes / 60) * 48 + 2;
+                    const height = (duration / 60) * 48 - 4;
+                    return renderCalendarEvent(item, top, height);
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  return (
+    <section className="container my-5">
+      <div className="card shadow-sm border-0 overflow-hidden calendar-card">
+        <div className="card-header bg-gradient text-white text-white-strong p-4">
+          <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div className="fw-bold">
+              <i className="bi bi-calendar3 me-2"></i>行事曆
+            </div>
+            <div className="btn-group">
+              <button type="button" className={`btn btn-sm ${calendarView === 'day' ? 'btn-light text-primary fw-bold' : 'btn-outline-light'}`} onClick={() => setCalendarView('day')}>
+                日
+              </button>
+              <button type="button" className={`btn btn-sm ${calendarView === 'week' ? 'btn-light text-primary fw-bold' : 'btn-outline-light'}`} onClick={() => setCalendarView('week')}>
+                週
+              </button>
+              <button type="button" className={`btn btn-sm ${calendarView === 'month' ? 'btn-light text-primary fw-bold' : 'btn-outline-light'}`} onClick={() => setCalendarView('month')}>
+                月
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="card-body p-0">
+          {calendarView === 'day' ? (
+            <div className="calendar-day">
+              <div className="calendar-day__times">
+                <div className="calendar-day__date">{today}</div>
+                {timeLabels.map((label) => (
+                  <div key={label} className="calendar-day__time">
+                    {label}
+                  </div>
+                ))}
+              </div>
+              <div className="calendar-day__slots">
+                <div className="calendar-now-line" style={{ top: `${48 + (nowMinutes / 60) * 48}px` }} />
+                {timeLabels.map((label) => (
+                  <div key={label} className="calendar-day__row" />
+                ))}
+                {dayItems.map((item) => {
+                  const top = 48 + (item.startMinutes / 60) * 48 + (item.topOffset || 0);
+                  const height = (item.duration / 60) * 48 - (item.heightOffset || 0);
+                  return renderCalendarEvent(item, top, height);
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          {weekCalendarContent}
+
+          {calendarView === 'month' ? (
+            <div className={`p-4 calendar-month-grid ${isMobile ? 'calendar-month-grid--simple' : ''}`}>
+              <div className="calendar-month-grid__title">{currentMonthLabel}</div>
+              <div className="calendar-month-grid__header">
+                {weekDayLabels.map((label) => (
+                  <div key={label} className="calendar-month-grid__head">
+                    星期{label}
+                  </div>
+                ))}
+              </div>
+              {monthDays.map((day) => {
+                const items = calendarItems
+                  .filter((item) => item.date === day.dateStr)
+                  .slice()
+                  .sort((a, b) => a.start.localeCompare(b.start));
+                return (
+                  <div key={day.dateStr} className={`calendar-month-grid__cell ${day.inMonth ? '' : 'is-muted'} ${day.dateStr === today ? 'is-today' : ''}`}>
+                    <div className="calendar-month-grid__date">{day.dateStr.split('-')[2]}</div>
+                    {isMobile ? (
+                      <div className="calendar-month-grid__dots">
+                        {items.slice(0, 6).map((item) => (
+                          <span
+                            key={item.id}
+                            className={`calendar-month-grid__dot${item.isCompleted ? ' calendar-event--completed' : ''}`}
+                            style={{ background: item.color }}
+                          ></span>
+                        ))}
+                        {items.length > 6 ? <span className="calendar-month-grid__more">+{items.length - 6}</span> : null}
+                      </div>
+                    ) : (
+                      <div className="calendar-month-grid__bars">
+                        {items.length <= 3
+                          ? items.map((item) => (
+                              <div key={item.id} className={`calendar-month-grid__bar${item.isCompleted ? ' calendar-event--completed' : ''}`} style={{ background: item.color }}>
+                                {formatHM(item.start)} {item.service}
+                              </div>
+                            ))
+                          : (
+                            <>
+                              {items.slice(0, 2).map((item) => (
+                                <div key={item.id} className={`calendar-month-grid__bar${item.isCompleted ? ' calendar-event--completed' : ''}`} style={{ background: item.color }}>
+                                  {formatHM(item.start)} {item.service}
+                                </div>
+                              ))}
+                              <div className="calendar-month-grid__more">+{items.length - 2}</div>
+                            </>
+                          )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function HomePage() {
   const { me } = useAuth();
   const { errorMessage, setErrorMessage } = useToast();
@@ -339,298 +650,35 @@ export default function HomePage() {
   }, [dayItems]);
   const isLoggedIn = Boolean(me);
   const isBusiness = me?.role === 'ROLE_BUSINESS';
-  let heroContent;
-  if (!isLoggedIn) {
-    heroContent = (
-      <div>
-        <h1 className="display-3 fw-bold mb-4 text-white-strong">歡迎來到 Reservio</h1>
-        <p className="lead mb-5 text-white-strong">最直覺、最快速的預約系統，讓管理預約不再是難事。</p>
-        <div className="d-grid gap-2 d-sm-flex justify-content-sm-center">
-          <Link to="/register" className="btn btn-light btn-lg px-4 gap-3 fw-bold text-primary">
-            開始使用
-          </Link>
-          <Link to="/login" className="btn btn-outline-light btn-lg px-4">
-            立即登入
-          </Link>
-        </div>
-      </div>
-    );
-  } else if (isBusiness) {
-    heroContent = (
-      <div>
-        <h1 className="display-4 fw-bold mb-3 text-white-strong">
-          店長<span className="text-warning">{me.business?.name}</span>，你好！
-        </h1>
-        <p className="lead mb-4 text-white-strong">歡迎回來，這是您今日的營運概況。</p>
-        <div className="row justify-content-center mt-4">
-          <div className="col-md-10">
-            <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white text-white-strong p-4 dashboard-card" style={{backdropFilter: 'blur(10px)'}}>
-              <div className="row align-items-center">
-                <Link to="/reservation/today/manage" className="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link">
-                  <h5 className="small text-uppercase opacity-75">今日預約</h5>
-                  <p className="h2 mb-0">{dashboard?.todayCount ?? 0}</p>
-                </Link>
-                <Link to="/reservation/pending/manage" className="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link">
-                  <h5 className="small text-uppercase opacity-75">待處理預約</h5>
-                  <p className="h2 mb-0">{dashboard?.pendingCount ?? 0}</p>
-                </Link>
-                <div className="col-sm-4">
-                  <div className="d-grid gap-2">
-                    <Link to="/business/info" className="btn btn-warning fw-bold shadow-sm no-text-shadow">
-                      管理商家資訊
-                    </Link>
-                    <Link to="/reservation/manage" className="btn btn-light fw-bold shadow-sm no-text-shadow">
-                      查看所有預約
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  } else {
-    heroContent = (
-      <div>
-        <h1 className="display-4 fw-bold mb-3 text-white-strong">
-          你好，<span className="text-warning">{me.username}</span>！
-        </h1>
-        <p className="lead mb-4 text-white-strong">歡迎回來，今天想預約哪些服務呢？</p>
-        <div className="row justify-content-center mt-4">
-          <div className="col-md-8">
-            <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white text-white-strong p-4 dashboard-card dashboard-card--customer" style={{ backdropFilter: 'blur(10px)' }}>
-              <div className="row align-items-center">
-                <div className="col-sm-6 border-end border-white border-opacity-25">
-                  <h5 className="small text-uppercase opacity-75">我的今日預約</h5>
-                  <p className="h2 mb-0">{dashboard?.todayCount ?? 0}</p>
-                </div>
-                <div className="col-sm-6 text-center">
-                  <Link to="/reservation/new" className="btn btn-light fw-bold px-4 shadow-sm no-text-shadow">
-                    <i className="bi bi-calendar-plus me-1"></i> 立即預約
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  let weekCalendarContent = null;
-  const renderCalendarEvent = (item, top, height) => {
-    const title = me?.role === 'ROLE_BUSINESS' ? item.customerName : item.businessName;
-    return (
-      <div key={item.id} className={`calendar-day__event${item.isCompleted ? ' calendar-event--completed' : ''}`} style={{ top: `${top}px`, height: `${height}px`, background: item.color, borderLeftColor: item.color }}>
-        <div className="calendar-day__event-title">{title} · {item.service}</div>
-        <div className="calendar-day__event-time">
-          {formatHM(item.start)} - {formatHM(item.end)}
-        </div>
-      </div>
-    );
-  };
 
-  if (calendarView === 'week') {
-    weekCalendarContent = (
-      <div className="calendar-week-grid calendar-week-grid--scroll">
-        <div className="calendar-week-grid__fixed-col">
-          <div className="calendar-week-grid__corner"></div>
-          <div className="calendar-week-grid__timescol">
-            {timeLabels.map((label) => (
-              <div key={label} className="calendar-week-grid__time">
-                {label}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="calendar-week-grid__scroll">
-          <div className="calendar-week-grid__scroll-inner">
-            <div className="calendar-week-grid__header">
-              {weekDates.map((date, idx) => (
-                <div key={date} className="calendar-week-grid__dayhead">
-                  <div className="calendar-week-grid__dayname">星期{weekDayLabels[idx]}</div>
-                  <div className="calendar-week-grid__date">{date}</div>
-                </div>
-              ))}
-            </div>
-            <div className="calendar-week-grid__weekcols">
-              {weekDates.map((date) => {
-                const items = calendarItems.filter((item) => item.date === date);
-                const showNow = date === today;
-                return (
-                  <div key={date} className="calendar-week-grid__daycol">
-                    {showNow
-                      ? (<div className="calendar-now-line" style={{ top: `${(nowMinutes / 60) * 48 + 2}px` }}/>)
-                      : null
-                    }
-                    {timeLabels.map((label) => (
-                      <div key={label} className="calendar-day__row" />
-                    ))}
-                    {items.map((item) => {
-                      const [sh, sm] = item.start.split(':').map(Number);
-                      const [eh, em] = item.end.split(':').map(Number);
-                      const startMinutes = sh * 60 + sm;
-                      const endMinutes = eh * 60 + em;
-                      const duration = Math.max(endMinutes - startMinutes, 15);
-                      const top = (startMinutes / 60) * 48 + 2;
-                      const height = (duration / 60) * 48 - 4;
-                      return renderCalendarEvent(item, top, height);
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
   return (
     <main>
       <header className="hero-section text-center">
         <div className="container">
-          {heroContent}
+          <HeroContent isLoggedIn={isLoggedIn} isBusiness={isBusiness} me={me} dashboard={dashboard} />
         </div>
       </header>
 
-      {me ? (
-        <section className="container my-5">
-          <div className="card shadow-sm border-0 overflow-hidden calendar-card">
-            <div className="card-header bg-gradient text-white text-white-strong p-4">
-              <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                <div className="fw-bold">
-                  <i className="bi bi-calendar3 me-2"></i>行事曆
-                </div>
-                <div className="btn-group">
-                  <button type="button" className={`btn btn-sm ${calendarView === 'day' ? 'btn-light text-primary fw-bold' : 'btn-outline-light'}`} onClick={() => setCalendarView('day')}>
-                    日
-                  </button>
-                  <button type="button" className={`btn btn-sm ${calendarView === 'week' ? 'btn-light text-primary fw-bold' : 'btn-outline-light'}`} onClick={() => setCalendarView('week')}>
-                    週
-                  </button>
-                  <button type="button" className={`btn btn-sm ${calendarView === 'month' ? 'btn-light text-primary fw-bold' : 'btn-outline-light'}`} onClick={() => setCalendarView('month')}>
-                    月
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="card-body p-0">
-              {calendarView === 'day' ? (
-                <div className="calendar-day">
-                  <div className="calendar-day__times">
-                    <div className="calendar-day__date">{today}</div>
-                    {timeLabels.map((label) => (
-                      <div key={label} className="calendar-day__time">
-                        {label}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="calendar-day__slots">
-                    <div className="calendar-now-line" style={{ top: `${48 + (nowMinutes / 60) * 48}px` }}/>
-                    {timeLabels.map((label) => (
-                      <div key={label} className="calendar-day__row" />
-                    ))}
-                    {dayItems.map((item) => {
-                      const top = 48 + (item.startMinutes / 60) * 48 + (item.topOffset || 0);
-                      const height = (item.duration / 60) * 48 - (item.heightOffset || 0);
-                      return renderCalendarEvent(item, top, height);
-                    })}
-                  </div>
-                </div>
-              ) : null}
-
-              {weekCalendarContent}
-
-              {calendarView === 'month' ? (
-                <div className={`p-4 calendar-month-grid ${isMobile ? 'calendar-month-grid--simple' : ''}`}>
-                  <div className="calendar-month-grid__title">{currentMonthLabel}</div>
-                  <div className="calendar-month-grid__header">
-                    {weekDayLabels.map((label) => (
-                      <div key={label} className="calendar-month-grid__head">
-                        星期{label}
-                      </div>
-                    ))}
-                  </div>
-                  {monthDays.map((day) => {
-                    const items = calendarItems
-                      .filter((item) => item.date === day.dateStr)
-                      .slice()
-                      .sort((a, b) => a.start.localeCompare(b.start));
-                    return (
-                      <div key={day.dateStr} className={`calendar-month-grid__cell ${day.inMonth ? '' : 'is-muted'} ${day.dateStr === today ? 'is-today' : ''}`}>
-                        <div className="calendar-month-grid__date">{day.dateStr.split('-')[2]}</div>
-                        {isMobile ? (
-                          <div className="calendar-month-grid__dots">
-                            {items.slice(0, 6).map((item) => (
-                              <span key={item.id} className={`calendar-month-grid__dot${item.isCompleted ? ' calendar-event--completed' : ''}`} style={{ background: item.color }}></span>
-                            ))}
-                            {items.length > 6 ? <span className="calendar-month-grid__more">+{items.length - 6}</span> : null}
-                          </div>
-                        ) : (
-                          <div className="calendar-month-grid__bars">
-                            {items.length <= 3
-                              ? items.map((item) => (
-                                  <div key={item.id} className={`calendar-month-grid__bar${item.isCompleted ? ' calendar-event--completed' : ''}`} style={{ background: item.color }}>
-                                  {formatHM(item.start)} {item.service}
-                                  </div>
-                                ))
-                              : (
-                                <>
-                                  {items.slice(0, 2).map((item) => (
-                                    <div key={item.id} className={`calendar-month-grid__bar${item.isCompleted ? ' calendar-event--completed' : ''}`} style={{ background: item.color }}>
-                                    {formatHM(item.start)} {item.service}
-                                    </div>
-                                  ))}
-                                  <div className="calendar-month-grid__more">+{items.length - 2}</div>
-                                </>
-                              )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </section>
+      {isLoggedIn ? (
+        <CalendarSection
+          me={me}
+          calendarView={calendarView}
+          setCalendarView={setCalendarView}
+          today={today}
+          timeLabels={timeLabels}
+          nowMinutes={nowMinutes}
+          dayItems={dayItems}
+          weekDates={weekDates}
+          weekDayLabels={weekDayLabels}
+          calendarItems={calendarItems}
+          currentMonthLabel={currentMonthLabel}
+          isMobile={isMobile}
+          monthDays={monthDays}
+          formatHM={formatHM}
+        />
       ) : null}
 
-      {isLoggedIn ?
-        null : (
-          <section className="container my-5">
-            <div className="row g-4">
-              <div className="col-md-4">
-                <div className="card h-100 feature-card p-4">
-                  <div className="card-body text-center">
-                    <div className="display-6 text-primary mb-3">📅</div>
-                    <h3 className="card-title h5 fw-bold">快速預約</h3>
-                    <p className="card-text text-muted">只需幾秒鐘，即可完成繁瑣的預約流程，提升工作效率。</p>
-                  </div>
-                </div>
-              </div>
-              <div className="col-md-4">
-                <div className="card h-100 feature-card p-4">
-                  <div className="card-body text-center">
-                    <div className="display-6 text-success mb-3">🔔</div>
-                    <h3 className="card-title h5 fw-bold">自動通知</h3>
-                    <p className="card-text text-muted">系統自動發送提醒，降低爽約率，維持良好的服務品質。</p>
-                  </div>
-                </div>
-              </div>
-              <div className="col-md-4">
-                <div className="card h-100 feature-card p-4">
-                  <div className="card-body text-center">
-                    <div className="display-6 text-info mb-3">📊</div>
-                    <h3 className="card-title h5 fw-bold">數據分析</h3>
-                    <p className="card-text text-muted">掌握預約趨勢，透過報表優化您的業務資源分配。</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-        )
-      }
+      {isLoggedIn ? null : <GuestFeaturesSection />}
       {errorMessage ? <div className="visually-hidden">{errorMessage}</div> : null}
     </main>
   );
