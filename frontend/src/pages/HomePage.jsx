@@ -5,7 +5,7 @@ import { useAuth } from '../state/AuthContext.jsx';
 import { useToast } from '../state/ToastContext.jsx';
 
 export default function HomePage() {
-  const { me, refresh } = useAuth();
+  const { me } = useAuth();
   const { errorMessage, setErrorMessage } = useToast();
   const [dashboard, setDashboard] = useState(null);
   const [calendarView, setCalendarView] = useState('week');
@@ -36,7 +36,7 @@ export default function HomePage() {
         setDashboard(null);
       }
     };
-    load();
+    void load();
   }, [me]);
 
   useEffect(() => {
@@ -48,15 +48,17 @@ export default function HomePage() {
       }
       try {
         const res = await api.todayReservations();
-        const items = res?.data?.reservations || [];
-        const users = res?.data?.users || [];
+        const { reservations = []} = res?.data || {};
+        const { userList = []} = res?.data || {};
+        const items = reservations;
+        const users = userList;
         setTodayReservations(Array.isArray(items) ? items : []);
         setTodayUsers(Array.isArray(users) ? users : []);
       } catch (err) {
         setErrorMessage(err.message || '載入今日預約失敗');
       }
     };
-    loadTodayReservations();
+    void loadTodayReservations();
   }, [me, setErrorMessage]);
 
   useEffect(() => {
@@ -68,8 +70,10 @@ export default function HomePage() {
       }
       try {
         const res = await api.weekReservations();
-        const items = res?.data?.reservations || [];
-        const users = res?.data?.users || [];
+        const { reservations = []} = res?.data || {};
+        const { userList = []} = res?.data || {};
+        const items = reservations;
+        const users = userList;
         setWeekReservations(Array.isArray(items) ? items : []);
         setWeekUsers(Array.isArray(users) ? users : []);
       } catch (err) {
@@ -77,7 +81,7 @@ export default function HomePage() {
       }
     };
     if (calendarView === 'week') {
-      loadWeekReservations();
+      void loadWeekReservations();
     }
   }, [calendarView, me, setErrorMessage]);
 
@@ -90,8 +94,10 @@ export default function HomePage() {
       }
       try {
         const res = await api.monthReservations();
-        const items = res?.data?.reservations || [];
-        const users = res?.data?.users || [];
+        const { reservations = []} = res?.data || {};
+        const { userList = []} = res?.data || {};
+        const items = reservations;
+        const users = userList;
         setMonthReservations(Array.isArray(items) ? items : []);
         setMonthUsers(Array.isArray(users) ? users : []);
       } catch (err) {
@@ -99,12 +105,12 @@ export default function HomePage() {
       }
     };
     if (calendarView === 'month') {
-      loadMonthReservations();
+      void loadMonthReservations();
     }
   }, [calendarView, me, setErrorMessage]);
 
   useEffect(() => {
-    const media = window.matchMedia('(max-width: 768px)');
+    const media = globalThis.matchMedia('(max-width: 768px)');
     const update = () => {
       const mobile = media.matches;
       setIsMobile(mobile);
@@ -115,8 +121,8 @@ export default function HomePage() {
       media.addEventListener('change', update);
       return () => media.removeEventListener('change', update);
     }
-    media.addListener(update);
-    return () => media.removeListener(update);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
   }, []);
 
   useEffect(() => {
@@ -324,98 +330,98 @@ export default function HomePage() {
       };
     }).filter(Boolean);
   }, [today, todayReservations, todayUsers, me]);
-
-  const groupedByDate = useMemo(() => {
+  useMemo(() => {
     return dayItems.reduce((acc, item) => {
       acc[item.date] = acc[item.date] || [];
       acc[item.date].push(item);
       return acc;
     }, {});
   }, [dayItems]);
-
+  const isLoggedIn = Boolean(me);
+  const isBusiness = me?.role === 'ROLE_BUSINESS';
+  let heroContent;
+  if (!isLoggedIn) {
+    heroContent = (
+      <div>
+        <h1 className="display-3 fw-bold mb-4 text-white-strong">歡迎來到 Reservio</h1>
+        <p className="lead mb-5 text-white-strong">最直覺、最快速的預約系統，讓管理預約不再是難事。</p>
+        <div className="d-grid gap-2 d-sm-flex justify-content-sm-center">
+          <Link to="/register" className="btn btn-light btn-lg px-4 gap-3 fw-bold text-primary">
+            開始使用
+          </Link>
+          <Link to="/login" className="btn btn-outline-light btn-lg px-4">
+            立即登入
+          </Link>
+        </div>
+      </div>
+    );
+  } else if (isBusiness) {
+    heroContent = (
+      <div>
+        <h1 className="display-4 fw-bold mb-3 text-white-strong">
+          店長<span className="text-warning">{me.business?.name}</span>，你好！
+        </h1>
+        <p className="lead mb-4 text-white-strong">歡迎回來，這是您今日的營運概況。</p>
+        <div className="row justify-content-center mt-4">
+          <div className="col-md-10">
+            <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white text-white-strong p-4 dashboard-card" style={{backdropFilter: 'blur(10px)'}}>
+              <div className="row align-items-center">
+                <Link to="/reservation/today/manage" className="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link">
+                  <h5 className="small text-uppercase opacity-75">今日預約</h5>
+                  <p className="h2 mb-0">{dashboard?.todayCount ?? 0}</p>
+                </Link>
+                <Link to="/reservation/pending/manage" className="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link">
+                  <h5 className="small text-uppercase opacity-75">待處理預約</h5>
+                  <p className="h2 mb-0">{dashboard?.pendingCount ?? 0}</p>
+                </Link>
+                <div className="col-sm-4">
+                  <div className="d-grid gap-2">
+                    <Link to="/business/info" className="btn btn-warning fw-bold shadow-sm no-text-shadow">
+                      管理商家資訊
+                    </Link>
+                    <Link to="/reservation/manage" className="btn btn-light fw-bold shadow-sm no-text-shadow">
+                      查看所有預約
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  } else {
+    heroContent = (
+      <div>
+        <h1 className="display-4 fw-bold mb-3 text-white-strong">
+          你好，<span className="text-warning">{me.username}</span>！
+        </h1>
+        <p className="lead mb-4 text-white-strong">歡迎回來，今天想預約哪些服務呢？</p>
+        <div className="row justify-content-center mt-4">
+          <div className="col-md-8">
+            <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white text-white-strong p-4 dashboard-card dashboard-card--customer" style={{ backdropFilter: 'blur(10px)' }}>
+              <div className="row align-items-center">
+                <div className="col-sm-6 border-end border-white border-opacity-25">
+                  <h5 className="small text-uppercase opacity-75">我的今日預約</h5>
+                  <p className="h2 mb-0">{dashboard?.todayCount ?? 0}</p>
+                </div>
+                <div className="col-sm-6 text-center">
+                  <Link to="/reservation/new" className="btn btn-light fw-bold px-4 shadow-sm no-text-shadow">
+                    <i className="bi bi-calendar-plus me-1"></i> 立即預約
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <main>
       <header className="hero-section text-center">
         <div className="container">
-          {!me ? (
-            <div>
-              <h1 className="display-3 fw-bold mb-4 text-white-strong">歡迎來到 Reservio</h1>
-              <p className="lead mb-5 text-white-strong">最直覺、最快速的預約系統，讓管理預約不再是難事。</p>
-              <div className="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                <Link to="/register" className="btn btn-light btn-lg px-4 gap-3 fw-bold text-primary">
-                  開始使用
-                </Link>
-                <Link to="/login" className="btn btn-outline-light btn-lg px-4">
-                  立即登入
-                </Link>
-              </div>
-            </div>
-          ) : me.role === 'ROLE_BUSINESS' ? (
-            <div>
-              <h1 className="display-4 fw-bold mb-3 text-white-strong">
-                店長 <span className="text-warning">{me.business?.name}</span>，你好！
-              </h1>
-              <p className="lead mb-4 text-white-strong">歡迎回來，這是您今日的營運概況。</p>
-
-              <div className="row justify-content-center mt-4">
-                <div className="col-md-10">
-                  <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white text-white-strong p-4 dashboard-card" style={{ backdropFilter: 'blur(10px)' }}>
-                    <div className="row align-items-center">
-                          <Link
-                            to="/reservation/today/manage"
-                            className="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link"
-                          >
-                        <h5 className="small text-uppercase opacity-75">今日預約</h5>
-                        <p className="h2 mb-0">{dashboard?.todayCount ?? 0}</p>
-                      </Link>
-                          <Link
-                            to="/reservation/pending/manage"
-                            className="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link"
-                          >
-                        <h5 className="small text-uppercase opacity-75">待處理預約</h5>
-                        <p className="h2 mb-0">{dashboard?.pendingCount ?? 0}</p>
-                      </Link>
-                      <div className="col-sm-4">
-                        <div className="d-grid gap-2">
-                          <Link to="/business/info" className="btn btn-warning fw-bold shadow-sm no-text-shadow">
-                            管理商家資訊
-                          </Link>
-                          <Link to="/reservation/manage" className="btn btn-light fw-bold shadow-sm no-text-shadow">
-                            查看所有預約
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <h1 className="display-4 fw-bold mb-3 text-white-strong">
-                你好，<span className="text-warning">{me.username}</span>！
-              </h1>
-              <p className="lead mb-4 text-white-strong">歡迎回來，今天想預約哪些服務呢？</p>
-
-              <div className="row justify-content-center mt-4">
-                <div className="col-md-8">
-                  <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white text-white-strong p-4 dashboard-card dashboard-card--customer" style={{ backdropFilter: 'blur(10px)' }}>
-                    <div className="row align-items-center">
-                      <div className="col-sm-6 border-end border-white border-opacity-25">
-                        <h5 className="small text-uppercase opacity-75">我的今日預約</h5>
-                        <p className="h2 mb-0">{dashboard?.todayCount ?? 0}</p>
-                      </div>
-                      <div className="col-sm-6 text-center">
-                        <Link to="/reservation/new" className="btn btn-light fw-bold px-4 shadow-sm no-text-shadow">
-                          <i className="bi bi-calendar-plus me-1"></i> 立即預約
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {heroContent}
         </div>
       </header>
 
@@ -428,25 +434,13 @@ export default function HomePage() {
                   <i className="bi bi-calendar3 me-2"></i>行事曆
                 </div>
                 <div className="btn-group">
-                  <button
-                    type="button"
-                    className={`btn btn-sm ${calendarView === 'day' ? 'btn-light text-primary fw-bold' : 'btn-outline-light'}`}
-                    onClick={() => setCalendarView('day')}
-                  >
+                  <button type="button" className={`btn btn-sm ${calendarView === 'day' ? 'btn-light text-primary fw-bold' : 'btn-outline-light'}`} onClick={() => setCalendarView('day')}>
                     日
                   </button>
-                  <button
-                    type="button"
-                    className={`btn btn-sm ${calendarView === 'week' ? 'btn-light text-primary fw-bold' : 'btn-outline-light'}`}
-                    onClick={() => setCalendarView('week')}
-                  >
+                  <button type="button" className={`btn btn-sm ${calendarView === 'week' ? 'btn-light text-primary fw-bold' : 'btn-outline-light'}`} onClick={() => setCalendarView('week')}>
                     週
                   </button>
-                  <button
-                    type="button"
-                    className={`btn btn-sm ${calendarView === 'month' ? 'btn-light text-primary fw-bold' : 'btn-outline-light'}`}
-                    onClick={() => setCalendarView('month')}
-                  >
+                  <button type="button" className={`btn btn-sm ${calendarView === 'month' ? 'btn-light text-primary fw-bold' : 'btn-outline-light'}`} onClick={() => setCalendarView('month')}>
                     月
                   </button>
                 </div>
@@ -464,10 +458,7 @@ export default function HomePage() {
                     ))}
                   </div>
                   <div className="calendar-day__slots">
-                    <div
-                      className="calendar-now-line"
-                      style={{ top: `${48 + (nowMinutes / 60) * 48}px` }}
-                    />
+                    <div className="calendar-now-line" style={{ top: `${48 + (nowMinutes / 60) * 48}px` }}/>
                     {timeLabels.map((label) => (
                       <div key={label} className="calendar-day__row" />
                     ))}
