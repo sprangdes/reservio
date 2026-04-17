@@ -357,9 +357,9 @@ export default function BusinessInfoPage() {
 
   const renderDurationOptionItems = (currentValue) => (
     <>
-      {hasCustomDurationOption(currentValue) ? (
+      {hasCustomDurationOption(currentValue) && (
         <option value={currentValue}>{currentValue}</option>
-      ) : null}
+      )}
       {durationOptions.map((value) => (
         <option key={value} value={String(value)}>{value}</option>
       ))}
@@ -381,12 +381,15 @@ export default function BusinessInfoPage() {
     </span>
   );
 
-  const renderServiceToggle = (service, withTitle = false) => (
-    <label className="switch" title={withTitle ? (service.active ? '已啟用' : '已停用') : undefined}>
-      <input type="checkbox" checked={!!service.active} disabled={busyId === service.id} onChange={() => handleToggle(service)}/>
-      <span className="slider"></span>
-    </label>
-  );
+  const renderServiceToggle = (service, withTitle = false) => {
+    const title = withTitle ? (service.active ? '已啟用' : '已停用') : undefined;
+    return (
+      <label className="switch" title={title}>
+        <input type="checkbox" checked={!!service.active} disabled={busyId === service.id} onChange={() => handleToggle(service)}/>
+        <span className="slider"></span>
+      </label>
+    );
+  };
 
   const renderEditingActions = (serviceId, mobile = false) => {
     if (mobile) {
@@ -526,9 +529,10 @@ export default function BusinessInfoPage() {
           </div>
 
           <div className="mt-4">
-            {overrides.length === 0 ? (
+            {overrides.length === 0 && (
               <div className="text-muted small">尚無指定日期調整。</div>
-            ) : (
+            )}
+            {overrides.length > 0 && (
               <div className="table-responsive">
                 <table className="table table-sm align-middle">
                   <thead className="table-light">
@@ -641,14 +645,14 @@ export default function BusinessInfoPage() {
                         </td>
                       </tr>
                     ))}
-                    {services.length === 0 ? (
+                    {services.length === 0 && (
                       <tr>
                         <td colSpan="4" className="text-center text-muted py-5">
                           <i className="bi bi-journal-x display-4 d-block mb-3 opacity-25"></i>
                           尚未設定任何服務項目，請從左側新增
                         </td>
                       </tr>
-                    ) : null}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -664,12 +668,12 @@ export default function BusinessInfoPage() {
                         <span className="text-muted small">啟用</span>
                         {renderServiceToggle(s)}
                       </div>
-                      {editingId === s.id ? (
+                      {editingId === s.id && (
                         <div className="mb-3">
                           <input type="text" className="form-control form-control-sm mb-2" name="name" value={editForm.name} onChange={handleEditChange} required/>
                           {renderEditDurationInput()}
                         </div>
-                      ) : null}
+                      )}
                       <div className="d-flex gap-2">
                         {editingId === s.id ? (
                           renderEditingActions(s.id, true)
@@ -680,11 +684,11 @@ export default function BusinessInfoPage() {
                     </div>
                   </div>
                 ))}
-                {services.length === 0 ? (
+                {services.length === 0 && (
                   <div className="text-center text-muted py-4">
                     尚未設定任何服務項目，請從左側新增
                   </div>
-                ) : null}
+                )}
               </div>
             </div>
           </div>
