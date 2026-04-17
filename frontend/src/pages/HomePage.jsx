@@ -557,21 +557,12 @@ export default function HomePage() {
                       .slice()
                       .sort((a, b) => a.start.localeCompare(b.start));
                     return (
-                      <div
-                        key={day.dateStr}
-                        className={`calendar-month-grid__cell ${day.inMonth ? '' : 'is-muted'} ${
-                          day.dateStr === today ? 'is-today' : ''
-                        }`}
-                      >
+                      <div key={day.dateStr} className={`calendar-month-grid__cell ${day.inMonth ? '' : 'is-muted'} ${day.dateStr === today ? 'is-today' : ''}`}>
                         <div className="calendar-month-grid__date">{day.dateStr.split('-')[2]}</div>
                         {isMobile ? (
                           <div className="calendar-month-grid__dots">
                             {items.slice(0, 6).map((item) => (
-                              <span
-                                key={item.id}
-                                className={`calendar-month-grid__dot${item.isCompleted ? ' calendar-event--completed' : ''}`}
-                                style={{ background: item.color }}
-                              ></span>
+                              <span key={item.id} className={`calendar-month-grid__dot${item.isCompleted ? ' calendar-event--completed' : ''}`} style={{ background: item.color }}></span>
                             ))}
                             {items.length > 6 ? <span className="calendar-month-grid__more">+{items.length - 6}</span> : null}
                           </div>
@@ -579,22 +570,14 @@ export default function HomePage() {
                           <div className="calendar-month-grid__bars">
                             {items.length <= 3
                               ? items.map((item) => (
-                                  <div
-                                    key={item.id}
-                                    className={`calendar-month-grid__bar${item.isCompleted ? ' calendar-event--completed' : ''}`}
-                                    style={{ background: item.color }}
-                                  >
+                                  <div key={item.id} className={`calendar-month-grid__bar${item.isCompleted ? ' calendar-event--completed' : ''}`} style={{ background: item.color }}>
                                   {formatHM(item.start)} {item.service}
                                   </div>
                                 ))
                               : (
                                 <>
                                   {items.slice(0, 2).map((item) => (
-                                    <div
-                                      key={item.id}
-                                      className={`calendar-month-grid__bar${item.isCompleted ? ' calendar-event--completed' : ''}`}
-                                      style={{ background: item.color }}
-                                    >
+                                    <div key={item.id} className={`calendar-month-grid__bar${item.isCompleted ? ' calendar-event--completed' : ''}`} style={{ background: item.color }}>
                                     {formatHM(item.start)} {item.service}
                                     </div>
                                   ))}
@@ -613,40 +596,41 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      {!me ? (
-        <section className="container my-5">
-          <div className="row g-4">
-            <div className="col-md-4">
-              <div className="card h-100 feature-card p-4">
-                <div className="card-body text-center">
-                  <div className="display-6 text-primary mb-3">📅</div>
-                  <h3 className="card-title h5 fw-bold">快速預約</h3>
-                  <p className="card-text text-muted">只需幾秒鐘，即可完成繁瑣的預約流程，提升工作效率。</p>
+      {isLoggedIn ?
+        null : (
+          <section className="container my-5">
+            <div className="row g-4">
+              <div className="col-md-4">
+                <div className="card h-100 feature-card p-4">
+                  <div className="card-body text-center">
+                    <div className="display-6 text-primary mb-3">📅</div>
+                    <h3 className="card-title h5 fw-bold">快速預約</h3>
+                    <p className="card-text text-muted">只需幾秒鐘，即可完成繁瑣的預約流程，提升工作效率。</p>
+                  </div>
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="card h-100 feature-card p-4">
+                  <div className="card-body text-center">
+                    <div className="display-6 text-success mb-3">🔔</div>
+                    <h3 className="card-title h5 fw-bold">自動通知</h3>
+                    <p className="card-text text-muted">系統自動發送提醒，降低爽約率，維持良好的服務品質。</p>
+                  </div>
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="card h-100 feature-card p-4">
+                  <div className="card-body text-center">
+                    <div className="display-6 text-info mb-3">📊</div>
+                    <h3 className="card-title h5 fw-bold">數據分析</h3>
+                    <p className="card-text text-muted">掌握預約趨勢，透過報表優化您的業務資源分配。</p>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="col-md-4">
-              <div className="card h-100 feature-card p-4">
-                <div className="card-body text-center">
-                  <div className="display-6 text-success mb-3">🔔</div>
-                  <h3 className="card-title h5 fw-bold">自動通知</h3>
-                  <p className="card-text text-muted">系統自動發送提醒，降低爽約率，維持良好的服務品質。</p>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="card h-100 feature-card p-4">
-                <div className="card-body text-center">
-                  <div className="display-6 text-info mb-3">📊</div>
-                  <h3 className="card-title h5 fw-bold">數據分析</h3>
-                  <p className="card-text text-muted">掌握預約趨勢，透過報表優化您的業務資源分配。</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      ) : null}
-
+          </section>
+        )
+      }
       {errorMessage ? <div className="visually-hidden">{errorMessage}</div> : null}
     </main>
   );
