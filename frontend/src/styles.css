@@ -489,11 +489,10 @@ main {
 .calendar-month-grid__cell {
     padding: 10px;
     background: #f8f9fa;
-    border-radius: 10px;
+    border-radius: 0;
     min-height: 70px;
     border-right: 1px solid #e9ecef;
     border-bottom: 1px solid #e9ecef;
-    border-radius: 0;
 }
 .calendar-month-grid__cell.is-today {
     border: 2px solid #667eea;
