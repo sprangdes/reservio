@@ -310,6 +310,20 @@ main {
     font-size: 0.75rem;
     color: #495057;
 }
+.calendar-event--completed {
+    opacity: 0.45;
+    filter: saturate(0.6);
+}
+.calendar-now-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: rgba(255, 193, 7, 0.35);
+    border-radius: 2px;
+    z-index: 2;
+    pointer-events: none;
+}
 .calendar-week-simple {
     display: grid;
     gap: 12px;

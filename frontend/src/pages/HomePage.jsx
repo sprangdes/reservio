@@ -16,6 +16,10 @@ export default function HomePage() {
   const [weekUsers, setWeekUsers] = useState([]);
   const [monthReservations, setMonthReservations] = useState([]);
   const [monthUsers, setMonthUsers] = useState([]);
+  const [nowMinutes, setNowMinutes] = useState(() => {
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+  });
 
   // AuthProvider 已在全域載入 me，這裡不重複刷新以避免多次呼叫 /api/me
 
@@ -113,6 +117,16 @@ export default function HomePage() {
     }
     media.addListener(update);
     return () => media.removeListener(update);
+  }, []);
+
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      setNowMinutes(now.getHours() * 60 + now.getMinutes());
+    };
+    tick();
+    const timer = setInterval(tick, 60000);
+    return () => clearInterval(timer);
   }, []);
 
   const today = useMemo(() => {
@@ -214,6 +228,7 @@ export default function HomePage() {
         service: item.title,
         customerName: getCustomerName(item),
         businessName: getBusinessName(item),
+        isCompleted: item.status === 'COMPLETED',
         color: weekColorMap.get(normalizeName(getColorKey(item, me?.role))) || weekPalette[0]
       }));
     }
@@ -226,6 +241,7 @@ export default function HomePage() {
         service: item.title,
         customerName: getCustomerName(item),
         businessName: getBusinessName(item),
+        isCompleted: item.status === 'COMPLETED',
         color: monthColorMap.get(normalizeName(getColorKey(item, me?.role))) || monthPalette[0]
       }));
     }
@@ -286,6 +302,7 @@ export default function HomePage() {
         service: item.title,
         customerName: getCustomerName(item),
         businessName: getBusinessName(item),
+        isCompleted: item.status === 'COMPLETED',
         color: todayColorMap.get(normalizeName(getColorKey(item, me?.role))) || todayPalette[0]
       };
       if (!mapped.start || !mapped.end) {
@@ -447,6 +464,10 @@ export default function HomePage() {
                     ))}
                   </div>
                   <div className="calendar-day__slots">
+                    <div
+                      className="calendar-now-line"
+                      style={{ top: `${48 + (nowMinutes / 60) * 48}px` }}
+                    />
                     {timeLabels.map((label) => (
                       <div key={label} className="calendar-day__row" />
                     ))}
@@ -457,7 +478,7 @@ export default function HomePage() {
                       return (
                         <div
                           key={item.id}
-                          className="calendar-day__event"
+                          className={`calendar-day__event${item.isCompleted ? ' calendar-event--completed' : ''}`}
                           style={{ top: `${top}px`, height: `${height}px`, background: item.color, borderLeftColor: item.color }}
                         >
                           <div className="calendar-day__event-title">{title} · {item.service}</div>
@@ -495,10 +516,17 @@ export default function HomePage() {
                           ))}
                         </div>
                         <div className="calendar-week-grid__weekcols">
-                          {weekDates.map((date) => {
+                          {weekDates.map((date, idx) => {
                             const items = calendarItems.filter((item) => item.date === date);
+                            const showNow = date === today;
                             return (
                               <div key={date} className="calendar-week-grid__daycol">
+                                {showNow ? (
+                                  <div
+                                    className="calendar-now-line"
+                                    style={{ top: `${(nowMinutes / 60) * 48 + 2}px` }}
+                                  />
+                                ) : null}
                                 {timeLabels.map((label) => (
                                   <div key={label} className="calendar-day__row" />
                                 ))}
@@ -514,7 +542,7 @@ export default function HomePage() {
                                 return (
                                   <div
                                     key={item.id}
-                                    className="calendar-day__event"
+                                    className={`calendar-day__event${item.isCompleted ? ' calendar-event--completed' : ''}`}
                                     style={{ top: `${top}px`, height: `${height}px`, background: item.color, borderLeftColor: item.color }}
                                   >
                                     <div className="calendar-day__event-title">{title} · {item.service}</div>
@@ -554,10 +582,17 @@ export default function HomePage() {
                           ))}
                         </div>
                         <div className="calendar-week-grid__weekcols">
-                          {weekDates.map((date) => {
+                          {weekDates.map((date, idx) => {
                             const items = calendarItems.filter((item) => item.date === date);
+                            const showNow = date === today;
                             return (
                               <div key={date} className="calendar-week-grid__daycol">
+                                {showNow ? (
+                                  <div
+                                    className="calendar-now-line"
+                                    style={{ top: `${(nowMinutes / 60) * 48 + 2}px` }}
+                                  />
+                                ) : null}
                                 {timeLabels.map((label) => (
                                   <div key={label} className="calendar-day__row" />
                                 ))}
@@ -573,7 +608,7 @@ export default function HomePage() {
                                   return (
                                     <div
                                       key={item.id}
-                                      className="calendar-day__event"
+                                      className={`calendar-day__event${item.isCompleted ? ' calendar-event--completed' : ''}`}
                                       style={{ top: `${top}px`, height: `${height}px`, background: item.color, borderLeftColor: item.color }}
                                     >
                                       <div className="calendar-day__event-title">{title} · {item.service}</div>
@@ -619,7 +654,11 @@ export default function HomePage() {
                         {isMobile ? (
                           <div className="calendar-month-grid__dots">
                             {items.slice(0, 6).map((item) => (
-                              <span key={item.id} className="calendar-month-grid__dot" style={{ background: item.color }}></span>
+                              <span
+                                key={item.id}
+                                className={`calendar-month-grid__dot${item.isCompleted ? ' calendar-event--completed' : ''}`}
+                                style={{ background: item.color }}
+                              ></span>
                             ))}
                             {items.length > 6 ? <span className="calendar-month-grid__more">+{items.length - 6}</span> : null}
                           </div>
@@ -627,14 +666,22 @@ export default function HomePage() {
                           <div className="calendar-month-grid__bars">
                             {items.length <= 3
                               ? items.map((item) => (
-                                  <div key={item.id} className="calendar-month-grid__bar" style={{ background: item.color }}>
+                                  <div
+                                    key={item.id}
+                                    className={`calendar-month-grid__bar${item.isCompleted ? ' calendar-event--completed' : ''}`}
+                                    style={{ background: item.color }}
+                                  >
                                   {formatHM(item.start)} {item.service}
                                   </div>
                                 ))
                               : (
                                 <>
                                   {items.slice(0, 2).map((item) => (
-                                    <div key={item.id} className="calendar-month-grid__bar" style={{ background: item.color }}>
+                                    <div
+                                      key={item.id}
+                                      className={`calendar-month-grid__bar${item.isCompleted ? ' calendar-event--completed' : ''}`}
+                                      style={{ background: item.color }}
+                                    >
                                     {formatHM(item.start)} {item.service}
                                     </div>
                                   ))}
