@@ -648,8 +648,7 @@ export default function BusinessInfoPage() {
                     {services.length === 0 && (
                       <tr>
                         <td colSpan="4" className="text-center text-muted py-5">
-                          <i className="bi bi-journal-x display-4 d-block mb-3 opacity-25"></i>
-                          尚未設定任何服務項目，請從左側新增
+                          <i className="bi bi-journal-x display-4 d-block mb-3 opacity-25"></i>尚未設定任何服務項目，請從左側新增
                         </td>
                       </tr>
                     )}

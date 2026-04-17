@@ -65,7 +65,7 @@ export default function ManageAllPage() {
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, [page, size, sortBy, sortDir, filters]);
 
   useEffect(() => {
@@ -80,13 +80,13 @@ export default function ManageAllPage() {
         setErrorMessage(err.message || '載入服務項目失敗');
       }
     };
-    loadServices();
+    void loadServices();
   }, [me]);
 
   useEffect(() => {
-    if (!window.flatpickr) return;
+    if (!globalThis.flatpickr) return;
     const fpFrom = dateFromRef.current
-      ? window.flatpickr(dateFromRef.current, {
+      ? globalThis.flatpickr(dateFromRef.current, {
           locale: 'zh_tw',
           dateFormat: 'Y-m-d',
           disableMobile: true,
@@ -99,7 +99,7 @@ export default function ManageAllPage() {
         })
       : null;
     const fpTo = dateToRef.current
-      ? window.flatpickr(dateToRef.current, {
+      ? globalThis.flatpickr(dateToRef.current, {
           locale: 'zh_tw',
           dateFormat: 'Y-m-d',
           disableMobile: true,
@@ -272,8 +272,7 @@ export default function ManageAllPage() {
                       {res.status === 'CANCEL_REQUESTED' ? (
                         <div className="mt-1">
                           <small className="text-danger text-break">
-                            <i className="bi bi-exclamation-circle me-1"></i>
-                            取消原因：<span>{res.cancelReason}</span>
+                            <i className="bi bi-exclamation-circle me-1"></i>取消原因：<span>{res.cancelReason}</span>
                           </small>
                         </div>
                       ) : null}
@@ -307,8 +306,7 @@ export default function ManageAllPage() {
                 {content.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="text-center text-muted py-5">
-                      <i className="bi bi-inbox display-4 d-block mb-3 opacity-25"></i>
-                      目前尚無預約資料
+                      <i className="bi bi-inbox display-4 d-block mb-3 opacity-25"></i>目前尚無預約資料
                     </td>
                   </tr>
                 ) : null}

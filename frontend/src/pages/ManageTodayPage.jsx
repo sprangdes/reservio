@@ -221,8 +221,7 @@ export default function ManageTodayPage() {
                       {res.status === 'CANCEL_REQUESTED' ? (
                         <div className="mt-1">
                           <small className="text-danger text-break">
-                            <i className="bi bi-exclamation-circle me-1"></i>
-                            取消原因：<span>{res.cancelReason}</span>
+                            <i className="bi bi-exclamation-circle me-1"></i>取消原因：<span>{res.cancelReason}</span>
                           </small>
                         </div>
                       ) : null}
@@ -256,8 +255,7 @@ export default function ManageTodayPage() {
                 {content.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="text-center text-muted py-5">
-                      <i className="bi bi-inbox display-4 d-block mb-3 opacity-25"></i>
-                      目前尚無今日預約資料
+                      <i className="bi bi-inbox display-4 d-block mb-3 opacity-25"></i>目前尚無今日預約資料
                     </td>
                   </tr>
                 ) : null}

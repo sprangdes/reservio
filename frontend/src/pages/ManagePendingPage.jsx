@@ -78,9 +78,9 @@ export default function ManagePendingPage() {
   }, [me]);
 
   useEffect(() => {
-    if (!window.flatpickr) return;
+    if (!globalThis.flatpickr) return;
     const fpFrom = dateFromRef.current
-      ? window.flatpickr(dateFromRef.current, {
+      ? globalThis.flatpickr(dateFromRef.current, {
           locale: 'zh_tw',
           dateFormat: 'Y-m-d',
           disableMobile: true,
@@ -93,7 +93,7 @@ export default function ManagePendingPage() {
         })
       : null;
     const fpTo = dateToRef.current
-      ? window.flatpickr(dateToRef.current, {
+      ? globalThis.flatpickr(dateToRef.current, {
           locale: 'zh_tw',
           dateFormat: 'Y-m-d',
           disableMobile: true,
@@ -263,8 +263,7 @@ export default function ManagePendingPage() {
                       {res.status === 'CANCEL_REQUESTED' ? (
                         <div className="mt-1">
                           <small className="text-danger text-break">
-                            <i className="bi bi-exclamation-circle me-1"></i>
-                            取消原因：<span>{res.cancelReason}</span>
+                            <i className="bi bi-exclamation-circle me-1"></i>取消原因：<span>{res.cancelReason}</span>
                           </small>
                         </div>
                       ) : null}
@@ -298,8 +297,7 @@ export default function ManagePendingPage() {
                 {content.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="text-center text-muted py-5">
-                      <i className="bi bi-inbox display-4 d-block mb-3 opacity-25"></i>
-                      目前沒有待處理預約
+                      <i className="bi bi-inbox display-4 d-block mb-3 opacity-25"></i>目前沒有待處理預約
                     </td>
                   </tr>
                 ) : null}

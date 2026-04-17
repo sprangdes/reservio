@@ -30,7 +30,7 @@ export default function ReservationNewPage() {
       const disabledRes = await api.disabledDates();
       setDisabledDates(disabledRes.data || []);
     };
-    load();
+    void load();
   }, []);
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function ReservationNewPage() {
       const list = (res.data || []).filter((item) => item.active);
       setServices(list);
     };
-    load();
+    void load();
   }, [form.businessId]);
 
   useEffect(() => {
@@ -61,7 +61,7 @@ export default function ReservationNewPage() {
   }, [form.title]);
 
   useEffect(() => {
-    if (!dateInputRef.current || !window.flatpickr) return;
+    if (!dateInputRef.current || !globalThis.flatpickr) return;
 
     const today = new Date();
     const minDate = today.toISOString().split('T')[0];
@@ -69,7 +69,7 @@ export default function ReservationNewPage() {
     threeMonthsLater.setMonth(today.getMonth() + 3);
     const maxDate = threeMonthsLater.toISOString().split('T')[0];
 
-    const fp = window.flatpickr(dateInputRef.current, {
+    const fp = globalThis.flatpickr(dateInputRef.current, {
       locale: 'zh_tw',
       dateFormat: 'Y-m-d',
       minDate,
@@ -93,7 +93,7 @@ export default function ReservationNewPage() {
       const res = await api.slots(form.reservationDate, serviceDuration);
       setSlots(res.data || []);
     };
-    loadSlots();
+    void loadSlots();
   }, [form.reservationDate, serviceDuration]);
 
   useEffect(() => {

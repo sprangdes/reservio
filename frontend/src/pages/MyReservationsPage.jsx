@@ -364,8 +364,7 @@ export default function MyReservationsPage() {
                 {content.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="text-center text-muted py-5">
-                      <i className="bi bi-inbox display-4 d-block mb-3 opacity-25"></i>
-                      目前尚無預約資料
+                      <i className="bi bi-inbox display-4 d-block mb-3 opacity-25"></i>目前尚無預約資料
                     </td>
                   </tr>
                 ) : null}

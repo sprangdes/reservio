@@ -12,15 +12,15 @@ export default function Navbar() {
   const [hoverEnabled, setHoverEnabled] = useState(false);
 
   useEffect(() => {
-    const media = window.matchMedia('(max-width: 768px)');
+    const media = globalThis.matchMedia('(max-width: 768px)');
     const update = () => setHoverEnabled(media.matches);
     update();
     if (media.addEventListener) {
       media.addEventListener('change', update);
       return () => media.removeEventListener('change', update);
     }
-    media.addListener(update);
-    return () => media.removeListener(update);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
   }, []);
 
   const handleLogout = async () => {
