@@ -86,13 +86,13 @@ export default function MyReservationsPage() {
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, [page, size, sortBy, sortDir, filters]);
 
   useEffect(() => {
-    if (!window.flatpickr) return;
+    if (!globalThis.flatpickr) return;
     const fpFrom = dateFromRef.current
-      ? window.flatpickr(dateFromRef.current, {
+      ? globalThis.flatpickr(dateFromRef.current, {
           locale: 'zh_tw',
           dateFormat: 'Y-m-d',
           disableMobile: true,
@@ -105,7 +105,7 @@ export default function MyReservationsPage() {
         })
       : null;
     const fpTo = dateToRef.current
-      ? window.flatpickr(dateToRef.current, {
+      ? globalThis.flatpickr(dateToRef.current, {
           locale: 'zh_tw',
           dateFormat: 'Y-m-d',
           disableMobile: true,
@@ -130,7 +130,7 @@ export default function MyReservationsPage() {
         setErrorMessage(err.message || '載入商家清單失敗');
       }
     };
-    loadBusinesses();
+    void loadBusinesses();
   }, [setErrorMessage]);
 
   useEffect(() => {
@@ -147,7 +147,7 @@ export default function MyReservationsPage() {
         setErrorMessage(err.message || '載入服務項目失敗');
       }
     };
-    loadServices();
+    void loadServices();
   }, [filterDraft.businessId, setErrorMessage]);
 
   const handleCancel = async (id, reason) => {
@@ -157,8 +157,8 @@ export default function MyReservationsPage() {
       setCancelReason('');
       setSelectedId(null);
       const modalEl = document.getElementById('cancelModal');
-      if (modalEl && window.bootstrap) {
-        const instance = window.bootstrap.Modal.getInstance(modalEl);
+      if (modalEl && globalThis.bootstrap) {
+        const instance = globalThis.bootstrap.Modal.getInstance(modalEl);
         if (instance) {
           instance.hide();
         }
@@ -172,9 +172,9 @@ export default function MyReservationsPage() {
   const openModal = (id) => {
     setSelectedId(id);
     setCancelReason('');
-    if (window.bootstrap) {
+    if (globalThis.bootstrap) {
       const modalEl = document.getElementById('cancelModal');
-      const modal = new window.bootstrap.Modal(modalEl);
+      const modal = new globalThis.bootstrap.Modal(modalEl);
       modal.show();
     }
   };
