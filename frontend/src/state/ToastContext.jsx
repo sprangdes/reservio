@@ -1,8 +1,10 @@
 import { createContext, useContext, useMemo, useState } from 'react';
+import PropTypes from 'prop-types';
 
 const ToastContext = createContext(null);
 
-export function ToastProvider({ children }) {
+export function ToastProvider(props) {
+  const { children } = props;
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -15,6 +17,10 @@ export function ToastProvider({ children }) {
 
   return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>;
 }
+
+ToastProvider.propTypes = {
+  children: PropTypes.node.isRequired
+};
 
 export function useToast() {
   return useContext(ToastContext);
