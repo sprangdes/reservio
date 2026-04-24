@@ -176,6 +176,7 @@ export default function ServiceManagementPage() {
                           <label className="switch" title={s.active ? '已啟用' : '已停用'}>
                             <input type="checkbox" checked={!!s.active} disabled={busyId === s.id} onChange={() => handleToggle(s)}/>
                             <span className="slider"></span>
+                            <span className="visually-hidden">{s.active ? '停用服務項目' : '啟用服務項目'}</span>
                           </label>
                         </td>
                         <td className="text-center pe-4">
@@ -226,6 +227,7 @@ export default function ServiceManagementPage() {
                         <label className="switch">
                           <input type="checkbox" checked={!!s.active} disabled={busyId === s.id} onChange={() => handleToggle(s)}/>
                           <span className="slider"></span>
+                          <span className="visually-hidden">{s.active ? '停用服務項目' : '啟用服務項目'}</span>
                         </label>
                       </div>
                       {editingId === s.id ? (
