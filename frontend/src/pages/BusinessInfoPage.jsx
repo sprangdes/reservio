@@ -95,10 +95,13 @@ export default function BusinessInfoPage() {
       const res = await api.getDefaultSlots();
       const data = res.data || {};
       if (data.defaultInterval != null && data.defaultInterval !== '') {
-        setInfoForm((prev) => ({
-          ...prev,
+        setInfoForm({
+          name: me?.business?.name || '',
+          category: me?.business?.category || '',
+          phone: me?.business?.phone || '',
+          address: me?.business?.address || '',
           slotInterval: String(data.defaultInterval)
-        }));
+        });
       }
       if (Array.isArray(data.defaultWeekSlots)) {
         const slotMap = weekDays.reduce((acc, day) => {
