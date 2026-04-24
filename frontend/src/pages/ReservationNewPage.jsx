@@ -20,6 +20,11 @@ export default function ReservationNewPage() {
   });
   const [serviceDuration, setServiceDuration] = useState(null);
   const dateInputRef = useRef(null);
+  const formRef = useRef(form);
+
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
 
   const selectedService = useMemo(() => services.find((s) => s.name === form.title), [services, form.title]);
 
@@ -36,7 +41,7 @@ export default function ReservationNewPage() {
   useEffect(() => {
     if (!form.businessId) {
       setServices([]);
-      setForm((prev) => ({ ...prev, title: '' }));
+      setForm({ ...form, title: '' });
       return;
     }
 
@@ -49,7 +54,8 @@ export default function ReservationNewPage() {
   }, [form.businessId]);
 
   useEffect(() => {
-    if (selectedService?.duration) {
+    const duration = selectedService?.duration;
+    if (duration) {
       setServiceDuration(selectedService.duration);
     } else {
       setServiceDuration(null);
@@ -57,7 +63,7 @@ export default function ReservationNewPage() {
   }, [selectedService]);
 
   useEffect(() => {
-    setForm((prev) => ({ ...prev, startTime: '', endTime: '' }));
+    setForm({ ...form, startTime: '', endTime: '' });
   }, [form.title]);
 
   useEffect(() => {
@@ -77,7 +83,12 @@ export default function ReservationNewPage() {
       disable: disabledDates,
       disableMobile: true,
       onChange: (_, dateStr) => {
-        setForm((prev) => ({ ...prev, reservationDate: dateStr, startTime: '', endTime: '' }));
+        setForm({
+          ...formRef.current,
+          reservationDate: dateStr,
+          startTime: '',
+          endTime: ''
+        });
       }
     });
 
@@ -98,7 +109,7 @@ export default function ReservationNewPage() {
 
   useEffect(() => {
     if (!form.startTime || !serviceDuration) {
-      setForm((prev) => ({ ...prev, endTime: '' }));
+      setForm({ ...form, endTime: '' });
       return;
     }
     const [hours, minutes] = form.startTime.split(':').map(Number);
@@ -106,7 +117,7 @@ export default function ReservationNewPage() {
     date.setHours(hours, minutes + Number(serviceDuration), 0);
     const endHours = String(date.getHours()).padStart(2, '0');
     const endMinutes = String(date.getMinutes()).padStart(2, '0');
-    setForm((prev) => ({ ...prev, endTime: `${endHours}:${endMinutes}` }));
+    setForm({ ...form, endTime: `${endHours}:${endMinutes}` });
   }, [form.startTime, serviceDuration]);
 
   const handleChange = (event) => {
@@ -131,6 +142,16 @@ export default function ReservationNewPage() {
       setErrorMessage(err.message || '預約失敗');
     }
   };
+
+  let servicePlaceholder = '請先選擇店家..';
+  if (form.businessId) {
+    servicePlaceholder = services.length ? '請選擇項目...' : '該店家目前無提供服務';
+  }
+
+  let slotPlaceholder = '請先選擇日期..';
+  if (form.reservationDate) {
+    slotPlaceholder = slots.length === 0 ? '該日無可用時段' : '請選擇時段...';
+  }
 
   return (
     <main>
@@ -167,7 +188,7 @@ export default function ReservationNewPage() {
                         disabled={!form.businessId}
                       >
                         <option value="" disabled>
-                          {form.businessId ? (services.length ? '請選擇項目...' : '該店家目前無提供服務') : '請先選擇店家..'}
+                          {servicePlaceholder}
                         </option>
                         {services.map((s) => (
                           <option key={s.id} value={s.name} data-duration={s.duration}>
@@ -211,7 +232,7 @@ export default function ReservationNewPage() {
                           disabled={!form.reservationDate || !serviceDuration || slots.length === 0}
                         >
                           <option value="" disabled>
-                            {!form.reservationDate ? '請先選擇日期..' : slots.length === 0 ? '該日無可用時段' : '請選擇時段...'}
+                            {slotPlaceholder}
                           </option>
                           {slots.map((slot) => (
                             <option key={slot.time} value={slot.time} disabled={!slot.available}>
