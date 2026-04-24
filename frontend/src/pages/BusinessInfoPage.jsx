@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../state/AuthContext.jsx';
 import { useToast } from '../state/ToastContext.jsx';
+import { useServiceManagement} from "../hooks/useServiceManagement.js";
 
 const weekDays = [
   { key: 'mon', label: '星期一', dayOfWeek: 'MONDAY' },
@@ -19,10 +20,6 @@ export default function BusinessInfoPage() {
   const { setSuccessMessage, setErrorMessage } = useToast();
 
   const [services, setServices] = useState([]);
-  const [form, setForm] = useState({ name: '', duration: '' });
-  const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({ name: '', duration: '' });
-  const [busyId, setBusyId] = useState(null);
   const [savingInfo, setSavingInfo] = useState(false);
   const [infoForm, setInfoForm] = useState({
     name: '',
@@ -33,7 +30,6 @@ export default function BusinessInfoPage() {
   });
   const [categories, setCategories] = useState([]);
   const didLoadRef = useRef(false);
-
   const [hours, setHours] = useState(() =>
     weekDays.reduce((acc, day) => {
       acc[day.key] = { open: false, start: '09:00', end: '18:00' };
@@ -48,6 +44,31 @@ export default function BusinessInfoPage() {
   });
   const [overrides, setOverrides] = useState([]);
 
+  const load = async () => {
+    const businessId = me?.business?.id;
+    if (!businessId) {
+      setServices([]);
+      return;
+    }
+    const res = await api.businessServices(businessId);
+    setServices(res.data || []);
+  };
+
+  const {
+    form,
+    editingId,
+    editForm,
+    busyId,
+    handleChange,
+    handleSubmit,
+    startEdit,
+    cancelEdit,
+    handleEditChange,
+    handleSave,
+    handleDelete,
+    handleToggle
+  } = useServiceManagement({ load, setSuccessMessage, setErrorMessage });
+
   useEffect(() => {
     if (!me?.business) return;
     setInfoForm({
@@ -58,15 +79,6 @@ export default function BusinessInfoPage() {
       slotInterval: me.business.slotInterval ?? ''
     });
   }, [me]);
-
-  const load = async () => {
-    if (!me?.business?.id) {
-      setServices([]);
-      return;
-    }
-    const res = await api.businessServices(me.business.id);
-    setServices(res.data || []);
-  };
 
   const loadCategories = async () => {
     try {
@@ -83,7 +95,10 @@ export default function BusinessInfoPage() {
       const res = await api.getDefaultSlots();
       const data = res.data || {};
       if (data.defaultInterval != null && data.defaultInterval !== '') {
-        setInfoForm((prev) => ({ ...prev, slotInterval: String(data.defaultInterval) }));
+        setInfoForm((prev) => ({
+          ...prev,
+          slotInterval: String(data.defaultInterval)
+        }));
       }
       if (Array.isArray(data.defaultWeekSlots)) {
         const slotMap = weekDays.reduce((acc, day) => {
@@ -157,11 +172,6 @@ export default function BusinessInfoPage() {
     void loadAdjustedSlots();
   }, [me]);
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
   const handleInfoChange = (event) => {
     const { name, value } = event.target;
     setInfoForm((prev) => ({ ...prev, [name]: value }));
@@ -187,83 +197,7 @@ export default function BusinessInfoPage() {
       setSavingInfo(false);
     }
   };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    try {
-      await api.addServiceItem({ name: form.name, duration: Number(form.duration) });
-      setSuccessMessage('服務項目新增成功');
-      setForm({ name: '', duration: '' });
-      await load();
-    } catch (err) {
-      setErrorMessage(err.message || '服務項目新增失敗');
-    }
-  };
-
-  const startEdit = (item) => {
-    setEditingId(item.id);
-    setEditForm({ name: item.name, duration: String(item.duration) });
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditForm({ name: '', duration: '' });
-  };
-
-  const handleEditChange = (event) => {
-    const { name, value } = event.target;
-    setEditForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSave = async (id) => {
-    try {
-      setBusyId(id);
-      await api.modifyServiceItem(id, { name: editForm.name, duration: Number(editForm.duration) });
-      setSuccessMessage('服務項目更新成功');
-      setEditingId(null);
-      await load();
-    } catch (err) {
-      setErrorMessage(err.message || '服務項目更新失敗');
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (!globalThis.confirm('確定要刪除此服務項目嗎？')) {
-      return;
-    }
-    try {
-      setBusyId(id);
-      await api.deleteServiceItem(id);
-      setSuccessMessage('服務項目刪除成功');
-      await load();
-    } catch (err) {
-      setErrorMessage(err.message || '服務項目刪除失敗');
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const handleToggle = async (item) => {
-    const nextActive = !item.active;
-    try {
-      setBusyId(item.id);
-      if (nextActive) {
-        await api.serviceOn(item.id);
-        setSuccessMessage('服務項目啟用成功');
-      } else {
-        await api.serviceOff(item.id);
-        setSuccessMessage('服務項目停用成功');
-      }
-      await load();
-    } catch (err) {
-      setErrorMessage(err.message || '服務狀態切換失敗');
-    } finally {
-      setBusyId(null);
-    }
-  };
-
+  
   const toggleDay = (dayKey) => {
     setHours((prev) => ({
       ...prev,
@@ -305,7 +239,10 @@ export default function BusinessInfoPage() {
 
   const handleDateChange = (event) => {
     const nextDate = event.target.value;
-    setDateOverride((prev) => ({ ...prev, date: nextDate }));
+    setDateOverride({
+      ...dateOverride,
+      date: nextDate
+    });
     if (nextDate) {
       void loadDateSlot(nextDate);
     }
@@ -382,10 +319,13 @@ export default function BusinessInfoPage() {
   );
 
   const renderServiceToggle = (service, withTitle = false) => {
-    const title = withTitle ? (service.active ? '已啟用' : '已停用') : undefined;
+    let title;
+    if (withTitle) {
+      title = service.active ? '已啟用' : '已停用';
+    }
     return (
       <label className="switch" title={title}>
-        <input type="checkbox" checked={!!service.active} disabled={busyId === service.id} onChange={() => handleToggle(service)}/>
+        <input type="checkbox" checked={!!service.active} disabled={busyId === service.id} onChange={() => handleToggle(service)} aria-label={title || '切換啟用狀態'}/>
         <span className="slider"></span>
       </label>
     );
@@ -482,8 +422,8 @@ export default function BusinessInfoPage() {
                   <div className="d-flex align-items-center justify-content-between">
                     <div className="fw-bold">{day.label}</div>
                     <div className="form-check form-switch mb-0">
-                      <input className="form-check-input" type="checkbox" checked={hours[day.key].open} onChange={() => toggleDay(day.key)}/>
-                      <label className="form-check-label text-muted small">營業</label>
+                      <input id={`business-open-${day.key}`} className="form-check-input" type="checkbox" name="open" checked={hours[day.key].open} onChange={() => toggleDay(day.key)}/>
+                      <label htmlFor={`business-open-${day.key}`} className="form-check-label text-muted small">營業</label>
                     </div>
                   </div>
                   <div className="d-flex align-items-center gap-2 flex-wrap">
@@ -508,23 +448,23 @@ export default function BusinessInfoPage() {
         <div className="card-body p-4">
           <div className="row g-3 align-items-end">
             <div className="col-md-3">
-              <label className="form-label fw-bold small text-muted">日期</label>
-              <input type="date" className="form-control" name="date" value={dateOverride.date} onChange={handleDateChange}/>
+              <label htmlFor="date" className="form-label fw-bold small text-muted">日期</label>
+              <input id="date" type="date" className="form-control" name="date" value={dateOverride.date} onChange={handleDateChange}/>
             </div>
             <div className="col-md-2">
-              <label className="form-label fw-bold small text-muted">是否營業</label>
+              <div className="form-label fw-bold small text-muted">是否營業</div>
               <div className="form-check form-switch">
-                <input className="form-check-input" type="checkbox" name="open" checked={dateOverride.open} onChange={handleOverrideChange}/>
-                <label className="form-check-label text-muted small">營業</label>
+                <input id="date-override-open" className="form-check-input" type="checkbox" name="open" checked={dateOverride.open} onChange={handleOverrideChange}/>
+                <label htmlFor="business-open" className="form-check-label text-muted small">營業</label>
               </div>
             </div>
             <div className="col-md-3">
-              <label className="form-label fw-bold small text-muted">開始時間</label>
-              <input type="time" className="form-control" name="start" value={dateOverride.start} onChange={handleOverrideChange} disabled={!dateOverride.open}/>
+              <label htmlFor="business-start" className="form-label fw-bold small text-muted">開始時間</label>
+              <input id="business-start" type="time" className="form-control" name="start" value={dateOverride.start} onChange={handleOverrideChange} disabled={!dateOverride.open}/>
             </div>
             <div className="col-md-3">
-              <label className="form-label fw-bold small text-muted">結束時間</label>
-              <input type="time" className="form-control" name="end" value={dateOverride.end} onChange={handleOverrideChange} disabled={!dateOverride.open}/>
+              <label htmlFor="business-close" className="form-label fw-bold small text-muted">結束時間</label>
+              <input id="business-close" type="time" className="form-control" name="end" value={dateOverride.end} onChange={handleOverrideChange} disabled={!dateOverride.open}/>
             </div>
           </div>
 

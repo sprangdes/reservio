@@ -3,22 +3,20 @@ import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../state/AuthContext.jsx';
 import { useToast } from '../state/ToastContext.jsx';
+import { useServiceManagement } from '../hooks/useServiceManagement.js';
 
 export default function ServiceManagementPage() {
   const { me } = useAuth();
   const { setSuccessMessage, setErrorMessage } = useToast();
   const [services, setServices] = useState([]);
-  const [form, setForm] = useState({ name: '', duration: '' });
-  const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({ name: '', duration: '' });
-  const [busyId, setBusyId] = useState(null);
 
   const load = async () => {
-    if (!me?.business?.id) {
+    const businessId = me?.business?.id;
+    if (!businessId) {
       setServices([]);
       return;
     }
-    const res = await api.businessServices(me.business.id);
+    const res = await api.businessServices(businessId);
     setServices(res.data || []);
   };
 
@@ -26,86 +24,20 @@ export default function ServiceManagementPage() {
     void load();
   }, [me]);
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    try {
-      await api.addServiceItem({ name: form.name, duration: Number(form.duration) });
-      setSuccessMessage('服務項目新增成功');
-      setForm({ name: '', duration: '' });
-      await load();
-    } catch (err) {
-      setErrorMessage(err.message || '服務項目新增失敗');
-    }
-  };
-
-  const startEdit = (item) => {
-    setEditingId(item.id);
-    setEditForm({ name: item.name, duration: String(item.duration) });
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditForm({ name: '', duration: '' });
-  };
-
-  const handleEditChange = (event) => {
-    const { name, value } = event.target;
-    setEditForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSave = async (id) => {
-    try {
-      setBusyId(id);
-      await api.modifyServiceItem(id, { name: editForm.name, duration: Number(editForm.duration) });
-      setSuccessMessage('服務項目更新成功');
-      setEditingId(null);
-      await load();
-    } catch (err) {
-      setErrorMessage(err.message || '服務項目更新失敗');
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (!globalThis.confirm('確定要刪除此服務項目嗎？')) {
-      return;
-    }
-    try {
-      setBusyId(id);
-      await api.deleteServiceItem(id);
-      setSuccessMessage('服務項目刪除成功');
-      await load();
-    } catch (err) {
-      setErrorMessage(err.message || '服務項目刪除失敗');
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const handleToggle = async (item) => {
-    const nextActive = !item.active;
-    try {
-      setBusyId(item.id);
-      if (nextActive) {
-        await api.serviceOn(item.id);
-        setSuccessMessage('服務項目啟用成功');
-      } else {
-        await api.serviceOff(item.id);
-        setSuccessMessage('服務項目停用成功');
-      }
-      await load();
-    } catch (err) {
-      setErrorMessage(err.message || '服務狀態切換失敗');
-    } finally {
-      setBusyId(null);
-    }
-  };
+  const {
+    form,
+    editingId,
+    editForm,
+    busyId,
+    handleChange,
+    handleSubmit,
+    startEdit,
+    cancelEdit,
+    handleEditChange,
+    handleSave,
+    handleDelete,
+    handleToggle
+  } = useServiceManagement({ load, setSuccessMessage, setErrorMessage });
 
   const resolvedInterval = Number(me?.business?.slotInterval || 30) || 30;
   const buildDurationOptions = (interval, maxMinutes = 480) => {
@@ -242,12 +174,7 @@ export default function ServiceManagementPage() {
                         </td>
                         <td className="text-center">
                           <label className="switch" title={s.active ? '已啟用' : '已停用'}>
-                            <input
-                              type="checkbox"
-                              checked={!!s.active}
-                              disabled={busyId === s.id}
-                              onChange={() => handleToggle(s)}
-                            />
+                            <input type="checkbox" checked={!!s.active} disabled={busyId === s.id} onChange={() => handleToggle(s)}/>
                             <span className="slider"></span>
                           </label>
                         </td>
@@ -297,12 +224,7 @@ export default function ServiceManagementPage() {
                       <div className="d-flex justify-content-between align-items-center mb-3">
                         <span className="text-muted small">啟用</span>
                         <label className="switch">
-                          <input
-                            type="checkbox"
-                            checked={!!s.active}
-                            disabled={busyId === s.id}
-                            onChange={() => handleToggle(s)}
-                          />
+                          <input type="checkbox" checked={!!s.active} disabled={busyId === s.id} onChange={() => handleToggle(s)}/>
                           <span className="slider"></span>
                         </label>
                       </div>
