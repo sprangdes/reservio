@@ -1,52 +1,45 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { formatTimeHM } from '../utils/time.js';
 import { useToast } from '../state/ToastContext.jsx';
 import { useAuth } from '../state/AuthContext.jsx';
-
-function StatusBadge({ status }) {
-  if (status === 'PENDING') {
-    return <span className="badge rounded-pill bg-warning text-dark px-3"><i className="bi bi-hourglass-split me-1"></i> 待確認</span>;
-  }
-  if (status === 'CONFIRMED') {
-    return <span className="badge rounded-pill bg-success px-3"><i className="bi bi-check-circle me-1"></i> 已確認</span>;
-  }
-  if (status === 'CANCEL_REQUESTED') {
-    return <span className="badge rounded-pill bg-secondary px-3"><i className="bi bi-exclamation-circle me-1"></i> 取消確認中</span>;
-  }
-  if (status === 'CANCELLED') {
-    return <span className="badge rounded-pill bg-secondary px-3"><i className="bi bi-x-circle me-1"></i> 已取消</span>;
-  }
-  if (status === 'COMPLETED') {
-    return <span className="badge rounded-pill bg-info px-3"><i className="bi bi-flag me-1"></i> 已完成</span>;
-  }
-  return null;
-}
-
-function SortButton({ label, field, sortBy, sortDir, onSort }) {
-  const active = sortBy === field;
-  const icon = !active ? 'bi bi-arrow-down-up' : sortDir === 'asc' ? 'bi bi-caret-up-fill' : 'bi bi-caret-down-fill';
-  return (
-    <button type="button" className="btn btn-link p-0 text-decoration-none text-dark" onClick={() => onSort(field)}>
-      {label} <i className={icon}></i>
-    </button>
-  );
-}
+import ReservationStatusBadge from '../components/reservations/ReservationStatusBadge.jsx';
+import ReservationSortButton from '../components/reservations/ReservationSortButton.jsx';
+import ReservationActionControls from '../components/reservations/ReservationActionControls.jsx';
+import ReservationCancelReason from '../components/reservations/ReservationCancelReason.jsx';
+import ReservationPaginationFooter from '../components/reservations/ReservationPaginationFooter.jsx';
+import {
+  getNextSortState,
+  loadBusinessActiveServices,
+  updateBusinessReservationStatus
+} from '../utils/reservationManagement.js';
 
 export default function ManageAllPage() {
   const { me } = useAuth();
   const { setSuccessMessage, setErrorMessage } = useToast();
+  const emptyFilters = useMemo(
+    () => ({ dateFrom: '', dateTo: '', service: '', keyword: '', status: '' }),
+    []
+  );
   const dateFromRef = useRef(null);
   const dateToRef = useRef(null);
   const [data, setData] = useState({ content: [], totalPages: 0, totalElements: 0 });
   const [services, setServices] = useState([]);
-  const [filterDraft, setFilterDraft] = useState({ dateFrom: '', dateTo: '', service: '', keyword: '', status: '' });
-  const [filters, setFilters] = useState({ dateFrom: '', dateTo: '', service: '', keyword: '', status: '' });
+  const [filterDraft, setFilterDraft] = useState(emptyFilters);
+  const [filters, setFilters] = useState(emptyFilters);
+  const filterDraftRef = useRef(filterDraft);
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [sortBy, setSortBy] = useState('reservationDate');
   const [sortDir, setSortDir] = useState('desc');
+
+  useEffect(() => {
+    filterDraftRef.current = filterDraft;
+  }, [filterDraft]);
+
+  const updateFilterDraft = (patch) => {
+    setFilterDraft({ ...filterDraftRef.current, ...patch });
+  };
 
   const load = async () => {
     try {
@@ -73,9 +66,8 @@ export default function ManageAllPage() {
       try {
         const businessId = me?.business?.id;
         if (!businessId) return;
-        const res = await api.businessActiveServices(businessId);
-        const items = res?.items || res?.data || res || [];
-        setServices(Array.isArray(items) ? items : []);
+        const items = await loadBusinessActiveServices(api, businessId);
+        setServices(items);
       } catch (err) {
         setErrorMessage(err.message || '載入服務項目失敗');
       }
@@ -91,7 +83,7 @@ export default function ManageAllPage() {
           dateFormat: 'Y-m-d',
           disableMobile: true,
           onChange: (_, dateStr) => {
-            setFilterDraft((prev) => ({ ...prev, dateFrom: dateStr }));
+            updateFilterDraft({ dateFrom: dateStr });
             if (fpTo) {
               fpTo.set('minDate', dateStr || null);
             }
@@ -104,7 +96,7 @@ export default function ManageAllPage() {
           dateFormat: 'Y-m-d',
           disableMobile: true,
           onChange: (_, dateStr) => {
-            setFilterDraft((prev) => ({ ...prev, dateTo: dateStr }));
+            updateFilterDraft({ dateTo: dateStr });
           }
         })
       : null;
@@ -116,7 +108,7 @@ export default function ManageAllPage() {
 
   const updateStatus = async (id, action) => {
     try {
-      const res = await api.updateReservationStatus(id, { action });
+      const res = await updateBusinessReservationStatus(api, id, action);
       setSuccessMessage(res.message || '更新成功');
       await load();
     } catch (err) {
@@ -125,12 +117,9 @@ export default function ManageAllPage() {
   };
 
   const handleSort = (field) => {
-    if (sortBy === field) {
-      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortDir('asc');
-    }
+    const nextSort = getNextSortState(sortBy, sortDir, field);
+    setSortBy(nextSort.sortBy);
+    setSortDir(nextSort.sortDir);
     setPage(0);
   };
 
@@ -141,9 +130,8 @@ export default function ManageAllPage() {
   };
 
   const clearFilters = () => {
-    const empty = { dateFrom: '', dateTo: '', service: '', keyword: '', status: '' };
-    setFilterDraft(empty);
-    setFilters(empty);
+    setFilterDraft(emptyFilters);
+    setFilters(emptyFilters);
     setPage(0);
   };
 
@@ -167,33 +155,36 @@ export default function ManageAllPage() {
             <form onSubmit={applyFilters}>
               <div className="row g-3 align-items-end">
                 <div className="col-12 col-md-3">
-                  <label className="form-label">開始日期</label>
+                  <label htmlFor="start-date" className="form-label">開始日期</label>
                   <input
+                    id="start-date"
                     type="text"
                     className="form-control bg-white"
                     placeholder="選擇開始日期"
                     ref={dateFromRef}
                     value={filterDraft.dateFrom}
-                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, dateFrom: e.target.value }))}
+                    onChange={(e) => updateFilterDraft({ dateFrom: e.target.value })}
                   />
                 </div>
                 <div className="col-12 col-md-3">
-                  <label className="form-label">結束日期</label>
+                  <label htmlFor="end-date" className="form-label">結束日期</label>
                   <input
+                    id="end-date"
                     type="text"
                     className="form-control bg-white"
                     placeholder="選擇結束日期"
                     ref={dateToRef}
                     value={filterDraft.dateTo}
-                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, dateTo: e.target.value }))}
+                    onChange={(e) => updateFilterDraft({ dateTo: e.target.value })}
                   />
                 </div>
                 <div className="col-12 col-md-3">
-                  <label className="form-label">服務項目</label>
+                  <label htmlFor="service-item" className="form-label">服務項目</label>
                   <select
+                    id="service-item"
                     className="form-select"
                     value={filterDraft.service}
-                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, service: e.target.value }))}
+                    onChange={(e) => updateFilterDraft({ service: e.target.value })}
                   >
                     <option value="">全部</option>
                     {services.map((service) => (
@@ -204,11 +195,12 @@ export default function ManageAllPage() {
                   </select>
                 </div>
                 <div className="col-12 col-md-3">
-                  <label className="form-label">預約狀態</label>
+                  <label htmlFor="reservation-status" className="form-label">預約狀態</label>
                   <select
+                    id="reservation-status"
                     className="form-select"
                     value={filterDraft.status}
-                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, status: e.target.value }))}
+                    onChange={(e) => updateFilterDraft({ status: e.target.value })}
                   >
                     <option value="">全部</option>
                     <option value="PENDING">待確認</option>
@@ -219,13 +211,14 @@ export default function ManageAllPage() {
                   </select>
                 </div>
                 <div className="col-12 col-md-3">
-                  <label className="form-label">關鍵字</label>
+                  <label htmlFor="search-keyword" className="form-label">關鍵字</label>
                   <input
+                    id="search-keyword"
                     type="text"
                     className="form-control"
                     placeholder="姓名 / 電話 / 備註"
                     value={filterDraft.keyword}
-                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, keyword: e.target.value }))}
+                    onChange={(e) => updateFilterDraft({ keyword: e.target.value })}
                   />
                 </div>
                 <div className="col-12 col-md-3 d-flex gap-2">
@@ -240,22 +233,22 @@ export default function ManageAllPage() {
               <thead className="table-light">
                 <tr>
                   <th className="ps-4 text-start" style={{ width: '12%' }}>
-                    <SortButton label="日期" field="reservationDate" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                    <ReservationSortButton label="日期" field="reservationDate" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   </th>
                   <th className="text-start" style={{ width: '10%' }}>
-                    <SortButton label="時間" field="startTime" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                    <ReservationSortButton label="時間" field="startTime" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   </th>
                   <th className="text-start" style={{ width: '14%' }}>
-                    <SortButton label="客戶名稱" field="username" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                    <ReservationSortButton label="客戶名稱" field="username" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   </th>
                   <th className="text-start" style={{ width: '14%' }}>
-                    <SortButton label="服務項目" field="title" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                    <ReservationSortButton label="服務項目" field="title" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   </th>
                   <th className="text-start" style={{ width: '26%' }}>
-                    <SortButton label="客戶備註" field="remark" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                    <ReservationSortButton label="客戶備註" field="remark" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   </th>
                   <th className="text-center" style={{ width: '10%' }}>
-                    <SortButton label="狀態" field="status" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                    <ReservationSortButton label="狀態" field="status" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   </th>
                   <th className="text-center pe-4" style={{ width: '14%' }}>操作</th>
                 </tr>
@@ -269,37 +262,15 @@ export default function ManageAllPage() {
                     <td className="text-start"><span className="text-dark">{res.title}</span></td>
                     <td className="text-start">
                       <small className="text-muted text-break">{res.remark || '無備註'}</small>
-                      {res.status === 'CANCEL_REQUESTED' ? (
-                        <div className="mt-1">
-                          <small className="text-danger text-break">
-                            <i className="bi bi-exclamation-circle me-1"></i>取消原因：<span>{res.cancelReason}</span>
-                          </small>
-                        </div>
-                      ) : null}
+                      <ReservationCancelReason status={res.status} cancelReason={res.cancelReason} />
                     </td>
-                    <td className="text-center"><StatusBadge status={res.status} /></td>
+                    <td className="text-center"><ReservationStatusBadge status={res.status} /></td>
                     <td className="text-center pe-4">
-                      {res.status === 'PENDING' ? (
-                        <div className="d-flex gap-2 justify-content-center">
-                          <button className="btn btn-sm btn-outline-success px-3" onClick={() => updateStatus(res.id, 'confirm')}>
-                            <i className="bi bi-check-lg"></i> 確認
-                          </button>
-                          <button className="btn btn-sm btn-outline-danger px-3" onClick={() => updateStatus(res.id, 'cancel')}>
-                            <i className="bi bi-x-lg"></i> 取消
-                          </button>
-                        </div>
-                      ) : res.status === 'CANCEL_REQUESTED' ? (
-                        <div className="d-flex gap-2 justify-content-center">
-                          <button className="btn btn-sm btn-outline-danger px-3" onClick={() => updateStatus(res.id, 'approveCancel')}>
-                            <i className="bi bi-x-circle me-1"></i> 確認取消
-                          </button>
-                          <button className="btn btn-sm btn-outline-secondary px-3" onClick={() => updateStatus(res.id, 'rejectCancel')}>
-                            <i className="bi bi-arrow-counterclockwise me-1"></i> 駁回
-                          </button>
-                        </div>
-                      ) : (
-                        <small className="text-muted">無可用操作</small>
-                      )}
+                      <ReservationActionControls
+                        status={res.status}
+                        reservationId={res.id}
+                        onAction={updateStatus}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -320,37 +291,20 @@ export default function ManageAllPage() {
                   <div className="d-flex justify-content-between align-items-center mb-2">
                     <div className="fw-bold">{res.username}</div>
                     <div className="d-flex align-items-center gap-2">
-                      <StatusBadge status={res.status} />
-                      {res.status === 'PENDING' ? (
-                        <>
-                          <button className="btn btn-sm btn-outline-success" onClick={() => updateStatus(res.id, 'confirm')}>
-                            確認
-                          </button>
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => updateStatus(res.id, 'cancel')}>
-                            取消
-                          </button>
-                        </>
-                      ) : res.status === 'CANCEL_REQUESTED' ? (
-                        <>
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => updateStatus(res.id, 'approveCancel')}>
-                            確認取消
-                          </button>
-                          <button className="btn btn-sm btn-outline-secondary" onClick={() => updateStatus(res.id, 'rejectCancel')}>
-                            駁回
-                          </button>
-                        </>
-                      ) : (
-                        <span className="text-muted small">無可用操作</span>
-                      )}
+                      <ReservationStatusBadge status={res.status} />
+                      <ReservationActionControls
+                        status={res.status}
+                        reservationId={res.id}
+                        onAction={updateStatus}
+                        compact
+                      />
                     </div>
                   </div>
                   <div className="small text-muted mb-1">日期：{res.reservationDate}</div>
                   <div className="small text-muted mb-1">時間：{formatTimeHM(res.startTime)}</div>
                   <div className="small text-muted mb-1">服務：{res.title}</div>
                   <div className="small text-muted mb-2">備註：{res.remark || '無備註'}</div>
-                  {res.status === 'CANCEL_REQUESTED' ? (
-                    <div className="small text-danger mb-2">取消原因：{res.cancelReason}</div>
-                  ) : null}
+                  <ReservationCancelReason status={res.status} cancelReason={res.cancelReason} compact />
                   <div className="d-flex gap-2"></div>
                 </div>
               </div>
@@ -363,43 +317,7 @@ export default function ManageAllPage() {
           </div>
         </div>
 
-        <div className="card-footer bg-white py-3 border-top-0 d-flex flex-wrap justify-content-between align-items-center gap-3">
-          <Link to="/" className="btn btn-link btn-sm text-primary fw-bold text-decoration-none btn-back-link">
-            <i className="bi bi-arrow-left me-1"></i> 返回儀表板
-          </Link>
-          <div className="d-flex align-items-center gap-2">
-            <span className="text-muted small">每頁</span>
-            <select
-              className="form-select form-select-sm"
-              value={size}
-              onChange={(e) => {
-                setSize(Number(e.target.value));
-                setPage(0);
-              }}
-              style={{ width: '90px' }}
-            >
-              {[10, 20, 50].map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-            <span className="text-muted small">筆</span>
-          </div>
-          <div className="btn-group">
-            <button className="btn btn-outline-secondary btn-sm" disabled={page === 0} onClick={() => setPage((p) => Math.max(p - 1, 0))}>
-              上一頁
-            </button>
-            <button className="btn btn-outline-secondary btn-sm" disabled>
-              第 {page + 1} / {totalPages} 頁
-            </button>
-            <button
-              className="btn btn-outline-secondary btn-sm"
-              disabled={page + 1 >= totalPages}
-              onClick={() => setPage((p) => Math.min(p + 1, totalPages - 1))}
-            >
-              下一頁
-            </button>
-          </div>
-        </div>
+        <ReservationPaginationFooter size={size} setSize={setSize} setPage={setPage} page={page} totalPages={totalPages} />
       </div>
     </main>
   );
