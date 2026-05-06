@@ -4,35 +4,8 @@ import { api } from '../api.js';
 import { formatTimeHM } from '../utils/time.js';
 import { useToast } from '../state/ToastContext.jsx';
 import { useAuth } from '../state/AuthContext.jsx';
-
-function StatusBadge({ status }) {
-  if (status === 'PENDING') {
-    return <span className="badge rounded-pill bg-warning text-dark px-3"><i className="bi bi-hourglass-split me-1"></i> 待確認</span>;
-  }
-  if (status === 'CONFIRMED') {
-    return <span className="badge rounded-pill bg-success px-3"><i className="bi bi-check-circle me-1"></i> 已確認</span>;
-  }
-  if (status === 'CANCEL_REQUESTED') {
-    return <span className="badge rounded-pill bg-secondary px-3"><i className="bi bi-exclamation-circle me-1"></i> 取消確認中</span>;
-  }
-  if (status === 'CANCELLED') {
-    return <span className="badge rounded-pill bg-secondary px-3"><i className="bi bi-x-circle me-1"></i> 已取消</span>;
-  }
-  if (status === 'COMPLETED') {
-    return <span className="badge rounded-pill bg-info px-3"><i className="bi bi-flag me-1"></i> 已完成</span>;
-  }
-  return null;
-}
-
-function SortButton({ label, field, sortBy, sortDir, onSort }) {
-  const active = sortBy === field;
-  const icon = !active ? 'bi bi-arrow-down-up' : sortDir === 'asc' ? 'bi bi-caret-up-fill' : 'bi bi-caret-down-fill';
-  return (
-    <button type="button" className="btn btn-link p-0 text-decoration-none text-dark" onClick={() => onSort(field)}>
-      {label} <i className={icon}></i>
-    </button>
-  );
-}
+import ReservationStatusBadge from '../components/reservations/ReservationStatusBadge.jsx';
+import ReservationSortButton from '../components/reservations/ReservationSortButton.jsx';
 
 export default function ManageTodayPage() {
   const { me } = useAuth();
@@ -193,19 +166,19 @@ export default function ManageTodayPage() {
               <thead className="table-light">
                 <tr>
                   <th className="ps-4 text-start" style={{ width: '12%' }}>
-                    <SortButton label="時間" field="startTime" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                    <ReservationSortButton label="時間" field="startTime" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   </th>
                   <th className="text-start" style={{ width: '15%' }}>
-                    <SortButton label="客戶名稱" field="username" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                    <ReservationSortButton label="客戶名稱" field="username" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   </th>
                   <th className="text-start" style={{ width: '18%' }}>
-                    <SortButton label="服務項目" field="title" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                    <ReservationSortButton label="服務項目" field="title" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   </th>
                   <th className="text-start" style={{ width: '25%' }}>
-                    <SortButton label="客戶備註" field="remark" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                    <ReservationSortButton label="客戶備註" field="remark" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   </th>
                   <th className="text-center" style={{ width: '12%' }}>
-                    <SortButton label="預約狀態" field="status" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                    <ReservationSortButton label="預約狀態" field="status" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   </th>
                   <th className="text-center pe-4" style={{ width: '18%' }}>操作管理</th>
                 </tr>
@@ -226,7 +199,7 @@ export default function ManageTodayPage() {
                         </div>
                       ) : null}
                     </td>
-                    <td className="text-center"><StatusBadge status={res.status} /></td>
+                    <td className="text-center"><ReservationStatusBadge status={res.status} /></td>
                     <td className="text-center pe-4">
                       {res.status === 'PENDING' ? (
                         <div className="d-flex gap-2 justify-content-center">
@@ -269,7 +242,7 @@ export default function ManageTodayPage() {
                   <div className="d-flex justify-content-between align-items-center mb-2">
                     <div className="fw-bold">{res.username}</div>
                     <div className="d-flex align-items-center gap-2">
-                      <StatusBadge status={res.status} />
+                      <ReservationStatusBadge status={res.status} />
                       {res.status === 'PENDING' ? (
                         <>
                           <button className="btn btn-sm btn-outline-success" onClick={() => updateStatus(res.id, 'confirm')}>

@@ -4,35 +4,8 @@ import { api } from '../api.js';
 import { formatTimeHM } from '../utils/time.js';
 import { useToast } from '../state/ToastContext.jsx';
 import { useAuth } from '../state/AuthContext.jsx';
-
-function StatusBadge({ status }) {
-  if (status === 'PENDING') {
-    return <span className="badge rounded-pill bg-warning text-dark px-3"><i className="bi bi-hourglass-split me-1"></i> 待確認</span>;
-  }
-  if (status === 'CONFIRMED') {
-    return <span className="badge rounded-pill bg-success px-3"><i className="bi bi-check-circle me-1"></i> 已確認</span>;
-  }
-  if (status === 'CANCEL_REQUESTED') {
-    return <span className="badge rounded-pill bg-secondary px-3"><i className="bi bi-exclamation-circle me-1"></i> 取消確認中</span>;
-  }
-  if (status === 'CANCELLED') {
-    return <span className="badge rounded-pill bg-secondary px-3"><i className="bi bi-x-circle me-1"></i> 已取消</span>;
-  }
-  if (status === 'COMPLETED') {
-    return <span className="badge rounded-pill bg-info px-3"><i className="bi bi-flag me-1"></i> 已完成</span>;
-  }
-  return null;
-}
-
-function SortButton({ label, field, sortBy, sortDir, onSort }) {
-  const active = sortBy === field;
-  const icon = !active ? 'bi bi-arrow-down-up' : sortDir === 'asc' ? 'bi bi-caret-up-fill' : 'bi bi-caret-down-fill';
-  return (
-    <button type="button" className="btn btn-link p-0 text-decoration-none text-dark" onClick={() => onSort(field)}>
-      {label} <i className={icon}></i>
-    </button>
-  );
-}
+import ReservationStatusBadge from '../components/reservations/ReservationStatusBadge.jsx';
+import ReservationSortButton from '../components/reservations/ReservationSortButton.jsx';
 
 export default function MyReservationsPage() {
   const { setSuccessMessage, setErrorMessage } = useToast();
@@ -311,22 +284,22 @@ export default function MyReservationsPage() {
               <thead className="table-light">
                 <tr>
                   <th className="ps-4 text-start" style={{ width: '18%' }}>
-                    <SortButton label="店家" field="businessName" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                    <ReservationSortButton label="店家" field="businessName" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   </th>
                   <th className="text-start" style={{ width: '12%' }}>
-                    <SortButton label="日期" field="reservationDate" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                    <ReservationSortButton label="日期" field="reservationDate" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   </th>
                   <th className="text-start" style={{ width: '10%' }}>
-                    <SortButton label="時間" field="startTime" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                    <ReservationSortButton label="時間" field="startTime" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   </th>
                   <th className="text-start" style={{ width: '16%' }}>
-                    <SortButton label="服務項目" field="title" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                    <ReservationSortButton label="服務項目" field="title" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   </th>
                   <th className="text-center" style={{ width: '14%' }}>
-                    <SortButton label="狀態" field="status" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                    <ReservationSortButton label="狀態" field="status" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   </th>
                   <th className="text-start" style={{ width: '20%' }}>
-                    <SortButton label="備註" field="remark" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                    <ReservationSortButton label="備註" field="remark" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   </th>
                   <th className="text-center pe-4" style={{ width: '10%' }}>操作</th>
                 </tr>
@@ -338,7 +311,7 @@ export default function MyReservationsPage() {
                     <td className="text-start">{res.reservationDate}</td>
                     <td className="text-start fw-bold text-primary">{formatTimeHM(res.startTime)}</td>
                     <td className="text-start"><span className="text-dark">{res.title}</span></td>
-                    <td className="text-center"><StatusBadge status={res.status} /></td>
+                    <td className="text-center"><ReservationStatusBadge status={res.status} /></td>
                     <td className="text-start">
                       <small className="text-muted text-break">{res.remark || '無備註'}</small>
                     </td>
@@ -378,7 +351,7 @@ export default function MyReservationsPage() {
                   <div className="d-flex justify-content-between align-items-center mb-2">
                     <div className="fw-bold">{res.businessName}</div>
                     <div className="d-flex align-items-center gap-2">
-                      <StatusBadge status={res.status} />
+                      <ReservationStatusBadge status={res.status} />
                       {res.status === 'PENDING' ? (
                         <button className="btn btn-sm btn-outline-danger" onClick={() => handleCancel(res.id)}>
                           取消
