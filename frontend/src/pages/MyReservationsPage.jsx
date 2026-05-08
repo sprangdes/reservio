@@ -177,6 +177,44 @@ export default function MyReservationsPage() {
 
   const totalPages = Math.max(data.totalPages || 0, 1);
   const content = useMemo(() => data.content || [], [data.content]);
+  const renderDesktopActions = (reservation) => {
+    if (reservation.status === 'PENDING') {
+      return (
+        <div className="d-flex gap-2 justify-content-center">
+          <button className="btn btn-sm btn-outline-danger px-3" onClick={() => handleCancel(reservation.id)}>
+            <i className="bi bi-x-lg"></i> 取消
+          </button>
+        </div>
+      );
+    }
+    if (reservation.status === 'CONFIRMED') {
+      return (
+        <div className="d-flex gap-2 justify-content-center">
+          <button className="btn btn-sm btn-outline-danger px-3" onClick={() => openModal(reservation.id)}>
+            <i className="bi bi-x-lg"></i> 取消
+          </button>
+        </div>
+      );
+    }
+    return <small className="text-muted">-</small>;
+  };
+  const renderMobileActions = (reservation) => {
+    if (reservation.status === 'PENDING') {
+      return (
+        <button className="btn btn-sm btn-outline-danger" onClick={() => handleCancel(reservation.id)}>
+          取消
+        </button>
+      );
+    }
+    if (reservation.status === 'CONFIRMED') {
+      return (
+        <button className="btn btn-sm btn-outline-danger" onClick={() => openModal(reservation.id)}>
+          取消
+        </button>
+      );
+    }
+    return <span className="text-muted small">無可用操作</span>;
+  };
 
   return (
     <main className="container list-page">
@@ -322,21 +360,7 @@ export default function MyReservationsPage() {
                       <small className="text-muted text-break">{res.remark || '無備註'}</small>
                     </td>
                     <td className="text-center pe-4">
-                      {res.status === 'PENDING' ? (
-                        <div className="d-flex gap-2 justify-content-center">
-                          <button className="btn btn-sm btn-outline-danger px-3" onClick={() => handleCancel(res.id)}>
-                            <i className="bi bi-x-lg"></i> 取消
-                          </button>
-                        </div>
-                      ) : res.status === 'CONFIRMED' ? (
-                        <div className="d-flex gap-2 justify-content-center">
-                          <button className="btn btn-sm btn-outline-danger px-3" onClick={() => openModal(res.id)}>
-                            <i className="bi bi-x-lg"></i> 取消
-                          </button>
-                        </div>
-                      ) : (
-                        <small className="text-muted">-</small>
-                      )}
+                      {renderDesktopActions(res)}
                     </td>
                   </tr>
                 ))}
@@ -358,17 +382,7 @@ export default function MyReservationsPage() {
                     <div className="fw-bold">{res.businessName}</div>
                     <div className="d-flex align-items-center gap-2">
                       <ReservationStatusBadge status={res.status} />
-                      {res.status === 'PENDING' ? (
-                        <button className="btn btn-sm btn-outline-danger" onClick={() => handleCancel(res.id)}>
-                          取消
-                        </button>
-                      ) : res.status === 'CONFIRMED' ? (
-                        <button className="btn btn-sm btn-outline-danger" onClick={() => openModal(res.id)}>
-                          取消
-                        </button>
-                      ) : (
-                        <span className="text-muted small">無可用操作</span>
-                      )}
+                      {renderMobileActions(res)}
                     </div>
                   </div>
                   <div className="small text-muted mb-1">日期：{res.reservationDate}</div>

@@ -97,6 +97,60 @@ export default function ManageTodayPage() {
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
     today.getDate()
   ).padStart(2, '0')}`;
+  const renderDesktopActions = (reservation) => {
+    if (reservation.status === 'PENDING') {
+      return (
+        <div className="d-flex gap-2 justify-content-center">
+          <button className="btn btn-sm btn-outline-success px-3" onClick={() => updateStatus(reservation.id, 'confirm')}>
+            <i className="bi bi-check-lg"></i> 確認
+          </button>
+          <button className="btn btn-sm btn-outline-danger px-3" onClick={() => updateStatus(reservation.id, 'cancel')}>
+            <i className="bi bi-x-lg"></i> 取消
+          </button>
+        </div>
+      );
+    }
+    if (reservation.status === 'CANCEL_REQUESTED') {
+      return (
+        <div className="d-flex gap-2 justify-content-center">
+          <button className="btn btn-sm btn-outline-danger px-3" onClick={() => updateStatus(reservation.id, 'approveCancel')}>
+            <i className="bi bi-x-circle me-1"></i> 確認取消
+          </button>
+          <button className="btn btn-sm btn-outline-secondary px-3" onClick={() => updateStatus(reservation.id, 'rejectCancel')}>
+            <i className="bi bi-arrow-counterclockwise me-1"></i> 駁回
+          </button>
+        </div>
+      );
+    }
+    return <small className="text-muted">無可用操作</small>;
+  };
+  const renderMobileActions = (reservation) => {
+    if (reservation.status === 'PENDING') {
+      return (
+        <>
+          <button className="btn btn-sm btn-outline-success" onClick={() => updateStatus(reservation.id, 'confirm')}>
+            確認
+          </button>
+          <button className="btn btn-sm btn-outline-danger" onClick={() => updateStatus(reservation.id, 'cancel')}>
+            取消
+          </button>
+        </>
+      );
+    }
+    if (reservation.status === 'CANCEL_REQUESTED') {
+      return (
+        <>
+          <button className="btn btn-sm btn-outline-danger" onClick={() => updateStatus(reservation.id, 'approveCancel')}>
+            確認取消
+          </button>
+          <button className="btn btn-sm btn-outline-secondary" onClick={() => updateStatus(reservation.id, 'rejectCancel')}>
+            駁回
+          </button>
+        </>
+      );
+    }
+    return <span className="text-muted small">無可用操作</span>;
+  };
 
   return (
     <main className="container list-page">
@@ -204,27 +258,7 @@ export default function ManageTodayPage() {
                     </td>
                     <td className="text-center"><ReservationStatusBadge status={res.status} /></td>
                     <td className="text-center pe-4">
-                      {res.status === 'PENDING' ? (
-                        <div className="d-flex gap-2 justify-content-center">
-                          <button className="btn btn-sm btn-outline-success px-3" onClick={() => updateStatus(res.id, 'confirm')}>
-                            <i className="bi bi-check-lg"></i> 確認
-                          </button>
-                          <button className="btn btn-sm btn-outline-danger px-3" onClick={() => updateStatus(res.id, 'cancel')}>
-                            <i className="bi bi-x-lg"></i> 取消
-                          </button>
-                        </div>
-                      ) : res.status === 'CANCEL_REQUESTED' ? (
-                        <div className="d-flex gap-2 justify-content-center">
-                          <button className="btn btn-sm btn-outline-danger px-3" onClick={() => updateStatus(res.id, 'approveCancel')}>
-                            <i className="bi bi-x-circle me-1"></i> 確認取消
-                          </button>
-                          <button className="btn btn-sm btn-outline-secondary px-3" onClick={() => updateStatus(res.id, 'rejectCancel')}>
-                            <i className="bi bi-arrow-counterclockwise me-1"></i> 駁回
-                          </button>
-                        </div>
-                      ) : (
-                        <small className="text-muted">無可用操作</small>
-                      )}
+                      {renderDesktopActions(res)}
                     </td>
                   </tr>
                 ))}
@@ -246,27 +280,7 @@ export default function ManageTodayPage() {
                     <div className="fw-bold">{res.username}</div>
                     <div className="d-flex align-items-center gap-2">
                       <ReservationStatusBadge status={res.status} />
-                      {res.status === 'PENDING' ? (
-                        <>
-                          <button className="btn btn-sm btn-outline-success" onClick={() => updateStatus(res.id, 'confirm')}>
-                            確認
-                          </button>
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => updateStatus(res.id, 'cancel')}>
-                            取消
-                          </button>
-                        </>
-                      ) : res.status === 'CANCEL_REQUESTED' ? (
-                        <>
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => updateStatus(res.id, 'approveCancel')}>
-                            確認取消
-                          </button>
-                          <button className="btn btn-sm btn-outline-secondary" onClick={() => updateStatus(res.id, 'rejectCancel')}>
-                            駁回
-                          </button>
-                        </>
-                      ) : (
-                        <span className="text-muted small">無可用操作</span>
-                      )}
+                      {renderMobileActions(res)}
                     </div>
                   </div>
                   <div className="small text-muted mb-1">時間：{formatTimeHM(res.startTime)}</div>
