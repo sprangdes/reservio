@@ -174,7 +174,7 @@ export default function ManageTodayPage() {
                     id="service"
                     className="form-select"
                     value={filterDraft.service}
-                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, service: e.target.value }))}
+                    onChange={(e) => setFilterDraft({ ...filterDraft, service: e.target.value })}
                   >
                     <option value="">全部</option>
                     {services.map((service) => (
@@ -190,7 +190,7 @@ export default function ManageTodayPage() {
                     id="status"
                     className="form-select"
                     value={filterDraft.status}
-                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, status: e.target.value }))}
+                    onChange={(e) => setFilterDraft({ ...filterDraft, status: e.target.value })}
                   >
                     <option value="">全部</option>
                     <option value="PENDING">待確認</option>
@@ -208,7 +208,7 @@ export default function ManageTodayPage() {
                     className="form-control"
                     placeholder="姓名 / 電話 / 備註"
                     value={filterDraft.keyword}
-                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, keyword: e.target.value }))}
+                    onChange={(e) => setFilterDraft({ ...filterDraft, keyword: e.target.value })}
                   />
                 </div>
                 <div className="col-12 col-md-3 d-flex gap-2">

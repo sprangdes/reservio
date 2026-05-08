@@ -32,12 +32,21 @@ export default function MyReservationsPage() {
   const [serviceOptions, setServiceOptions] = useState([]);
   const dateFromRef = useRef(null);
   const dateToRef = useRef(null);
+  const filterDraftRef = useRef(filterDraft);
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [sortBy, setSortBy] = useState('reservationDate');
   const [sortDir, setSortDir] = useState('desc');
   const [selectedId, setSelectedId] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
+
+  useEffect(() => {
+    filterDraftRef.current = filterDraft;
+  }, [filterDraft]);
+
+  const updateFilterDraft = (patch) => {
+    setFilterDraft({ ...filterDraftRef.current, ...patch });
+  };
 
   useEffect(() => {
     if (!loading && me?.role === 'ROLE_BUSINESS') {
@@ -70,7 +79,7 @@ export default function MyReservationsPage() {
           dateFormat: 'Y-m-d',
           disableMobile: true,
           onChange: (_, dateStr) => {
-            setFilterDraft((prev) => ({ ...prev, dateFrom: dateStr }));
+            updateFilterDraft({ dateFrom: dateStr });
             if (fpTo) {
               fpTo.set('minDate', dateStr || null);
             }
@@ -83,7 +92,7 @@ export default function MyReservationsPage() {
           dateFormat: 'Y-m-d',
           disableMobile: true,
           onChange: (_, dateStr) => {
-            setFilterDraft((prev) => ({ ...prev, dateTo: dateStr }));
+            updateFilterDraft({ dateTo: dateStr });
           }
         })
       : null;
@@ -241,7 +250,7 @@ export default function MyReservationsPage() {
                     placeholder="選擇開始日期"
                     ref={dateFromRef}
                     value={filterDraft.dateFrom}
-                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, dateFrom: e.target.value }))}
+                    onChange={(e) => updateFilterDraft({ dateFrom: e.target.value })}
                   />
                 </div>
                 <div className="col-12 col-md-3">
@@ -253,7 +262,7 @@ export default function MyReservationsPage() {
                     placeholder="選擇結束日期"
                     ref={dateToRef}
                     value={filterDraft.dateTo}
-                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, dateTo: e.target.value }))}
+                    onChange={(e) => updateFilterDraft({ dateTo: e.target.value })}
                   />
                 </div>
                 <div className="col-12 col-md-3">
@@ -262,7 +271,7 @@ export default function MyReservationsPage() {
                     id="businessId"
                     className="form-select"
                     value={filterDraft.businessId}
-                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, businessId: e.target.value }))}
+                    onChange={(e) => updateFilterDraft({ businessId: e.target.value })}
                   >
                     <option value="">全部</option>
                     {businessOptions.map((biz) => (
@@ -278,7 +287,7 @@ export default function MyReservationsPage() {
                     id="service"
                     className="form-select"
                     value={filterDraft.service}
-                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, service: e.target.value }))}
+                    onChange={(e) => updateFilterDraft({ service: e.target.value })}
                     disabled={!filterDraft.businessId}
                   >
                     <option value="">{filterDraft.businessId ? '全部' : '請先選擇商家'}</option>
@@ -295,7 +304,7 @@ export default function MyReservationsPage() {
                     id="status"
                     className="form-select"
                     value={filterDraft.status}
-                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, status: e.target.value }))}
+                    onChange={(e) => updateFilterDraft({ status: e.target.value })}
                   >
                     <option value="">全部</option>
                     <option value="PENDING">待確認</option>
@@ -313,7 +322,7 @@ export default function MyReservationsPage() {
                     className="form-control"
                     placeholder="店家 / 服務 / 備註"
                     value={filterDraft.keyword}
-                    onChange={(e) => setFilterDraft((prev) => ({ ...prev, keyword: e.target.value }))}
+                    onChange={(e) => updateFilterDraft({ keyword: e.target.value })}
                   />
                 </div>
                 <div className="col-12 col-md-3 d-flex gap-2">
