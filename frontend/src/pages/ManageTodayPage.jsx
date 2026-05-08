@@ -40,7 +40,7 @@ export default function ManageTodayPage() {
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, [page, size, sortBy, sortDir, filters]);
 
   useEffect(() => {
@@ -55,7 +55,7 @@ export default function ManageTodayPage() {
         setErrorMessage(err.message || '載入服務項目失敗');
       }
     };
-    loadServices();
+    void loadServices();
   }, [me]);
 
   const updateStatus = async (id, action) => {
@@ -115,8 +115,9 @@ export default function ManageTodayPage() {
             <form onSubmit={applyFilters}>
               <div className="row g-3 align-items-end">
                 <div className="col-12 col-md-3">
-                  <label className="form-label">服務項目</label>
+                  <label htmlFor="service" className="form-label">服務項目</label>
                   <select
+                    id="service"
                     className="form-select"
                     value={filterDraft.service}
                     onChange={(e) => setFilterDraft((prev) => ({ ...prev, service: e.target.value }))}
@@ -130,8 +131,9 @@ export default function ManageTodayPage() {
                   </select>
                 </div>
                 <div className="col-12 col-md-3">
-                  <label className="form-label">預約狀態</label>
+                  <label htmlFor="status" className="form-label">預約狀態</label>
                   <select
+                    id="status"
                     className="form-select"
                     value={filterDraft.status}
                     onChange={(e) => setFilterDraft((prev) => ({ ...prev, status: e.target.value }))}
@@ -145,8 +147,9 @@ export default function ManageTodayPage() {
                   </select>
                 </div>
                 <div className="col-12 col-md-3">
-                  <label className="form-label">關鍵字</label>
+                  <label htmlFor="keyword" className="form-label">關鍵字</label>
                   <input
+                    id="keyword"
                     type="text"
                     className="form-control"
                     placeholder="姓名 / 電話 / 備註"

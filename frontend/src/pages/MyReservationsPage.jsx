@@ -195,8 +195,9 @@ export default function MyReservationsPage() {
             <form onSubmit={applyFilters}>
               <div className="row g-3 align-items-end">
                 <div className="col-12 col-md-3">
-                  <label className="form-label">開始日期</label>
+                  <label htmlFor="startDate" className="form-label">開始日期</label>
                   <input
+                    id="startDate"
                     type="text"
                     className="form-control bg-white"
                     placeholder="選擇開始日期"
@@ -206,8 +207,9 @@ export default function MyReservationsPage() {
                   />
                 </div>
                 <div className="col-12 col-md-3">
-                  <label className="form-label">結束日期</label>
+                  <label htmlFor="endDate" className="form-label">結束日期</label>
                   <input
+                    id="endDate"
                     type="text"
                     className="form-control bg-white"
                     placeholder="選擇結束日期"
@@ -217,8 +219,9 @@ export default function MyReservationsPage() {
                   />
                 </div>
                 <div className="col-12 col-md-3">
-                  <label className="form-label">商家</label>
+                  <label htmlFor="businessId" className="form-label">商家</label>
                   <select
+                    id="businessId"
                     className="form-select"
                     value={filterDraft.businessId}
                     onChange={(e) => setFilterDraft((prev) => ({ ...prev, businessId: e.target.value }))}
@@ -232,8 +235,9 @@ export default function MyReservationsPage() {
                   </select>
                 </div>
                 <div className="col-12 col-md-3">
-                  <label className="form-label">服務項目</label>
+                  <label htmlFor="service" className="form-label">服務項目</label>
                   <select
+                    id="service"
                     className="form-select"
                     value={filterDraft.service}
                     onChange={(e) => setFilterDraft((prev) => ({ ...prev, service: e.target.value }))}
@@ -248,8 +252,9 @@ export default function MyReservationsPage() {
                   </select>
                 </div>
                 <div className="col-12 col-md-3">
-                  <label className="form-label">預約狀態</label>
+                  <label htmlFor="status" className="form-label">預約狀態</label>
                   <select
+                    id="status"
                     className="form-select"
                     value={filterDraft.status}
                     onChange={(e) => setFilterDraft((prev) => ({ ...prev, status: e.target.value }))}
@@ -263,8 +268,9 @@ export default function MyReservationsPage() {
                   </select>
                 </div>
                 <div className="col-12 col-md-3">
-                  <label className="form-label">關鍵字</label>
+                  <label htmlFor="keyword" className="form-label">關鍵字</label>
                   <input
+                    id="keyword"
                     type="text"
                     className="form-control"
                     placeholder="店家 / 服務 / 備註"
