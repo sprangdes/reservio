@@ -7,7 +7,7 @@ import { useReservationManagementControls } from './useReservationManagementCont
 
 const DEFAULT_EMPTY_FILTERS = { dateFrom: '', dateTo: '', service: '', keyword: '', status: '' };
 
-export function useBusinessReservationList({ initialSortDir = 'desc', defaultStatus = null }) {
+export function useBusinessReservationList({ initialSortDir = 'desc', defaultStatus = '' }) {
   const { me } = useAuth();
   const { setSuccessMessage, setErrorMessage } = useToast();
   const emptyFilters = useMemo(() => ({ ...DEFAULT_EMPTY_FILTERS }), []);

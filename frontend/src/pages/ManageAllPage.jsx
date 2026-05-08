@@ -31,7 +31,7 @@ export default function ManageAllPage() {
     handleSort,
     applyFilters,
     clearFilters
-  } = useBusinessReservationList({ initialSortDir: 'desc', defaultStatus: null });
+  } = useBusinessReservationList({ initialSortDir: 'desc', defaultStatus: '' });
 
   const totalPages = Math.max(data.totalPages || 0, 1);
   const content = useMemo(() => data.content || [], [data.content]);
