@@ -28,7 +28,7 @@ export default function RegisterBusinessPage() {
         setLocalError(err.message || '載入服務類別失敗');
       }
     };
-    loadCategories();
+    void loadCategories();
   }, []);
 
   useEffect(() => {

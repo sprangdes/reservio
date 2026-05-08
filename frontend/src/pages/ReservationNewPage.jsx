@@ -54,12 +54,7 @@ export default function ReservationNewPage() {
   }, [form.businessId]);
 
   useEffect(() => {
-    const duration = selectedService?.duration;
-    if (duration) {
-      setServiceDuration(selectedService.duration);
-    } else {
-      setServiceDuration(null);
-    }
+    setServiceDuration(selectedService?.duration ?? null);
   }, [selectedService]);
 
   useEffect(() => {
