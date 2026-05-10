@@ -4,7 +4,10 @@ import ReservationStatusBadge from './ReservationStatusBadge';
 import ReservationActionControls from './ReservationActionControls';
 import type { ReservationItem } from './types';
 
-export default function ReservationDesktopRow({ reservation, onAction }: { reservation: ReservationItem; onAction: (id: string | number, action: string) => void | Promise<void> }) {
+export default function ReservationDesktopRow({ reservation, onAction }: Readonly<{
+    reservation: ReservationItem;
+    onAction: (id: string | number, action: string) => void | Promise<void>
+}>) {
   return (
     <tr>
       <td className="ps-4 text-start">{reservation.reservationDate}</td>

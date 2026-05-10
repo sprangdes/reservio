@@ -4,7 +4,10 @@ import ReservationActionControls from './ReservationActionControls';
 import ReservationCancelReason from './ReservationCancelReason';
 import type { ReservationItem } from './types';
 
-export default function ReservationMobileCard({ reservation, onAction }: { reservation: ReservationItem; onAction: (id: string | number, action: string) => void | Promise<void> }) {
+export default function ReservationMobileCard({ reservation, onAction }: Readonly<{
+  reservation: ReservationItem;
+  onAction: (id: string | number, action: string) => void | Promise<void>
+}>) {
   return (
     <div className="card mb-3 shadow-sm">
       <div className="card-body">
