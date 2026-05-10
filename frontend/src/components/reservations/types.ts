@@ -1,0 +1,26 @@
+export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCEL_REQUESTED' | 'CANCELLED' | 'COMPLETED' | string;
+
+export interface ReservationItem {
+  id: string | number;
+  reservationDate?: string;
+  startTime?: string;
+  username?: string;
+  title?: string;
+  remark?: string;
+  status: ReservationStatus;
+  cancelReason?: string;
+  [key: string]: unknown;
+}
+
+export interface ServiceOption {
+  id: string | number;
+  name: string;
+}
+
+export interface FilterDraft {
+  dateFrom: string;
+  dateTo: string;
+  service: string;
+  keyword: string;
+  status: string;
+}
