@@ -2,12 +2,6 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
 
 type Primitive = string | number | boolean;
 export type QueryParams = Record<string, Primitive | null | undefined>;
-
-export interface ApiEnvelope<T> {
-  data: T;
-  message?: string;
-}
-
 async function request<T = any>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
