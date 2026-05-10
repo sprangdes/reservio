@@ -1,4 +1,5 @@
-export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCEL_REQUESTED' | 'CANCELLED' | 'COMPLETED' | string;
+export type KnownReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCEL_REQUESTED' | 'CANCELLED' | 'COMPLETED';
+export type ReservationStatus = KnownReservationStatus | (string & {});
 
 export interface ReservationItem {
   id: string | number;
