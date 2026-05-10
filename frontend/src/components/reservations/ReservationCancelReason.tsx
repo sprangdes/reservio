@@ -6,7 +6,7 @@ interface Props {
   compact?: boolean;
 }
 
-export default function ReservationCancelReason({ status, cancelReason = '', compact = false }: Props) {
+export default function ReservationCancelReason({ status, cancelReason = '', compact = false }: Readonly<Props>) {
   if (status !== 'CANCEL_REQUESTED') return null;
   if (compact) return <div className="small text-danger mb-2">取消原因：{cancelReason}</div>;
   return (

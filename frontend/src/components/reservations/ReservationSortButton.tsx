@@ -6,7 +6,7 @@ interface Props {
   onSort: (field: string) => void;
 }
 
-export default function ReservationSortButton({ label, field, sortBy, sortDir, onSort }: Props) {
+export default function ReservationSortButton({ label, field, sortBy, sortDir, onSort }: Readonly<Props>) {
   const active = sortBy === field;
   let icon = 'bi bi-arrow-down-up';
   if (active) {

@@ -9,7 +9,7 @@ interface Props {
   backPath?: string;
 }
 
-export default function ReservationPaginationFooter({ size, setSize, setPage, page, totalPages, backPath = '/' }: Props) {
+export default function ReservationPaginationFooter({ size, setSize, setPage, page, totalPages, backPath = '/' }: Readonly<Props>) {
   return (
     <div className="card-footer bg-white py-3 border-top-0 d-flex flex-wrap justify-content-between align-items-center gap-3">
       <Link to={backPath} className="btn btn-link btn-sm text-primary fw-bold text-decoration-none btn-back-link"><i className="bi bi-arrow-left me-1"></i> 返回儀表板</Link>

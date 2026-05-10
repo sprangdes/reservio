@@ -1,6 +1,6 @@
 import type { ReservationStatus } from './types';
 
-export default function ReservationStatusBadge({ status }: { status: ReservationStatus }) {
+export default function ReservationStatusBadge({ status }: Readonly<{ status: ReservationStatus }>) {
   if (status === 'PENDING') return <span className="badge rounded-pill bg-warning text-dark px-3"><i className="bi bi-hourglass-split me-1"></i> 待確認</span>;
   if (status === 'CONFIRMED') return <span className="badge rounded-pill bg-success px-3"><i className="bi bi-check-circle me-1"></i> 已確認</span>;
   if (status === 'CANCEL_REQUESTED') return <span className="badge rounded-pill bg-secondary px-3"><i className="bi bi-exclamation-circle me-1"></i> 取消確認中</span>;

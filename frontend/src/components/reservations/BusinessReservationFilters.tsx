@@ -14,7 +14,7 @@ interface Props {
   clearFilters: () => void;
 }
 
-export default function BusinessReservationFilters({ filterDraft, services, dateFromRef, dateToRef, statusLabel = '預約狀態', statusOptions, updateFilterDraft, applyFilters, clearFilters }: Props) {
+export default function BusinessReservationFilters({ filterDraft, services, dateFromRef, dateToRef, statusLabel = '預約狀態', statusOptions, updateFilterDraft, applyFilters, clearFilters }: Readonly<Props>) {
   return (
     <div className="p-3 border-bottom bg-white">
       <form onSubmit={applyFilters}>

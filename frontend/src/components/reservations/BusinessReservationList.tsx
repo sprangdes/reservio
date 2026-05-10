@@ -15,7 +15,7 @@ interface Props {
   emptyMobileText?: string;
 }
 
-export default function BusinessReservationList({ content, sortBy, sortDir, handleSort, updateStatus, statusColumnLabel = '狀態', actionColumnLabel = '操作', emptyDesktopText = '目前尚無預約資料', emptyMobileText = '目前尚無預約資料' }: Props) {
+export default function BusinessReservationList({ content, sortBy, sortDir, handleSort, updateStatus, statusColumnLabel = '狀態', actionColumnLabel = '操作', emptyDesktopText = '目前尚無預約資料', emptyMobileText = '目前尚無預約資料' }: Readonly<Props>) {
   return <>
     <div className="table-responsive desktop-table">
       <table className="table table-hover align-middle mb-0">
