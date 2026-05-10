@@ -4,6 +4,8 @@ import {
   loadBusinessActiveServices,
   updateBusinessReservationStatus
 } from '../utils/reservationManagement.js';
+import type { Dispatch, SetStateAction } from 'react';
+import type { ServiceOption } from '../components/reservations/types';
 
 type SortDir = 'asc' | 'desc';
 
@@ -24,7 +26,7 @@ interface ControlsParams {
   dateFromRef: { current: HTMLInputElement | null };
   dateToRef: { current: HTMLInputElement | null };
   updateFilterDraft: (patch: Partial<FilterDraft>) => void;
-  setServices: (services: unknown[]) => void;
+  setServices: Dispatch<SetStateAction<ServiceOption[]>>;
   setErrorMessage: (message: string) => void;
   setSuccessMessage: (message: string) => void;
   load: () => Promise<void>;

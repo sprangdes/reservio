@@ -4,8 +4,14 @@ import { api } from '../api.js';
 
 interface AuthUser {
   role?: string;
+  username?: string;
   business?: {
     id?: string | number;
+    name?: string;
+    category?: string;
+    phone?: string;
+    address?: string;
+    slotInterval?: string | number;
   };
   [key: string]: unknown;
 }

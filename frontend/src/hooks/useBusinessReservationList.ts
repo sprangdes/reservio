@@ -4,6 +4,7 @@ import { useToast } from '../state/ToastContext.jsx';
 import { useAuth } from '../state/AuthContext.jsx';
 import { useAsyncEffect } from './useAsyncEffect.js';
 import { useReservationManagementControls } from './useReservationManagementControls.js';
+import type { ReservationItem, ServiceOption } from '../components/reservations/types';
 
 type SortDir = 'asc' | 'desc';
 
@@ -16,7 +17,7 @@ interface FilterDraft {
 }
 
 interface ReservationListData {
-  content: unknown[];
+  content: ReservationItem[];
   totalPages: number;
   totalElements: number;
 }
@@ -36,7 +37,7 @@ export function useBusinessReservationList({
   const dateFromRef = useRef<HTMLInputElement | null>(null);
   const dateToRef = useRef<HTMLInputElement | null>(null);
   const [data, setData] = useState<ReservationListData>({ content: [], totalPages: 0, totalElements: 0 });
-  const [services, setServices] = useState<unknown[]>([]);
+  const [services, setServices] = useState<ServiceOption[]>([]);
   const [filterDraft, setFilterDraft] = useState<FilterDraft>(emptyFilters);
   const [filters, setFilters] = useState<FilterDraft>(emptyFilters);
   const filterDraftRef = useRef(filterDraft);
