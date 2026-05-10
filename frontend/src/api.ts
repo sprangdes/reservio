@@ -8,7 +8,7 @@ export interface ApiEnvelope<T> {
   message?: string;
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T = any>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
     headers: {
