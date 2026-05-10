@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api.js';
-import { useAuth } from '../state/AuthContext.jsx';
-import { useToast } from '../state/ToastContext.jsx';
-import { useServiceManagement} from "../hooks/useServiceManagement.js";
+import { api } from '../api';
+import { useAuth } from '../state/AuthContext';
+import { useToast } from '../state/ToastContext';
+import { useServiceManagement} from "../hooks/useServiceManagement";
 
 const weekDays = [
   { key: 'mon', label: '星期一', dayOfWeek: 'MONDAY' },

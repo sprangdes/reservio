@@ -1,7 +1,7 @@
-import { formatTimeHM } from '../../utils/time.js';
-import ReservationStatusBadge from './ReservationStatusBadge.jsx';
-import ReservationActionControls from './ReservationActionControls.jsx';
-import ReservationCancelReason from './ReservationCancelReason.jsx';
+import { formatTimeHM } from '../../utils/time';
+import ReservationStatusBadge from './ReservationStatusBadge';
+import ReservationActionControls from './ReservationActionControls';
+import ReservationCancelReason from './ReservationCancelReason';
 import type { ReservationItem } from './types';
 
 export default function ReservationMobileCard({ reservation, onAction }: { reservation: ReservationItem; onAction: (id: string | number, action: string) => void | Promise<void> }) {

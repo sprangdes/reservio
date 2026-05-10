@@ -1,7 +1,7 @@
-import { formatTimeHM } from '../../utils/time.js';
-import ReservationCancelReason from './ReservationCancelReason.jsx';
-import ReservationStatusBadge from './ReservationStatusBadge.jsx';
-import ReservationActionControls from './ReservationActionControls.jsx';
+import { formatTimeHM } from '../../utils/time';
+import ReservationCancelReason from './ReservationCancelReason';
+import ReservationStatusBadge from './ReservationStatusBadge';
+import ReservationActionControls from './ReservationActionControls';
 import type { ReservationItem } from './types';
 
 export default function ReservationDesktopRow({ reservation, onAction }: { reservation: ReservationItem; onAction: (id: string | number, action: string) => void | Promise<void> }) {

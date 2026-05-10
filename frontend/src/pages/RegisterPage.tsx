@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api } from '../api.js';
-import { useToast } from '../state/ToastContext.jsx';
+import { api } from '../api';
+import { useToast } from '../state/ToastContext';
 
 export default function RegisterPage() {
   const { setErrorMessage } = useToast();

@@ -3,7 +3,7 @@ import {
   getNextSortState,
   loadBusinessActiveServices,
   updateBusinessReservationStatus
-} from '../utils/reservationManagement.js';
+} from '../utils/reservationManagement';
 import type { Dispatch, SetStateAction } from 'react';
 import type { ServiceOption } from '../components/reservations/types';
 

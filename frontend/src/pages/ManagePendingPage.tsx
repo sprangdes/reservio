@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import ReservationPaginationFooter from '../components/reservations/ReservationPaginationFooter.jsx';
-import BusinessReservationFilters from '../components/reservations/BusinessReservationFilters.jsx';
-import BusinessReservationList from '../components/reservations/BusinessReservationList.jsx';
-import { useBusinessReservationList } from '../hooks/useBusinessReservationList.js';
+import ReservationPaginationFooter from '../components/reservations/ReservationPaginationFooter';
+import BusinessReservationFilters from '../components/reservations/BusinessReservationFilters';
+import BusinessReservationList from '../components/reservations/BusinessReservationList';
+import { useBusinessReservationList } from '../hooks/useBusinessReservationList';
 
 const STATUS_OPTIONS = [
   { value: '', label: '全部（待處理）' },

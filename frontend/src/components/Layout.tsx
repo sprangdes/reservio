@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import Navbar from './Navbar.jsx';
-import Footer from './Footer.jsx';
-import ToastContainer from './ToastContainer.jsx';
+import Navbar from './Navbar';
+import Footer from './Footer';
+import ToastContainer from './ToastContainer';
 
 interface LayoutProps {
   children: ReactNode;

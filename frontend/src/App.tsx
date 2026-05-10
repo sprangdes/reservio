@@ -1,16 +1,16 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Layout from './components/Layout.jsx';
-import HomePage from './pages/HomePage.jsx';
-import LoginPage from './pages/LoginPage.jsx';
-import RegisterPage from './pages/RegisterPage.jsx';
-import RegisterBusinessPage from './pages/RegisterBusinessPage.jsx';
-import ReservationNewPage from './pages/ReservationNewPage.jsx';
-import MyReservationsPage from './pages/MyReservationsPage.jsx';
-import ManageTodayPage from './pages/ManageTodayPage.jsx';
-import ManageAllPage from './pages/ManageAllPage.jsx';
-import ManagePendingPage from './pages/ManagePendingPage.jsx';
-import ServiceManagementPage from './pages/ServiceManagementPage.jsx';
-import BusinessInfoPage from './pages/BusinessInfoPage.jsx';
+import Layout from './components/Layout';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import RegisterBusinessPage from './pages/RegisterBusinessPage';
+import ReservationNewPage from './pages/ReservationNewPage';
+import MyReservationsPage from './pages/MyReservationsPage';
+import ManageTodayPage from './pages/ManageTodayPage';
+import ManageAllPage from './pages/ManageAllPage';
+import ManagePendingPage from './pages/ManagePendingPage';
+import ServiceManagementPage from './pages/ServiceManagementPage';
+import BusinessInfoPage from './pages/BusinessInfoPage';
 
 export default function App() {
   return (

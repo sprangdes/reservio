@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../api.js';
-import { useToast } from '../state/ToastContext.jsx';
+import { api } from '../api';
+import { useToast } from '../state/ToastContext';
 
 export default function ReservationNewPage() {
   const { setSuccessMessage, setErrorMessage } = useToast();

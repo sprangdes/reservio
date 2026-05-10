@@ -1,6 +1,6 @@
-import ReservationSortButton from './ReservationSortButton.jsx';
-import ReservationDesktopRow from './ReservationDesktopRow.jsx';
-import ReservationMobileCard from './ReservationMobileCard.jsx';
+import ReservationSortButton from './ReservationSortButton';
+import ReservationDesktopRow from './ReservationDesktopRow';
+import ReservationMobileCard from './ReservationMobileCard';
 import type { ReservationItem } from './types';
 
 interface Props {

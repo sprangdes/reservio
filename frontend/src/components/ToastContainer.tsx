@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useToast } from '../state/ToastContext.jsx';
+import { useToast } from '../state/ToastContext';
 
 export default function ToastContainer() {
   const { successMessage, errorMessage, setSuccessMessage, setErrorMessage } = useToast();

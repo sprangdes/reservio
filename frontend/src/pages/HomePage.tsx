@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api.js';
-import { useAuth } from '../state/AuthContext.jsx';
-import { useToast } from '../state/ToastContext.jsx';
+import { api } from '../api';
+import { useAuth } from '../state/AuthContext';
+import { useToast } from '../state/ToastContext';
 
 function renderHeroContent(isLoggedIn, isBusiness, me, dashboard) {
   if (!isLoggedIn) {

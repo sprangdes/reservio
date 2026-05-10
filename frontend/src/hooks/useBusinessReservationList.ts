@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api } from '../api.js';
-import { useToast } from '../state/ToastContext.jsx';
-import { useAuth } from '../state/AuthContext.jsx';
-import { useAsyncEffect } from './useAsyncEffect.js';
-import { useReservationManagementControls } from './useReservationManagementControls.js';
+import { api } from '../api';
+import { useToast } from '../state/ToastContext';
+import { useAuth } from '../state/AuthContext';
+import { useAsyncEffect } from './useAsyncEffect';
+import { useReservationManagementControls } from './useReservationManagementControls';
 import type { ReservationItem, ServiceOption } from '../components/reservations/types';
 
 type SortDir = 'asc' | 'desc';

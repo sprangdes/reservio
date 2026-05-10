@@ -1,8 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { useAuth } from '../state/AuthContext.jsx';
-import { api } from '../api.js';
-import { useToast } from '../state/ToastContext.jsx';
+import { useAuth } from '../state/AuthContext';
+import { api } from '../api';
+import { useToast } from '../state/ToastContext';
 
 export default function Navbar() {
   const { me, setMe } = useAuth();

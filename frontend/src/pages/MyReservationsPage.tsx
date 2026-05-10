@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../api.js';
-import { formatTimeHM } from '../utils/time.js';
-import { useToast } from '../state/ToastContext.jsx';
-import { useAuth } from '../state/AuthContext.jsx';
-import ReservationStatusBadge from '../components/reservations/ReservationStatusBadge.jsx';
-import ReservationSortButton from '../components/reservations/ReservationSortButton.jsx';
-import ReservationPaginationFooter from '../components/reservations/ReservationPaginationFooter.jsx';
-import { useReservationListControls } from '../hooks/useReservationListControls.js';
+import { api } from '../api';
+import { formatTimeHM } from '../utils/time';
+import { useToast } from '../state/ToastContext';
+import { useAuth } from '../state/AuthContext';
+import ReservationStatusBadge from '../components/reservations/ReservationStatusBadge';
+import ReservationSortButton from '../components/reservations/ReservationSortButton';
+import ReservationPaginationFooter from '../components/reservations/ReservationPaginationFooter';
+import { useReservationListControls } from '../hooks/useReservationListControls';
 
 export default function MyReservationsPage() {
   const { setSuccessMessage, setErrorMessage } = useToast();

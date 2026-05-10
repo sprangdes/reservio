@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { api } from '../api.js';
-import { useAuth } from '../state/AuthContext.jsx';
-import { useToast } from '../state/ToastContext.jsx';
+import { api } from '../api';
+import { useAuth } from '../state/AuthContext';
+import { useToast } from '../state/ToastContext';
 
 export default function LoginPage() {
   const { setMe } = useAuth();
