@@ -142,10 +142,7 @@ export default function MyReservationsPage() {
       setSelectedId(null);
       const modalEl = document.getElementById('cancelModal');
       if (modalEl && globalThis.bootstrap) {
-        const instance = globalThis.bootstrap.Modal.getInstance(modalEl);
-        if (instance) {
-          instance.hide();
-        }
+        globalThis.bootstrap.Modal.getOrCreateInstance(modalEl).hide();
       }
       await load();
     } catch (err) {
@@ -158,8 +155,9 @@ export default function MyReservationsPage() {
     setCancelReason('');
     if (globalThis.bootstrap) {
       const modalEl = document.getElementById('cancelModal');
-      const modal = new globalThis.bootstrap.Modal(modalEl);
-      modal.show();
+      if (modalEl) {
+        globalThis.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+      }
     }
   };
 

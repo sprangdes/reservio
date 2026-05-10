@@ -1,5 +1,3 @@
-import type { FormEvent } from 'react';
-
 type SortDir = 'asc' | 'desc';
 
 interface Params<TFilterDraft extends object> {
@@ -31,7 +29,7 @@ export function useReservationListControls<TFilterDraft extends object>({
     setPage(0);
   };
 
-  const applyFilters = (event: FormEvent<HTMLFormElement>) => {
+  const applyFilters = (event: { preventDefault: () => void }) => {
     event.preventDefault();
     setFilters({ ...filterDraft });
     setPage(0);

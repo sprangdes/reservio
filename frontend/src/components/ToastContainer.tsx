@@ -8,14 +8,14 @@ export default function ToastContainer() {
 
   useEffect(() => {
     if (successMessage && successRef.current && (globalThis as any).bootstrap) {
-      const toast = new (globalThis as any).bootstrap.Toast(successRef.current);
+      const toast = (globalThis as any).bootstrap.Toast.getOrCreateInstance(successRef.current);
       toast.show();
     }
   }, [successMessage]);
 
   useEffect(() => {
     if (errorMessage && errorRef.current && (globalThis as any).bootstrap) {
-      const toast = new (globalThis as any).bootstrap.Toast(errorRef.current);
+      const toast = (globalThis as any).bootstrap.Toast.getOrCreateInstance(errorRef.current);
       toast.show();
     }
   }, [errorMessage]);

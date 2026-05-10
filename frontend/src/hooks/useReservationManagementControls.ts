@@ -125,7 +125,7 @@ export function useReservationManagementControls({
     setPage(0);
   };
 
-  const applyFilters = (event: React.FormEvent<HTMLFormElement>) => {
+  const applyFilters = (event: { preventDefault: () => void }) => {
     event.preventDefault();
     setFilters({ ...filterDraft });
     setPage(0);

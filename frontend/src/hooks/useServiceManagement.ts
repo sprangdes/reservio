@@ -30,7 +30,7 @@ export function useServiceManagement({ load, setSuccessMessage, setErrorMessage 
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: { preventDefault: () => void }) => {
     event.preventDefault();
     try {
       await api.addServiceItem({ name: form.name, duration: Number(form.duration) });

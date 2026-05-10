@@ -1,4 +1,4 @@
-import type { FormEvent, RefObject } from 'react';
+import type { RefObject } from 'react';
 import type { FilterDraft, ServiceOption } from './types';
 
 interface StatusOption { value: string; label: string; }
@@ -10,7 +10,7 @@ interface Props {
   statusLabel?: string;
   statusOptions: StatusOption[];
   updateFilterDraft: (patch: Partial<FilterDraft>) => void;
-  applyFilters: (event: FormEvent<HTMLFormElement>) => void;
+  applyFilters: (event: { preventDefault: () => void }) => void;
   clearFilters: () => void;
 }
 
