@@ -2,15 +2,26 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useToast } from '../state/ToastContext';
+import type { ServiceOption } from '../components/reservations/types';
+
+type SlotItem = { time: string; available: boolean };
+type NewReservationForm = {
+  businessId: string;
+  title: string;
+  reservationDate: string;
+  startTime: string;
+  endTime: string;
+  remark: string;
+};
 
 export default function ReservationNewPage() {
   const { setSuccessMessage, setErrorMessage } = useToast();
   const navigate = useNavigate();
-  const [businesses, setBusinesses] = useState([]);
-  const [services, setServices] = useState([]);
-  const [disabledDates, setDisabledDates] = useState([]);
-  const [slots, setSlots] = useState([]);
-  const [form, setForm] = useState({
+  const [businesses, setBusinesses] = useState<Array<{ id: string | number; name: string }>>([]);
+  const [services, setServices] = useState<Array<ServiceOption & { duration?: number; active?: boolean }>>([]);
+  const [disabledDates, setDisabledDates] = useState<string[]>([]);
+  const [slots, setSlots] = useState<SlotItem[]>([]);
+  const [form, setForm] = useState<NewReservationForm>({
     businessId: '',
     title: '',
     reservationDate: '',
@@ -18,8 +29,8 @@ export default function ReservationNewPage() {
     endTime: '',
     remark: ''
   });
-  const [serviceDuration, setServiceDuration] = useState(null);
-  const dateInputRef = useRef(null);
+  const [serviceDuration, setServiceDuration] = useState<number | null>(null);
+  const dateInputRef = useRef<HTMLInputElement | null>(null);
   const formRef = useRef(form);
 
   useEffect(() => {
@@ -47,7 +58,7 @@ export default function ReservationNewPage() {
 
     const load = async () => {
       const res = await api.businessServices(form.businessId);
-      const list = (res.data || []).filter((item) => item.active);
+      const list = (res.data || []).filter((item: { active?: boolean }) => item.active);
       setServices(list);
     };
     void load();
@@ -62,7 +73,7 @@ export default function ReservationNewPage() {
   }, [form.title]);
 
   useEffect(() => {
-    if (!dateInputRef.current || !globalThis.flatpickr) return;
+    if (!dateInputRef.current || !(globalThis as any).flatpickr) return;
 
     const today = new Date();
     const minDate = today.toISOString().split('T')[0];
@@ -70,14 +81,14 @@ export default function ReservationNewPage() {
     threeMonthsLater.setMonth(today.getMonth() + 3);
     const maxDate = threeMonthsLater.toISOString().split('T')[0];
 
-    const fp = globalThis.flatpickr(dateInputRef.current, {
+    const fp = (globalThis as any).flatpickr(dateInputRef.current, {
       locale: 'zh_tw',
       dateFormat: 'Y-m-d',
       minDate,
       maxDate,
       disable: disabledDates,
       disableMobile: true,
-      onChange: (_, dateStr) => {
+      onChange: (_: unknown, dateStr: string) => {
         setForm({
           ...formRef.current,
           reservationDate: dateStr,
@@ -115,12 +126,12 @@ export default function ReservationNewPage() {
     setForm({ ...form, endTime: `${endHours}:${endMinutes}` });
   }, [form.startTime, serviceDuration]);
 
-  const handleChange = (event) => {
+  const handleChange = (event: { target: { name: string; value: string } }) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: { preventDefault: () => void }) => {
     event.preventDefault();
     try {
       await api.createReservation({

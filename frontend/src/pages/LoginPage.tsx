@@ -21,7 +21,7 @@ export default function LoginPage() {
     }
   }, [location.search]);
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: { preventDefault: () => void }) => {
     event.preventDefault();
     setLocalError('');
     try {

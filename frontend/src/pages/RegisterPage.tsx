@@ -16,7 +16,7 @@ export default function RegisterPage() {
   const [passwordError, setPasswordError] = useState('');
   const navigate = useNavigate();
 
-  const handleChange = (event) => {
+  const handleChange = (event: { target: { name: string; value: string; type: string; checked: boolean } }) => {
     const { name, value, type, checked } = event.target;
     setForm((prev) => ({
       ...prev,
@@ -24,7 +24,7 @@ export default function RegisterPage() {
     }));
   };
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: { preventDefault: () => void }) => {
     event.preventDefault();
     setLocalError('');
 
@@ -112,7 +112,7 @@ export default function RegisterPage() {
                       id="confirmPassword"
                       name="confirmPassword"
                       value={form.confirmPassword}
-                      onChange={(event) => {
+                      onChange={(event: { target: { name: string; value: string; type: string; checked: boolean } }) => {
                         handleChange(event);
                         setPasswordError('');
                       }}

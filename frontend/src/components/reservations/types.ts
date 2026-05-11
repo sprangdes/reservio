@@ -6,6 +6,7 @@ export interface ReservationItem {
   reservationDate?: string;
   startTime?: string;
   username?: string;
+  businessName?: string;
   title?: string;
   remark?: string;
   status: ReservationStatus;

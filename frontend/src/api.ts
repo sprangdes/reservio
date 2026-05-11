@@ -16,7 +16,7 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
     return null as T;
   }
 
-  const data = (await response.json().catch(() => null)) as { message?: string } | null;
+  const data = (await response.json().catch((): null => null)) as { message?: string } | null;
   if (!response.ok) {
     const message = data?.message || 'Request failed';
     throw new Error(message);

@@ -8,12 +8,13 @@ import ReservationStatusBadge from '../components/reservations/ReservationStatus
 import ReservationSortButton from '../components/reservations/ReservationSortButton';
 import ReservationPaginationFooter from '../components/reservations/ReservationPaginationFooter';
 import { useReservationListControls } from '../hooks/useReservationListControls';
+import type { ReservationItem, ServiceOption } from '../components/reservations/types';
 
 export default function MyReservationsPage() {
   const { setSuccessMessage, setErrorMessage } = useToast();
   const { me, loading } = useAuth();
   const navigate = useNavigate();
-  const [data, setData] = useState({ content: [], totalPages: 0, totalElements: 0 });
+  const [data, setData] = useState<{ content: ReservationItem[]; totalPages: number; totalElements: number }>({ content: [], totalPages: 0, totalElements: 0 });
   const [filterDraft, setFilterDraft] = useState({
     dateFrom: '',
     dateTo: '',
@@ -30,8 +31,8 @@ export default function MyReservationsPage() {
     service: '',
     keyword: ''
   });
-  const [businessOptions, setBusinessOptions] = useState([]);
-  const [serviceOptions, setServiceOptions] = useState([]);
+  const [businessOptions, setBusinessOptions] = useState<Array<{ id: string | number; name: string }>>([]);
+  const [serviceOptions, setServiceOptions] = useState<ServiceOption[]>([]);
   const dateFromRef = useRef(null);
   const dateToRef = useRef(null);
   const filterDraftRef = useRef(filterDraft);
@@ -46,7 +47,7 @@ export default function MyReservationsPage() {
     filterDraftRef.current = filterDraft;
   }, [filterDraft]);
 
-  const updateFilterDraft = (patch) => {
+  const updateFilterDraft = (patch: Partial<typeof filterDraft>) => {
     setFilterDraft({ ...filterDraftRef.current, ...patch });
   };
 
@@ -74,13 +75,13 @@ export default function MyReservationsPage() {
   }, [page, size, sortBy, sortDir, filters]);
 
   useEffect(() => {
-    if (!globalThis.flatpickr) return;
+    if (!(globalThis as any).flatpickr) return;
     const fpFrom = dateFromRef.current
-      ? globalThis.flatpickr(dateFromRef.current, {
+      ? (globalThis as any).flatpickr(dateFromRef.current, {
           locale: 'zh_tw',
           dateFormat: 'Y-m-d',
           disableMobile: true,
-          onChange: (_, dateStr) => {
+          onChange: (_: unknown, dateStr: string) => {
             updateFilterDraft({ dateFrom: dateStr });
             if (fpTo) {
               fpTo.set('minDate', dateStr || null);
@@ -89,11 +90,11 @@ export default function MyReservationsPage() {
         })
       : null;
     const fpTo = dateToRef.current
-      ? globalThis.flatpickr(dateToRef.current, {
+      ? (globalThis as any).flatpickr(dateToRef.current, {
           locale: 'zh_tw',
           dateFormat: 'Y-m-d',
           disableMobile: true,
-          onChange: (_, dateStr) => {
+          onChange: (_: unknown, dateStr: string) => {
             updateFilterDraft({ dateTo: dateStr });
           }
         })
@@ -141,8 +142,8 @@ export default function MyReservationsPage() {
       setCancelReason('');
       setSelectedId(null);
       const modalEl = document.getElementById('cancelModal');
-      if (modalEl && globalThis.bootstrap) {
-        globalThis.bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+      if (modalEl && (globalThis as any).bootstrap) {
+        (globalThis as any).bootstrap.Modal.getOrCreateInstance(modalEl).hide();
       }
       await load();
     } catch (err) {
@@ -153,10 +154,10 @@ export default function MyReservationsPage() {
   const openModal = (id: string | number) => {
     setSelectedId(id);
     setCancelReason('');
-    if (globalThis.bootstrap) {
+    if ((globalThis as any).bootstrap) {
       const modalEl = document.getElementById('cancelModal');
       if (modalEl) {
-        globalThis.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        (globalThis as any).bootstrap.Modal.getOrCreateInstance(modalEl).show();
       }
     }
   };
@@ -180,7 +181,7 @@ export default function MyReservationsPage() {
 
   const totalPages = Math.max(data.totalPages || 0, 1);
   const content = useMemo(() => data.content || [], [data.content]);
-  const renderDesktopActions = (reservation) => {
+  const renderDesktopActions = (reservation: ReservationItem) => {
     if (reservation.status === 'PENDING') {
       return (
         <div className="d-flex gap-2 justify-content-center">
@@ -201,7 +202,7 @@ export default function MyReservationsPage() {
     }
     return <small className="text-muted">-</small>;
   };
-  const renderMobileActions = (reservation) => {
+  const renderMobileActions = (reservation: ReservationItem) => {
     if (reservation.status === 'PENDING') {
       return (
         <button className="btn btn-sm btn-outline-danger" onClick={() => handleCancel(reservation.id)}>

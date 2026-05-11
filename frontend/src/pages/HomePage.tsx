@@ -1,144 +1,192 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { api } from '../api';
-import { useAuth } from '../state/AuthContext';
-import { useToast } from '../state/ToastContext';
+import {useEffect, useMemo, useState} from 'react';
+import {Link} from 'react-router-dom';
+import {api} from '../api';
+import {useAuth} from '../state/AuthContext';
+import {useToast} from '../state/ToastContext';
 
-function renderHeroContent(isLoggedIn, isBusiness, me, dashboard) {
+type CalendarEventItem = {
+  id: string | number;
+  date: string;
+  start: string;
+  end: string;
+  service: string;
+  customerName: string;
+  businessName: string;
+  isCompleted: boolean;
+  color: string;
+};
+
+type DayCalendarItem = CalendarEventItem & {
+  startMinutes: number;
+  endMinutes: number;
+  duration: number;
+  topOffset: number;
+  heightOffset: number;
+};
+
+function renderHeroContent(
+  isLoggedIn: boolean,
+  isBusiness: boolean,
+  me: any,
+  dashboard: { todayCount?: number; pendingCount?: number } | null | undefined
+) {
   if (!isLoggedIn) {
     return (
-      <div>
-        <h1 className="display-3 fw-bold mb-4 text-white-strong">歡迎來到 Reservio</h1>
-        <p className="lead mb-5 text-white-strong">最直覺、最快速的預約系統，讓管理預約不再是難事。</p>
-        <div className="d-grid gap-2 d-sm-flex justify-content-sm-center">
-          <Link to="/register" className="btn btn-light btn-lg px-4 gap-3 fw-bold text-primary">
-            開始使用
-          </Link>
-          <Link to="/login" className="btn btn-outline-light btn-lg px-4">
-            立即登入
-          </Link>
+        <div>
+          <h1 className="display-3 fw-bold mb-4 text-white-strong">歡迎來到 Reservio</h1>
+          <p className="lead mb-5 text-white-strong">最直覺、最快速的預約系統，讓管理預約不再是難事。</p>
+          <div className="d-grid gap-2 d-sm-flex justify-content-sm-center">
+            <Link to="/register" className="btn btn-light btn-lg px-4 gap-3 fw-bold text-primary">
+              開始使用
+            </Link>
+            <Link to="/login" className="btn btn-outline-light btn-lg px-4">
+              立即登入
+            </Link>
+          </div>
         </div>
-      </div>
     );
   }
 
   if (isBusiness) {
     return (
-      <div>
-        <h1 className="display-4 fw-bold mb-3 text-white-strong">
-          店長<span className="text-warning">{me.business?.name}</span>，你好！
-        </h1>
-        <p className="lead mb-4 text-white-strong">歡迎回來，這是您今日的營運概況。</p>
-        <div className="row justify-content-center mt-4">
-          <div className="col-md-10">
-            <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white text-white-strong p-4 dashboard-card" style={{ backdropFilter: 'blur(10px)' }}>
-              <div className="row align-items-center">
-                <Link to="/reservation/today/manage" className="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link">
-                  <h5 className="small text-uppercase opacity-75">今日預約</h5>
-                  <p className="h2 mb-0">{dashboard?.todayCount ?? 0}</p>
-                </Link>
-                <Link to="/reservation/pending/manage" className="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link">
-                  <h5 className="small text-uppercase opacity-75">待處理預約</h5>
-                  <p className="h2 mb-0">{dashboard?.pendingCount ?? 0}</p>
-                </Link>
-                <div className="col-sm-4">
-                  <div className="d-grid gap-2">
-                    <Link to="/business/info" className="btn btn-warning fw-bold shadow-sm no-text-shadow">
-                      管理商家資訊
-                    </Link>
-                    <Link to="/reservation/manage" className="btn btn-light fw-bold shadow-sm no-text-shadow">
-                      查看所有預約
-                    </Link>
+        <div>
+          <h1 className="display-4 fw-bold mb-3 text-white-strong">
+            店長<span className="text-warning">{me.business?.name}</span>，你好！
+          </h1>
+          <p className="lead mb-4 text-white-strong">歡迎回來，這是您今日的營運概況。</p>
+          <div className="row justify-content-center mt-4">
+            <div className="col-md-10">
+              <div
+                  className="card bg-white bg-opacity-10 border-0 shadow-lg text-white text-white-strong p-4 dashboard-card"
+                  style={{backdropFilter: 'blur(10px)'}}>
+                <div className="row align-items-center">
+                  <Link to="/reservation/today/manage"
+                        className="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link">
+                    <h5 className="small text-uppercase opacity-75">今日預約</h5>
+                    <p className="h2 mb-0">{dashboard?.todayCount ?? 0}</p>
+                  </Link>
+                  <Link to="/reservation/pending/manage"
+                        className="col-sm-4 border-end border-white border-opacity-25 text-decoration-none text-white dashboard-card-link">
+                    <h5 className="small text-uppercase opacity-75">待處理預約</h5>
+                    <p className="h2 mb-0">{dashboard?.pendingCount ?? 0}</p>
+                  </Link>
+                  <div className="col-sm-4">
+                    <div className="d-grid gap-2">
+                      <Link to="/business/info" className="btn btn-warning fw-bold shadow-sm no-text-shadow">
+                        管理商家資訊
+                      </Link>
+                      <Link to="/reservation/manage" className="btn btn-light fw-bold shadow-sm no-text-shadow">
+                        查看所有預約
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
     );
   }
 
   return (
-    <div>
-      <h1 className="display-4 fw-bold mb-3 text-white-strong">
-        你好，<span className="text-warning">{me.username}</span>！
-      </h1>
-      <p className="lead mb-4 text-white-strong">歡迎回來，今天想預約哪些服務呢？</p>
-      <div className="row justify-content-center mt-4">
-        <div className="col-md-8">
-          <div className="card bg-white bg-opacity-10 border-0 shadow-lg text-white text-white-strong p-4 dashboard-card dashboard-card--customer" style={{ backdropFilter: 'blur(10px)' }}>
-            <div className="row align-items-center">
-              <div className="col-sm-6 border-end border-white border-opacity-25">
-                <h5 className="small text-uppercase opacity-75">我的今日預約</h5>
-                <p className="h2 mb-0">{dashboard?.todayCount ?? 0}</p>
-              </div>
-              <div className="col-sm-6 text-center">
-                <Link to="/reservation/new" className="btn btn-light fw-bold px-4 shadow-sm no-text-shadow">
-                  <i className="bi bi-calendar-plus me-1"></i> 立即預約
-                </Link>
+      <div>
+        <h1 className="display-4 fw-bold mb-3 text-white-strong">
+          你好，<span className="text-warning">{me.username}</span>！
+        </h1>
+        <p className="lead mb-4 text-white-strong">歡迎回來，今天想預約哪些服務呢？</p>
+        <div className="row justify-content-center mt-4">
+          <div className="col-md-8">
+            <div
+                className="card bg-white bg-opacity-10 border-0 shadow-lg text-white text-white-strong p-4 dashboard-card dashboard-card--customer"
+                style={{backdropFilter: 'blur(10px)'}}>
+              <div className="row align-items-center">
+                <div className="col-sm-6 border-end border-white border-opacity-25">
+                  <h5 className="small text-uppercase opacity-75">我的今日預約</h5>
+                  <p className="h2 mb-0">{dashboard?.todayCount ?? 0}</p>
+                </div>
+                <div className="col-sm-6 text-center">
+                  <Link to="/reservation/new" className="btn btn-light fw-bold px-4 shadow-sm no-text-shadow">
+                    <i className="bi bi-calendar-plus me-1"></i> 立即預約
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
   );
 }
 
 function renderGuestFeaturesSection() {
   return (
-    <section className="container my-5">
-      <div className="row g-4">
-        <div className="col-md-4">
-          <div className="card h-100 feature-card p-4">
-            <div className="card-body text-center">
-              <div className="display-6 text-primary mb-3">📅</div>
-              <h3 className="card-title h5 fw-bold">快速預約</h3>
-              <p className="card-text text-muted">只需幾秒鐘，即可完成繁瑣的預約流程，提升工作效率。</p>
+      <section className="container my-5">
+        <div className="row g-4">
+          <div className="col-md-4">
+            <div className="card h-100 feature-card p-4">
+              <div className="card-body text-center">
+                <div className="display-6 text-primary mb-3">📅</div>
+                <h3 className="card-title h5 fw-bold">快速預約</h3>
+                <p className="card-text text-muted">只需幾秒鐘，即可完成繁瑣的預約流程，提升工作效率。</p>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-4">
+            <div className="card h-100 feature-card p-4">
+              <div className="card-body text-center">
+                <div className="display-6 text-success mb-3">🔔</div>
+                <h3 className="card-title h5 fw-bold">自動通知</h3>
+                <p className="card-text text-muted">系統自動發送提醒，降低爽約率，維持良好的服務品質。</p>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-4">
+            <div className="card h-100 feature-card p-4">
+              <div className="card-body text-center">
+                <div className="display-6 text-info mb-3">📊</div>
+                <h3 className="card-title h5 fw-bold">數據分析</h3>
+                <p className="card-text text-muted">掌握預約趨勢，透過報表優化您的業務資源分配。</p>
+              </div>
             </div>
           </div>
         </div>
-        <div className="col-md-4">
-          <div className="card h-100 feature-card p-4">
-            <div className="card-body text-center">
-              <div className="display-6 text-success mb-3">🔔</div>
-              <h3 className="card-title h5 fw-bold">自動通知</h3>
-              <p className="card-text text-muted">系統自動發送提醒，降低爽約率，維持良好的服務品質。</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="card h-100 feature-card p-4">
-            <div className="card-body text-center">
-              <div className="display-6 text-info mb-3">📊</div>
-              <h3 className="card-title h5 fw-bold">數據分析</h3>
-              <p className="card-text text-muted">掌握預約趨勢，透過報表優化您的業務資源分配。</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+      </section>
   );
 }
 
+interface CalendarSectionProps {
+  me: { role?: string } | null;
+  calendarView: string;
+  setCalendarView: (value: string) => void;
+  today: string;
+  timeLabels: string[];
+  nowMinutes: number;
+  dayItems: DayCalendarItem[];
+  weekDates: string[];
+  weekDayLabels: string[];
+  calendarItems: CalendarEventItem[];
+  currentMonthLabel: string;
+  isMobile: boolean;
+  monthDays: Array<{ dateStr: string; inMonth: boolean }>;
+  formatHM: (value: string) => string;
+}
+
 function renderCalendarSection({
-  me,
-  calendarView,
-  setCalendarView,
-  today,
-  timeLabels,
-  nowMinutes,
-  dayItems,
-  weekDates,
-  weekDayLabels,
-  calendarItems,
-  currentMonthLabel,
-  isMobile,
-  monthDays,
-  formatHM
-}) {
-  const renderCalendarEvent = (item, top, height) => {
+                                 me,
+                                 calendarView,
+                                 setCalendarView,
+                                 today,
+                                 timeLabels,
+                                 nowMinutes,
+                                 dayItems,
+                                 weekDates,
+                                 weekDayLabels,
+                                 calendarItems,
+                                 currentMonthLabel,
+                                 isMobile,
+                                 monthDays,
+                                 formatHM
+                               }: CalendarSectionProps) {
+  const renderCalendarEvent = (item: CalendarEventItem, top: number, height: number) => {
     const title = me?.role === 'ROLE_BUSINESS' ? item.customerName : item.businessName;
     return (
       <div
@@ -159,7 +207,7 @@ function renderCalendarSection({
       <div className="calendar-week-grid__fixed-col">
         <div className="calendar-week-grid__corner"></div>
         <div className="calendar-week-grid__timescol">
-          {timeLabels.map((label) => (
+          {timeLabels.map((label: string | number) => (
             <div key={label} className="calendar-week-grid__time">
               {label}
             </div>
@@ -169,7 +217,7 @@ function renderCalendarSection({
       <div className="calendar-week-grid__scroll">
         <div className="calendar-week-grid__scroll-inner">
           <div className="calendar-week-grid__header">
-            {weekDates.map((date, idx) => (
+            {weekDates.map((date: string, idx: number) => (
               <div key={date} className="calendar-week-grid__dayhead">
                 <div className="calendar-week-grid__dayname">星期{weekDayLabels[idx]}</div>
                 <div className="calendar-week-grid__date">{date}</div>
@@ -177,18 +225,18 @@ function renderCalendarSection({
             ))}
           </div>
           <div className="calendar-week-grid__weekcols">
-            {weekDates.map((date) => {
-              const items = calendarItems.filter((item) => item.date === date);
+            {weekDates.map((date: string) => {
+              const items = calendarItems.filter((item: CalendarEventItem) => item.date === date);
               const showNow = date === today;
               return (
                 <div key={date} className="calendar-week-grid__daycol">
                   {showNow ? (
                     <div className="calendar-now-line" style={{ top: `${(nowMinutes / 60) * 48 + 2}px` }} />
                   ) : null}
-                  {timeLabels.map((label) => (
+                  {timeLabels.map((label: string | number) => (
                     <div key={label} className="calendar-day__row" />
                   ))}
-                  {items.map((item) => {
+                  {items.map((item: CalendarEventItem) => {
                     const [sh, sm] = item.start.split(':').map(Number);
                     const [eh, em] = item.end.split(':').map(Number);
                     const startMinutes = sh * 60 + sm;
@@ -233,7 +281,7 @@ function renderCalendarSection({
             <div className="calendar-day">
               <div className="calendar-day__times">
                 <div className="calendar-day__date">{today}</div>
-                {timeLabels.map((label) => (
+                {timeLabels.map((label: string | number) => (
                   <div key={label} className="calendar-day__time">
                     {label}
                   </div>
@@ -241,10 +289,10 @@ function renderCalendarSection({
               </div>
               <div className="calendar-day__slots">
                 <div className="calendar-now-line" style={{ top: `${48 + (nowMinutes / 60) * 48}px` }} />
-                {timeLabels.map((label) => (
+                {timeLabels.map((label: string | number) => (
                   <div key={label} className="calendar-day__row" />
                 ))}
-                {dayItems.map((item) => {
+                {dayItems.map((item: DayCalendarItem) => {
                   const top = 48 + (item.startMinutes / 60) * 48 + (item.topOffset || 0);
                   const height = (item.duration / 60) * 48 - (item.heightOffset || 0);
                   return renderCalendarEvent(item, top, height);
@@ -259,17 +307,17 @@ function renderCalendarSection({
             <div className={`p-4 calendar-month-grid ${isMobile ? 'calendar-month-grid--simple' : ''}`}>
               <div className="calendar-month-grid__title">{currentMonthLabel}</div>
               <div className="calendar-month-grid__header">
-                {weekDayLabels.map((label) => (
+                {weekDayLabels.map((label: string | number) => (
                   <div key={label} className="calendar-month-grid__head">
                     星期{label}
                   </div>
                 ))}
               </div>
-              {monthDays.map((day) => {
+              {monthDays.map((day: { dateStr: string; inMonth: boolean }) => {
                 const items = calendarItems
-                  .filter((item) => item.date === day.dateStr)
+                  .filter((item: CalendarEventItem) => item.date === day.dateStr)
                   .slice()
-                  .sort((a, b) => a.start.localeCompare(b.start));
+                  .sort((a: CalendarEventItem, b: CalendarEventItem) => a.start.localeCompare(b.start));
                 return (
                   <div key={day.dateStr} className={`calendar-month-grid__cell ${day.inMonth ? '' : 'is-muted'} ${day.dateStr === today ? 'is-today' : ''}`}>
                     <div className="calendar-month-grid__date">{day.dateStr.split('-')[2]}</div>
@@ -287,14 +335,14 @@ function renderCalendarSection({
                     ) : (
                       <div className="calendar-month-grid__bars">
                         {items.length <= 3
-                          ? items.map((item) => (
+                          ? items.map((item: CalendarEventItem) => (
                               <div key={item.id} className={`calendar-month-grid__bar${item.isCompleted ? ' calendar-event--completed' : ''}`} style={{ background: item.color }}>
                                 {formatHM(item.start)} {item.service}
                               </div>
                             ))
                           : (
                             <>
-                              {items.slice(0, 2).map((item) => (
+                              {items.slice(0, 2).map((item: CalendarEventItem) => (
                                 <div key={item.id} className={`calendar-month-grid__bar${item.isCompleted ? ' calendar-event--completed' : ''}`} style={{ background: item.color }}>
                                   {formatHM(item.start)} {item.service}
                                 </div>
@@ -318,15 +366,15 @@ function renderCalendarSection({
 export default function HomePage() {
   const { me } = useAuth();
   const { errorMessage, setErrorMessage } = useToast();
-  const [dashboard, setDashboard] = useState(null);
+  const [dashboard, setDashboard] = useState<unknown>(null);
   const [calendarView, setCalendarView] = useState('week');
   const [isMobile, setIsMobile] = useState(false);
-  const [todayReservations, setTodayReservations] = useState([]);
-  const [todayUsers, setTodayUsers] = useState([]);
-  const [weekReservations, setWeekReservations] = useState([]);
-  const [weekUsers, setWeekUsers] = useState([]);
-  const [monthReservations, setMonthReservations] = useState([]);
-  const [monthUsers, setMonthUsers] = useState([]);
+  const [todayReservations, setTodayReservations] = useState<Array<Record<string, any>>>([]);
+  const [todayUsers, setTodayUsers] = useState<string[]>([]);
+  const [weekReservations, setWeekReservations] = useState<Array<Record<string, any>>>([]);
+  const [weekUsers, setWeekUsers] = useState<string[]>([]);
+  const [monthReservations, setMonthReservations] = useState<Array<Record<string, any>>>([]);
+  const [monthUsers, setMonthUsers] = useState<string[]>([]);
   const [nowMinutes, setNowMinutes] = useState(() => {
     const now = new Date();
     return now.getHours() * 60 + now.getMinutes();
@@ -456,9 +504,9 @@ export default function HomePage() {
     return `${d.getFullYear()}年${d.getMonth() + 1}月`;
   }, []);
 
-  const hslToHex = (h, s, l) => {
+  const hslToHex = (h: number, s: number, l: number) => {
     const a = s * Math.min(l, 1 - l);
-    const f = (n) => {
+    const f = (n: number) => {
       const k = (n + h / 30) % 12;
       const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
       return Math.round(255 * color).toString(16).padStart(2, '0');
@@ -466,7 +514,7 @@ export default function HomePage() {
     return `#${f(0)}${f(8)}${f(4)}`;
   };
 
-  const generatePalette = (count) => {
+  const generatePalette = (count: number) => {
     const colors = [];
     const safeCount = Math.max(count, 1);
     const hueStart = 210;
@@ -485,20 +533,20 @@ export default function HomePage() {
     return colors;
   };
 
-  const normalizeName = (value) => (value ? String(value).trim() : '');
+  const normalizeName = (value: any) => (value ? String(value).trim() : '');
 
-  const getCustomerName = (item) =>
+  const getCustomerName = (item: Record<string, any>) =>
     item.username || item.userName || item.customerName || item.name || '';
 
-  const getBusinessName = (item) =>
+  const getBusinessName = (item: Record<string, any>) =>
     item.businessName || item.business?.name || item.shopName || '';
 
-  const getColorKey = (item, role) =>
+  const getColorKey = (item: Record<string, any>, role?: string) =>
     role === 'ROLE_BUSINESS' ? getCustomerName(item) : getBusinessName(item);
 
-  const buildColorMap = (list, palette) => {
-    const map = new Map();
-    list.forEach((name, idx) => {
+  const buildColorMap = (list: string[], palette: string[]) => {
+    const map = new Map<string, string>();
+    list.forEach((name: string, idx: number) => {
       const key = normalizeName(name);
       if (key && !map.has(key)) {
         map.set(key, palette[idx % palette.length]);
@@ -507,9 +555,9 @@ export default function HomePage() {
     return map;
   };
 
-  const extractNames = (reservations, role) => {
+  const extractNames = (reservations: Array<Record<string, any>>, role?: string) => {
     const list = reservations
-      .map((item) => getColorKey(item, role))
+      .map((item: Record<string, any>) => getColorKey(item, role))
       .filter(Boolean);
     return Array.from(new Set(list));
   };
@@ -570,7 +618,7 @@ export default function HomePage() {
     []
   );
 
-  const formatHM = (value) => {
+  const formatHM = (value: string) => {
     if (!value) return '';
     const parts = value.split(':');
     return parts.length >= 2 ? `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}` : value;
@@ -610,7 +658,7 @@ export default function HomePage() {
   const weekDayLabels = useMemo(() => ['日', '一', '二', '三', '四', '五', '六'], []);
 
   const dayItems = useMemo(() => {
-    return todayReservations.map((item, idx) => {
+    return todayReservations.map((item: Record<string, any>, idx: number) => {
       const mapped = {
         id: item.id ?? `today-${idx}`,
         date: item.reservationDate ?? today,

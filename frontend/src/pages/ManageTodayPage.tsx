@@ -7,12 +7,13 @@ import ReservationStatusBadge from '../components/reservations/ReservationStatus
 import ReservationSortButton from '../components/reservations/ReservationSortButton';
 import ReservationPaginationFooter from '../components/reservations/ReservationPaginationFooter';
 import { useReservationListControls } from '../hooks/useReservationListControls';
+import type { ReservationItem, ServiceOption } from '../components/reservations/types';
 
 export default function ManageTodayPage() {
   const { me } = useAuth();
   const { setSuccessMessage, setErrorMessage } = useToast();
-  const [data, setData] = useState({ content: [], totalPages: 0, totalElements: 0 });
-  const [services, setServices] = useState([]);
+  const [data, setData] = useState<{ content: ReservationItem[]; totalPages: number; totalElements: number }>({ content: [], totalPages: 0, totalElements: 0 });
+  const [services, setServices] = useState<ServiceOption[]>([]);
   const [filterDraft, setFilterDraft] = useState({ service: '', keyword: '', status: '' });
   const [filters, setFilters] = useState({ service: '', keyword: '', status: '' });
   const [page, setPage] = useState(0);
@@ -59,7 +60,7 @@ export default function ManageTodayPage() {
     void loadServices();
   }, [me]);
 
-  const updateStatus = async (id, action) => {
+  const updateStatus = async (id: string | number, action: string) => {
     try {
       const res = await api.updateReservationStatus(id, { action });
       setSuccessMessage(res.message || '更新成功');
@@ -92,7 +93,7 @@ export default function ManageTodayPage() {
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
     today.getDate()
   ).padStart(2, '0')}`;
-  const renderDesktopActions = (reservation) => {
+  const renderDesktopActions = (reservation: ReservationItem) => {
     if (reservation.status === 'PENDING') {
       return (
         <div className="d-flex gap-2 justify-content-center">
@@ -119,7 +120,7 @@ export default function ManageTodayPage() {
     }
     return <small className="text-muted">無可用操作</small>;
   };
-  const renderMobileActions = (reservation) => {
+  const renderMobileActions = (reservation: ReservationItem) => {
     if (reservation.status === 'PENDING') {
       return (
         <>

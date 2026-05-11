@@ -43,12 +43,12 @@ export default function RegisterBusinessPage() {
     }
   }, []);
 
-  const handleChange = (event) => {
+  const handleChange = (event: { target: { name: string; value: string } }) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: { preventDefault: () => void }) => {
     event.preventDefault();
     setLocalError('');
 

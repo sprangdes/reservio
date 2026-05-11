@@ -40,7 +40,7 @@ export default function ServiceManagementPage() {
   } = useServiceManagement({ load, setSuccessMessage, setErrorMessage });
 
   const resolvedInterval = Number(me?.business?.slotInterval || 30) || 30;
-  const buildDurationOptions = (interval, maxMinutes = 480) => {
+  const buildDurationOptions = (interval: number, maxMinutes = 480) => {
     const safe = Number.isFinite(interval) && interval > 0 ? interval : 30;
     const values = [];
     for (let value = safe; value <= maxMinutes; value += safe) {

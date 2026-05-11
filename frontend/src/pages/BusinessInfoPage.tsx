@@ -284,7 +284,7 @@ export default function BusinessInfoPage() {
 
   const resolvedInterval = Number(infoForm.slotInterval || me?.business?.slotInterval || 30) || 30;
   const buildDurationOptions = (interval: number | null | undefined, maxMinutes = 480): number[] => {
-    const safe = Number.isFinite(interval) && (interval as number) > 0 ? (interval as number) : 30;
+    const safe = Number.isFinite(interval) && (interval) > 0 ? (interval) : 30;
     const values: number[] = [];
     for (let value = safe; value <= maxMinutes; value += safe) {
       values.push(value);
