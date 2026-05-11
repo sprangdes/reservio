@@ -6,7 +6,7 @@ interface ServiceForm {
   duration: string;
 }
 
-interface ServiceItem {
+export interface ServiceItem {
   id: string | number;
   name: string;
   duration: string | number;

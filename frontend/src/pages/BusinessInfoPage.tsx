@@ -4,6 +4,7 @@ import { api } from '../api';
 import { useAuth } from '../state/AuthContext';
 import { useToast } from '../state/ToastContext';
 import { useServiceManagement} from "../hooks/useServiceManagement";
+import type { ServiceItem } from '../hooks/useServiceManagement';
 
 const weekDays = [
   { key: 'mon', label: '星期一', dayOfWeek: 'MONDAY' },
@@ -76,7 +77,7 @@ export default function BusinessInfoPage() {
       category: me.business.category || '',
       phone: me.business.phone || '',
       address: me.business.address || '',
-      slotInterval: me.business.slotInterval != null ? String(me.business.slotInterval) : ''
+      slotInterval: me.business.slotInterval == null ? '' : String(me.business.slotInterval)
     });
   }, [me]);
 
@@ -108,7 +109,7 @@ export default function BusinessInfoPage() {
           acc[day.key] = { open: false, start: '09:00', end: '18:00' };
           return acc;
         }, {});
-        data.defaultWeekSlots.forEach((slot) => {
+        data.defaultWeekSlots.forEach((slot: { dayOfWeek: string; startTime: any; endTime: any; }) => {
           const dayKey = weekDays.find((item) => item.dayOfWeek === slot.dayOfWeek)?.key;
           if (!dayKey) return;
           slotMap[dayKey] = {
@@ -152,13 +153,13 @@ export default function BusinessInfoPage() {
     try {
       const res = await api.getAdjustedSlots();
       const data = Array.isArray(res.data) ? res.data : [];
-      const mapped = data.map((item) => ({
+      const mapped = data.map((item: { date: any; open: boolean; startTime: any; endTime: any; }) => ({
         date: item.date,
         open: item.open !== false,
         start: item.startTime ? String(item.startTime).slice(0, 5) : '09:00',
         end: item.endTime ? String(item.endTime).slice(0, 5) : '18:00'
       }));
-      mapped.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      mapped.sort((a: { date: any; }, b: { date: any; }) => String(a.date).localeCompare(String(b.date)));
       setOverrides(mapped);
     } catch (err) {
       setErrorMessage(err.message || '取得已調整時段失敗');
@@ -175,7 +176,7 @@ export default function BusinessInfoPage() {
     void loadAdjustedSlots();
   }, [me]);
 
-  const handleInfoChange = (event) => {
+  const handleInfoChange = (event: { target: { name: any; value: any; }; }) => {
     const { name, value } = event.target;
     setInfoForm((prev) => ({ ...prev, [name]: value }));
   };
@@ -200,15 +201,15 @@ export default function BusinessInfoPage() {
       setSavingInfo(false);
     }
   };
-  
-  const toggleDay = (dayKey) => {
+
+  const toggleDay = (dayKey: string) => {
     setHours((prev) => ({
       ...prev,
       [dayKey]: { ...prev[dayKey], open: !prev[dayKey].open }
     }));
   };
 
-  const updateDayTime = (dayKey, field, value) => {
+  const updateDayTime = (dayKey: string, field: string, value: string) => {
     setHours((prev) => ({
       ...prev,
       [dayKey]: { ...prev[dayKey], [field]: value }
@@ -232,7 +233,7 @@ export default function BusinessInfoPage() {
     }
   };
 
-  const handleOverrideChange = (event) => {
+  const handleOverrideChange = (event: { target: { name: any; value: any; type: any; checked: any; }; }) => {
     const { name, value, type, checked } = event.target;
     setDateOverride((prev) => ({
       ...prev,
@@ -240,7 +241,7 @@ export default function BusinessInfoPage() {
     }));
   };
 
-  const handleDateChange = (event) => {
+  const handleDateChange = (event: { target: { value: any; }; }) => {
     const nextDate = event.target.value;
     setDateOverride({
       ...dateOverride,
@@ -251,7 +252,7 @@ export default function BusinessInfoPage() {
     }
   };
 
-  const handleDeleteOverride = async (date) => {
+  const handleDeleteOverride = async (date: any) => {
     try {
       await api.deleteDateSlot({ date });
       setSuccessMessage('已刪除指定日期調整');
@@ -282,9 +283,9 @@ export default function BusinessInfoPage() {
   };
 
   const resolvedInterval = Number(infoForm.slotInterval || me?.business?.slotInterval || 30) || 30;
-  const buildDurationOptions = (interval, maxMinutes = 480) => {
-    const safe = Number.isFinite(interval) && interval > 0 ? interval : 30;
-    const values = [];
+  const buildDurationOptions = (interval: number | null | undefined, maxMinutes = 480): number[] => {
+    const safe = Number.isFinite(interval) && (interval as number) > 0 ? (interval as number) : 30;
+    const values: number[] = [];
     for (let value = safe; value <= maxMinutes; value += safe) {
       values.push(value);
     }
@@ -292,10 +293,10 @@ export default function BusinessInfoPage() {
   };
 
   const durationOptions = buildDurationOptions(resolvedInterval);
-  const hasCustomDurationOption = (value) =>
+  const hasCustomDurationOption = (value: string | number) =>
     !durationOptions.includes(Number(value)) && Boolean(value);
 
-  const renderDurationOptionItems = (currentValue) => (
+  const renderDurationOptionItems = (currentValue: string | number) => (
     <>
       {hasCustomDurationOption(currentValue) && (
         <option value={currentValue}>{currentValue}</option>
@@ -315,14 +316,14 @@ export default function BusinessInfoPage() {
     </div>
   );
 
-  const renderDurationBadge = (duration) => (
+  const renderDurationBadge = (duration: string | number) => (
     <span className="badge rounded-pill bg-light text-primary border border-primary border-opacity-25 px-3 py-2">
       <i className="bi bi-stopwatch me-1"></i> {duration} 分鐘
     </span>
   );
 
-  const renderServiceToggle = (service, withTitle = false) => {
-    let title;
+  const renderServiceToggle = (service: ServiceItem, withTitle: boolean = false) => {
+    let title: string | undefined;
     if (withTitle) {
       title = service.active ? '已啟用' : '已停用';
     }
@@ -334,7 +335,7 @@ export default function BusinessInfoPage() {
     );
   };
 
-  const renderEditingActions = (serviceId, mobile = false) => {
+  const renderEditingActions = (serviceId: string | number, mobile = false) => {
     if (mobile) {
       return (
         <>
@@ -351,7 +352,7 @@ export default function BusinessInfoPage() {
     );
   };
 
-  const renderDisplayActions = (service, mobile = false) => {
+  const renderDisplayActions = (service: ServiceItem, mobile = false) => {
     if (mobile) {
       return (
         <>
