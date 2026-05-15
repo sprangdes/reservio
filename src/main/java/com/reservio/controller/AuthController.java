@@ -2,6 +2,7 @@ package com.reservio.controller;
 
 import com.reservio.dto.*;
 import com.reservio.entity.UserData;
+import com.reservio.exception.OtpVerificationException;
 import com.reservio.exception.UserAlreadyExistsException;
 import com.reservio.service.OtpService;
 import com.reservio.service.OtpAuthService;
@@ -206,24 +207,31 @@ public class AuthController {
             @RequestBody VerifyOtpRequest request,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
-        OtpVerificationResult result = otpService.verifyForgotPasswordOtp(request);
-        UserData user = result.getUser();
+        try {
+            OtpVerificationResult result = otpService.verifyForgotPasswordOtp(request);
+            UserData user = result.getUser();
 
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                user.getUsername(),
-                null,
-                List.of(new SimpleGrantedAuthority(user.getRole()))
-        );
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authentication);
-        SecurityContextHolder.setContext(context);
-        securityContextRepository.saveContext(context, httpRequest, httpResponse);
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                    user.getUsername(),
+                    null,
+                    List.of(new SimpleGrantedAuthority(user.getRole()))
+            );
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
+            context.setAuthentication(authentication);
+            SecurityContextHolder.setContext(context);
+            securityContextRepository.saveContext(context, httpRequest, httpResponse);
 
-        return ResponseEntity.ok(ApiResponse.<UserDTO>builder()
-                .success(true)
-                .message("OTP 驗證成功")
-                .data(toUserDTO(user))
-                .build());
+            return ResponseEntity.ok(ApiResponse.<UserDTO>builder()
+                    .success(true)
+                    .message("OTP 驗證成功")
+                    .data(toUserDTO(user))
+                    .build());
+        } catch (OtpVerificationException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.<UserDTO>builder()
+                    .success(false)
+                    .message("OTP 驗證失敗")
+                    .build());
+        }
     }
 
     @PostMapping("/force-change-password")

@@ -5,6 +5,7 @@ import com.reservio.dto.RequestOtpRequest;
 import com.reservio.dto.VerifyOtpRequest;
 import com.reservio.entity.Otp;
 import com.reservio.entity.UserData;
+import com.reservio.exception.OtpVerificationException;
 import com.reservio.repo.OtpRepo;
 import com.reservio.repo.UserDataRepo;
 import lombok.extern.slf4j.Slf4j;
@@ -70,7 +71,7 @@ public class OtpService {
     public OtpVerificationResult verifyForgotPasswordOtp(VerifyOtpRequest request) {
         if (request == null || request.getEmailOrUsername() == null || request.getOtp() == null
                 || request.getEmailOrUsername().isBlank() || request.getOtp().isBlank()) {
-            throw new IllegalArgumentException("OTP 驗證失敗");
+            throw new OtpVerificationException("OTP 驗證失敗");
         }
 
         String account = request.getEmailOrUsername().trim();
@@ -81,25 +82,25 @@ public class OtpService {
             user = userDataRepo.findByEmail(account);
         }
         if (user == null) {
-            throw new IllegalArgumentException("OTP 驗證失敗");
+            throw new OtpVerificationException("OTP 驗證失敗");
         }
 
         Otp otp = otpRepo.findTopByUserIdOrderByCreatedAtDesc(user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("OTP 驗證失敗"));
+                .orElseThrow(() -> new OtpVerificationException("OTP 驗證失敗"));
 
         LocalDateTime now = LocalDateTime.now();
         if (otp.getUsedAt() != null || now.isAfter(otp.getExpiresAt())) {
-            throw new IllegalArgumentException("OTP 驗證失敗");
+            throw new OtpVerificationException("OTP 驗證失敗");
         }
         if (otp.getAttemptCount() != null && otp.getAttemptCount() >= otpProperties.getMaxAttempts()) {
-            throw new IllegalArgumentException("OTP 驗證失敗");
+            throw new OtpVerificationException("OTP 驗證失敗");
         }
 
         boolean matched = passwordEncoder.matches(otpPlain, otp.getOtpHash());
         if (!matched) {
             otp.setAttemptCount((otp.getAttemptCount() == null ? 0 : otp.getAttemptCount()) + 1);
             otpRepo.save(otp);
-            throw new IllegalArgumentException("OTP 驗證失敗");
+            throw new OtpVerificationException("OTP 驗證失敗");
         }
 
         otp.setUsedAt(now);
