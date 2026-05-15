@@ -1,5 +1,6 @@
 package com.reservio.service;
 
+import com.reservio.config.OtpProperties;
 import com.reservio.dto.RequestOtpRequest;
 import com.reservio.dto.VerifyOtpRequest;
 import com.reservio.entity.Otp;
@@ -11,34 +12,35 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 
 @Slf4j
 @Service
 public class OtpService {
 
-    private static final int OTP_EXPIRE_MINUTES = 10;
-    private static final int MAX_ATTEMPTS = 5;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final UserDataRepo userDataRepo;
     private final OtpRepo otpRepo;
     private final PasswordEncoder passwordEncoder;
+    private final OtpProperties otpProperties;
 
     public OtpService(
             UserDataRepo userDataRepo,
             OtpRepo otpRepo,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            OtpProperties otpProperties) {
         this.userDataRepo = userDataRepo;
         this.otpRepo = otpRepo;
         this.passwordEncoder = passwordEncoder;
+        this.otpProperties = otpProperties;
     }
 
     @Transactional
     public void requestForgotPasswordOtp(RequestOtpRequest request) {
         if (request == null || request.getEmailOrUsername() == null || request.getEmailOrUsername().isBlank()) {
-            return;
+            throw new IllegalArgumentException("請求參數無效");
         }
 
         String account = request.getEmailOrUsername().trim();
@@ -57,7 +59,7 @@ public class OtpService {
         Otp otp = Otp.builder()
                 .user(user)
                 .otpHash(passwordEncoder.encode(otpPlain))
-                .expiresAt(LocalDateTime.now().plusMinutes(OTP_EXPIRE_MINUTES))
+                .expiresAt(LocalDateTime.now().plusMinutes(otpProperties.getExpireMinute()))
                 .build();
         otpRepo.save(otp);
 
@@ -89,7 +91,7 @@ public class OtpService {
         if (otp.getUsedAt() != null || now.isAfter(otp.getExpiresAt())) {
             throw new IllegalArgumentException("OTP 驗證失敗");
         }
-        if (otp.getAttemptCount() != null && otp.getAttemptCount() >= MAX_ATTEMPTS) {
+        if (otp.getAttemptCount() != null && otp.getAttemptCount() >= otpProperties.getMaxAttempts()) {
             throw new IllegalArgumentException("OTP 驗證失敗");
         }
 
