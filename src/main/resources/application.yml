@@ -27,3 +27,7 @@ server:
 
 business:
   category: "美容美髮,診所醫療,餐飲服務,其他諮詢"
+
+otp:
+  expire-minute: 10
+  max-attempts: 5
