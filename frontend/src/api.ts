@@ -49,6 +49,18 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(payload)
   }),
+  requestPasswordResetOtp: (payload: unknown) => request('/api/auth/forgot-password/request-otp', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  }),
+  verifyPasswordResetOtp: (payload: unknown) => request('/api/auth/forgot-password/verify-otp', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  }),
+  forceChangePassword: (payload: unknown) => request('/api/auth/force-change-password', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  }),
   me: () => request('/api/me'),
   dashboard: () => request('/api/dashboard'),
   businesses: () => request('/api/businesses'),

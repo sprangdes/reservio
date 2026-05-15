@@ -28,6 +28,10 @@ export default function LoginPage() {
       const res = await api.login({ username, password });
       setMe(res.data);
       setSuccessMessage('登入成功');
+      if (res?.data?.mustChangePassword) {
+        navigate('/force-change-password');
+        return;
+      }
       navigate('/');
     } catch (err) {
       setLocalError('使用者名稱或密碼不正確，請再試一次。');
@@ -75,6 +79,11 @@ export default function LoginPage() {
                       placeholder="請輸入密碼"
                       required
                     />
+                  </div>
+                  <div className="text-end">
+                    <Link to="/forgot-password" className="small text-decoration-none">
+                      忘記密碼？
+                    </Link>
                   </div>
                   <div className="d-grid mt-4">
                     <button type="submit" className="btn btn-gradient btn-lg fw-bold shadow-sm">登入系統</button>

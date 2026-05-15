@@ -3,6 +3,9 @@ package com.reservio.controller;
 import com.reservio.dto.*;
 import com.reservio.entity.UserData;
 import com.reservio.exception.UserAlreadyExistsException;
+import com.reservio.service.OtpService;
+import com.reservio.service.OtpAuthService;
+import com.reservio.service.OtpVerificationResult;
 import com.reservio.service.UserDataService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -10,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,20 +23,27 @@ import org.springframework.web.bind.annotation.*;
 
 import static com.reservio.enums.ApiResponseMessageEnum.*;
 import static com.reservio.util.UserUtil.toUserDTO;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
     private final UserDataService userDataService;
+    private final OtpService otpService;
+    private final OtpAuthService otpAuthService;
     private final AuthenticationManager authenticationManager;
     private final SecurityContextRepository securityContextRepository;
 
     public AuthController(
             UserDataService userDataService,
+            OtpService otpService,
+            OtpAuthService otpAuthService,
             AuthenticationManager authenticationManager,
             SecurityContextRepository securityContextRepository) {
         this.userDataService = userDataService;
+        this.otpService = otpService;
+        this.otpAuthService = otpAuthService;
         this.authenticationManager = authenticationManager;
         this.securityContextRepository = securityContextRepository;
     }
@@ -176,5 +187,49 @@ public class AuthController {
             new SecurityContextLogoutHandler().logout(request, response, authentication);
         }
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/forgot-password/request-otp")
+    public ResponseEntity<ApiResponse<Void>> requestOtp(@RequestBody RequestOtpRequest request) {
+        otpService.requestForgotPasswordOtp(request);
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .success(true)
+                .message("若帳號存在，OTP 已寄出")
+                .build());
+    }
+
+    @PostMapping("/forgot-password/verify-otp")
+    public ResponseEntity<ApiResponse<UserDTO>> verifyOtp(
+            @RequestBody VerifyOtpRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
+        OtpVerificationResult result = otpService.verifyForgotPasswordOtp(request);
+        UserData user = result.getUser();
+
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                user.getUsername(),
+                null,
+                List.of(new SimpleGrantedAuthority(user.getRole()))
+        );
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        SecurityContextHolder.setContext(context);
+        securityContextRepository.saveContext(context, httpRequest, httpResponse);
+
+        return ResponseEntity.ok(ApiResponse.<UserDTO>builder()
+                .success(true)
+                .message("OTP 驗證成功")
+                .data(toUserDTO(user))
+                .build());
+    }
+
+    @PostMapping("/force-change-password")
+    public ResponseEntity<ApiResponse<UserDTO>> forceChangePassword(@RequestBody ForceChangePasswordRequest request) {
+        UserData user = otpAuthService.forceChangePassword(request);
+        return ResponseEntity.ok(ApiResponse.<UserDTO>builder()
+                .success(true)
+                .message("密碼更新成功")
+                .data(toUserDTO(user))
+                .build());
     }
 }

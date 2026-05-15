@@ -34,6 +34,10 @@ public class UserData {
     @Column(nullable = false)
     private String role;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean mustChangePassword = false;
+
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     @JsonManagedReference
