@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -11,10 +11,31 @@ import ManageAllPage from './pages/ManageAllPage';
 import ManagePendingPage from './pages/ManagePendingPage';
 import ServiceManagementPage from './pages/ServiceManagementPage';
 import BusinessInfoPage from './pages/BusinessInfoPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ForgotPasswordVerifyPage from './pages/ForgotPasswordVerifyPage';
+import ForceChangePasswordPage from './pages/ForceChangePasswordPage';
+import { useAuth } from './state/AuthContext';
+
+function PasswordResetGuard({ children }: Readonly<{ children: JSX.Element }>) {
+  const { me, loading } = useAuth();
+  const location = useLocation();
+  const allowPaths = ['/force-change-password', '/login', '/forgot-password', '/forgot-password/verify'];
+
+  if (loading) {
+    return children;
+  }
+
+  if (me?.mustChangePassword && !allowPaths.includes(location.pathname)) {
+    return <Navigate to="/force-change-password" replace />;
+  }
+
+  return children;
+}
 
 export default function App() {
   return (
-    <Routes>
+    <PasswordResetGuard>
+      <Routes>
       <Route
         path="/"
         element={
@@ -44,6 +65,30 @@ export default function App() {
         element={
           <Layout>
             <RegisterBusinessPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <Layout>
+            <ForgotPasswordPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/forgot-password/verify"
+        element={
+          <Layout>
+            <ForgotPasswordVerifyPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/force-change-password"
+        element={
+          <Layout>
+            <ForceChangePasswordPage />
           </Layout>
         }
       />
@@ -104,6 +149,7 @@ export default function App() {
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </PasswordResetGuard>
   );
 }

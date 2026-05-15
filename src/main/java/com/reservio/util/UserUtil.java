@@ -28,6 +28,7 @@ public class UserUtil {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .role(user.getRole())
+                .mustChangePassword(user.getMustChangePassword())
                 .business(businessDTO)
                 .build();
     }

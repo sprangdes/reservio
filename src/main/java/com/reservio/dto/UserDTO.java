@@ -14,5 +14,6 @@ public class UserDTO {
     private String username;
     private String email;
     private String role;
+    private Boolean mustChangePassword;
     private BusinessDTO business;
 }
