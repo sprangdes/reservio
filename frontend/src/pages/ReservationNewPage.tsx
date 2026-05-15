@@ -43,8 +43,6 @@ export default function ReservationNewPage() {
     const load = async () => {
       const businessRes = await api.businesses();
       setBusinesses(businessRes.data || []);
-      const disabledRes = await api.disabledDates();
-      setDisabledDates(disabledRes.data || []);
     };
     void load();
   }, []);
@@ -60,6 +58,8 @@ export default function ReservationNewPage() {
       const res = await api.businessServices(form.businessId);
       const list = (res.data || []).filter((item: { active?: boolean }) => item.active);
       setServices(list);
+      const disabledRes = await api.disabledDates(form.businessId);
+      setDisabledDates(disabledRes.data || []);
     };
     void load();
   }, [form.businessId]);
@@ -107,11 +107,15 @@ export default function ReservationNewPage() {
         setSlots([]);
         return;
       }
-      const res = await api.slots(form.reservationDate, serviceDuration);
+      if (!form.businessId) {
+        setSlots([]);
+        return;
+      }
+      const res = await api.slots(form.reservationDate, serviceDuration, form.businessId);
       setSlots(res.data || []);
     };
     void loadSlots();
-  }, [form.reservationDate, serviceDuration]);
+  }, [form.reservationDate, serviceDuration, form.businessId]);
 
   useEffect(() => {
     if (!form.startTime || !serviceDuration) {

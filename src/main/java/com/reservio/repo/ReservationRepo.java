@@ -16,6 +16,7 @@ import java.util.Optional;
 public interface ReservationRepo extends JpaRepository<Reservation, Long>, JpaSpecificationExecutor<Reservation> {
 
     List<Reservation> findAllByReservationDateAndStatusNot(LocalDate date, ReservationStatus status);
+    List<Reservation> findAllByBusinessIdAndReservationDateAndStatusNot(Long businessId, LocalDate date, ReservationStatus status);
 
     long countByUserAndReservationDateAndStatusNot(UserData user, LocalDate date, ReservationStatus status);
 

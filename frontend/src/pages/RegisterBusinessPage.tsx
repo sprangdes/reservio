@@ -3,6 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useToast } from '../state/ToastContext';
 
+function getErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error && err.message) {
+    return err.message;
+  }
+  return fallback;
+}
+
 export default function RegisterBusinessPage() {
   const { setErrorMessage } = useToast();
   const [categories, setCategories] = useState([]);
@@ -25,7 +32,7 @@ export default function RegisterBusinessPage() {
         const items = Array.isArray(res.data) ? res.data : [];
         setCategories(items);
       } catch (err) {
-        setLocalError(err.message || '載入服務類別失敗');
+        setLocalError(getErrorMessage(err, '載入服務類別失敗'));
       }
     };
     void loadCategories();
@@ -57,8 +64,9 @@ export default function RegisterBusinessPage() {
       sessionStorage.removeItem('businessRegisterDraft');
       navigate('/login?registered=1');
     } catch (err) {
-      setLocalError(err.message);
-      setErrorMessage(err.message);
+      const message = getErrorMessage(err, '商家註冊失敗');
+      setLocalError(message);
+      setErrorMessage(message);
     }
   };
 
