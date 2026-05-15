@@ -71,7 +71,8 @@ public class ReservationTimeService {
         }
 
         // 2. 獲取當天所有有效的預約
-        List<Reservation> existingReservations = reservationRepo.findAllByReservationDateAndStatusNot(date, CANCELLED);
+        List<Reservation> existingReservations = reservationRepo
+                .findAllByBusinessIdAndReservationDateAndStatusNot(resolvedBusinessId, date, CANCELLED);
         LocalTime now = LocalTime.now();
         boolean isToday = date.equals(LocalDate.now());
 

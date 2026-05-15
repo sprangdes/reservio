@@ -9,6 +9,7 @@ import com.reservio.service.OtpVerificationResult;
 import com.reservio.service.UserDataService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,6 +28,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
+@Slf4j
 public class AuthController {
 
     private final UserDataService userDataService;
@@ -81,6 +83,7 @@ public class AuthController {
                             .build()
                     );
         } catch (Exception e) {
+            log.error("Business registration failed", e);
             // 系統錯誤
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.<UserDTO>builder()

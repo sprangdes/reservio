@@ -65,8 +65,9 @@ export const api = {
   dashboard: () => request('/api/dashboard'),
   businesses: () => request('/api/businesses'),
   businessServices: (id: string | number) => request(`/api/businesses/${id}/services`),
-  disabledDates: () => request('/api/reservations/disabled-dates'),
-  slots: (date: string, duration: string | number) => request(`/api/reservations/slots?date=${date}&duration=${duration}`),
+  disabledDates: (businessId: string | number) => request(`/api/reservations/disabled-dates?businessId=${businessId}`),
+  slots: (date: string, duration: string | number, businessId: string | number) =>
+    request(`/api/reservations/slots?date=${date}&duration=${duration}&businessId=${businessId}`),
   createReservation: (payload: unknown) => request('/api/reservations', {
     method: 'POST',
     body: JSON.stringify(payload)
