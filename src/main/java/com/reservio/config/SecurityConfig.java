@@ -2,6 +2,7 @@ package com.reservio.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -17,11 +18,15 @@ import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.util.UriComponentsBuilder;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableConfigurationProperties(LineOAuth2Properties.class)
+@Slf4j
 public class SecurityConfig {
 
     @Bean
@@ -30,7 +35,10 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(
+            HttpSecurity http,
+            LineOAuth2AuthenticationSuccessHandler lineOAuth2AuthenticationSuccessHandler,
+            LineOAuth2Properties lineOAuth2Properties) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -44,6 +52,25 @@ public class SecurityConfig {
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 .maximumSessions(1)
+            )
+            .oauth2Login(oauth2 -> oauth2
+                .successHandler(lineOAuth2AuthenticationSuccessHandler)
+                .failureHandler((request, response, exception) -> {
+                    String reason = exception.getClass().getSimpleName();
+                    log.warn("LINE oauth login failed. reason={}, message={}", reason, exception.getMessage());
+                    String target = lineOAuth2Properties.failureRedirectPath();
+                    UriComponentsBuilder builder =
+                            (target != null && (target.startsWith("http://") || target.startsWith("https://")))
+                                    ? UriComponentsBuilder.fromUriString(target)
+                                    : UriComponentsBuilder.fromPath(target == null || target.isBlank() ? "/login" : target);
+
+                    String failureRedirect = builder
+                            .queryParam("lineLogin", "failed")
+                            .queryParam("reason", reason)
+                            .build()
+                            .toUriString();
+                    response.sendRedirect(failureRedirect);
+                })
             );
 
         return http.build();
@@ -62,7 +89,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:5173",
+                "http://localhost:3000",
+                "https://*.ngrok-free.app"
+        ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Content-Type", "Authorization"));
         config.setAllowCredentials(true);

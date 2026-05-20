@@ -10,6 +10,7 @@ import com.reservio.service.OtpVerificationResult;
 import com.reservio.service.UserDataService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -242,5 +243,15 @@ public class AuthController {
                 .message("密碼更新成功")
                 .data(toUserDTO(user))
                 .build());
+    }
+
+    @GetMapping("/line/user")
+    public void lineUserLogin(HttpServletResponse response) throws IOException {
+        response.sendRedirect("/oauth2/authorization/line-user");
+    }
+
+    @GetMapping("/line/business")
+    public void lineBusinessLogin(HttpServletResponse response) throws IOException {
+        response.sendRedirect("/oauth2/authorization/line-business");
     }
 }
