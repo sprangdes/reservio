@@ -34,6 +34,9 @@ public class UserData {
     @Column(nullable = false)
     private String role;
 
+    @Column(name = "line_user_id")
+    private String lineUserId;
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean mustChangePassword = false;

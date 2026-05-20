@@ -12,6 +12,32 @@ spring:
       hibernate:
         format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  security:
+    oauth2:
+      client:
+        provider:
+          line:
+            authorization-uri: https://access.line.me/oauth2/v2.1/authorize
+            token-uri: https://api.line.me/oauth2/v2.1/token
+            user-info-uri: https://api.line.me/v2/profile
+            user-name-attribute: userId
+        registration:
+          line-user:
+            provider: line
+            client-id: ${LINE_LOGIN_CHANNEL_ID:2010143022}
+            client-secret: ${LINE_LOGIN_CHANNEL_SECRET:c5b06a417d98bd686a9209ee4eaf35ea}
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - profile
+          line-business:
+            provider: line
+            client-id: ${LINE_LOGIN_CHANNEL_ID:2010143022}
+            client-secret: ${LINE_LOGIN_CHANNEL_SECRET:c5b06a417d98bd686a9209ee4eaf35ea}
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - profile
 
 logging:
   level:
@@ -19,10 +45,13 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: ERROR
 
 server:
+  forward-headers-strategy: framework
   servlet:
     session:
       timeout: 5m
       cookie:
+        same-site: none
+        secure: true
         max-age: 5m
 
 business:
@@ -31,3 +60,8 @@ business:
 otp:
   expire-minute: 10
   max-attempts: 5
+
+app:
+  auth:
+    success-redirect-path: ${LINE_LOGIN_SUCCESS_REDIRECT_PATH:/login}
+    failure-redirect-path: ${LINE_LOGIN_FAILURE_REDIRECT_PATH:/login}

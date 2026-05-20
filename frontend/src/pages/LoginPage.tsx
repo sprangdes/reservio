@@ -5,6 +5,7 @@ import { useAuth } from '../state/AuthContext';
 import { useToast } from '../state/ToastContext';
 
 export default function LoginPage() {
+  const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
   const { setMe } = useAuth();
   const { setSuccessMessage, setErrorMessage } = useToast();
   const [username, setUsername] = useState('');
@@ -18,6 +19,34 @@ export default function LoginPage() {
     const params = new URLSearchParams(location.search);
     if (params.get('registered')) {
       setLocalSuccess('註冊成功。請登入您的帳號。');
+    }
+
+    const lineLogin = params.get('lineLogin');
+    const role = params.get('role');
+    const reason = params.get('reason');
+
+    if (lineLogin === 'success') {
+      void (async () => {
+        try {
+          const res = await api.me();
+          setMe(res.data);
+          setSuccessMessage('LINE 登入成功');
+
+          if (res?.data?.mustChangePassword) {
+            navigate('/force-change-password', { replace: true });
+            return;
+          }
+
+          navigate('/', { replace: true, state: { lineRole: role } });
+        } catch (err: any) {
+          setLocalError('LINE 登入成功，但讀取使用者資訊失敗，請再試一次。');
+          setErrorMessage(err?.message || 'LINE 登入失敗');
+        }
+      })();
+    }
+
+    if (lineLogin === 'failed') {
+      setLocalError(`LINE 登入失敗${reason ? `（${reason}）` : ''}`);
     }
   }, [location.search]);
 
@@ -89,6 +118,21 @@ export default function LoginPage() {
                     <button type="submit" className="btn btn-gradient btn-lg fw-bold shadow-sm">登入系統</button>
                   </div>
                 </form>
+
+                <div className="my-4 d-flex align-items-center">
+                  <hr className="flex-grow-1" />
+                  <span className="px-3 text-muted small">或使用 LINE</span>
+                  <hr className="flex-grow-1" />
+                </div>
+
+                <div className="d-grid gap-2">
+                  <a href={`${apiBase}/api/auth/line/user`} className="btn btn-success btn-lg fw-bold">
+                    使用 LINE 客戶登入
+                  </a>
+                  <a href={`${apiBase}/api/auth/line/business`} className="btn btn-outline-success btn-lg fw-bold">
+                    使用 LINE 商家登入
+                  </a>
+                </div>
               </div>
 
               <div className="card-footer text-center py-3">
