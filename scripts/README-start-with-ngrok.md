@@ -17,16 +17,18 @@ export LINE_LOGIN_CHANNEL_SECRET=<LINE_CHANNEL_SECRET>
 
 ## What it does
 
-- Starts ngrok for frontend (`5173`) and backend (`8080`)
-- Reads public URLs automatically
+- Starts ngrok for frontend (`5173`) only
+- Uses Vite proxy for backend routes:
+  - `/api` -> `http://localhost:8080`
+  - `/oauth2` -> `http://localhost:8080`
+  - `/login/oauth2` -> `http://localhost:8080`
 - Starts backend with:
   - `LINE_LOGIN_CHANNEL_ID`
   - `LINE_LOGIN_CHANNEL_SECRET`
   - `LINE_LOGIN_SUCCESS_REDIRECT_PATH`
   - `LINE_LOGIN_FAILURE_REDIRECT_PATH`
-- Starts frontend with:
-  - `VITE_API_BASE`
-- Prints LINE callback URLs
+- Starts frontend dev server
+- Prints LINE callback URLs using frontend ngrok domain
 
 ## Stop
 
