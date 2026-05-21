@@ -24,16 +24,16 @@ spring:
         registration:
           line-user:
             provider: line
-            client-id: ${LINE_LOGIN_CHANNEL_ID:2010143022}
-            client-secret: ${LINE_LOGIN_CHANNEL_SECRET:c5b06a417d98bd686a9209ee4eaf35ea}
+            client-id: ${LINE_LOGIN_CHANNEL_ID}
+            client-secret: ${LINE_LOGIN_CHANNEL_SECRET}
             authorization-grant-type: authorization_code
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             scope:
               - profile
           line-business:
             provider: line
-            client-id: ${LINE_LOGIN_CHANNEL_ID:2010143022}
-            client-secret: ${LINE_LOGIN_CHANNEL_SECRET:c5b06a417d98bd686a9209ee4eaf35ea}
+            client-id: ${LINE_LOGIN_CHANNEL_ID}
+            client-secret: ${LINE_LOGIN_CHANNEL_SECRET}
             authorization-grant-type: authorization_code
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             scope:
