@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_BASE || '';
 
 type Primitive = string | number | boolean;
 export type QueryParams = Record<string, Primitive | null | undefined>;

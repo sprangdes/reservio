@@ -5,7 +5,6 @@ import { useAuth } from '../state/AuthContext';
 import { useToast } from '../state/ToastContext';
 
 export default function LoginPage() {
-  const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
   const { setMe } = useAuth();
   const { setSuccessMessage, setErrorMessage } = useToast();
   const [username, setUsername] = useState('');
@@ -126,10 +125,10 @@ export default function LoginPage() {
                 </div>
 
                 <div className="d-grid gap-2">
-                  <a href={`${apiBase}/api/auth/line/user`} className="btn btn-success btn-lg fw-bold">
+                  <a href="/api/auth/line/user" className="btn btn-success btn-lg fw-bold">
                     使用 LINE 客戶登入
                   </a>
-                  <a href={`${apiBase}/api/auth/line/business`} className="btn btn-outline-success btn-lg fw-bold">
+                  <a href="/api/auth/line/business" className="btn btn-outline-success btn-lg fw-bold">
                     使用 LINE 商家登入
                   </a>
                 </div>

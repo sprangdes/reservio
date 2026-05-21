@@ -5,6 +5,11 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    allowedHosts: ['.ngrok-free.app']
+    allowedHosts: ['.ngrok-free.app'],
+    proxy: {
+      '/api': 'http://localhost:8080',
+      '/oauth2': 'http://localhost:8080',
+      '/login/oauth2': 'http://localhost:8080'
+    }
   }
 });

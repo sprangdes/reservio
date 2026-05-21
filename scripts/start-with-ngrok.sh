@@ -28,10 +28,12 @@ require_cmd curl
 cleanup() {
   echo
   echo "Stopping processes..."
+  # shellcheck disable=SC2015
   [[ -n "${FRONTEND_PID:-}" ]] && kill "$FRONTEND_PID" 2>/dev/null || true
+  # shellcheck disable=SC2015
   [[ -n "${BACKEND_PID:-}" ]] && kill "$BACKEND_PID" 2>/dev/null || true
+  # shellcheck disable=SC2015
   [[ -n "${NGROK_FRONTEND_PID:-}" ]] && kill "$NGROK_FRONTEND_PID" 2>/dev/null || true
-  [[ -n "${NGROK_BACKEND_PID:-}" ]] && kill "$NGROK_BACKEND_PID" 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
 
@@ -64,14 +66,8 @@ ngrok http 5173 --log stdout --log-format logfmt >/tmp/ngrok-frontend.log 2>&1 &
 NGROK_FRONTEND_PID=$!
 FRONTEND_PUBLIC_URL="$(wait_for_url_from_log /tmp/ngrok-frontend.log frontend)"
 
-echo "Starting ngrok for backend (8080)..."
-ngrok http 8080 --log stdout --log-format logfmt >/tmp/ngrok-backend.log 2>&1 &
-NGROK_BACKEND_PID=$!
-BACKEND_PUBLIC_URL="$(wait_for_url_from_log /tmp/ngrok-backend.log backend)"
-
 LINE_LOGIN_SUCCESS_REDIRECT_PATH="$FRONTEND_PUBLIC_URL/login"
 LINE_LOGIN_FAILURE_REDIRECT_PATH="$FRONTEND_PUBLIC_URL/login"
-VITE_API_BASE="$BACKEND_PUBLIC_URL"
 
 echo "Starting backend..."
 (
@@ -87,7 +83,7 @@ BACKEND_PID=$!
 echo "Starting frontend..."
 (
   cd "$FRONTEND_DIR"
-  VITE_API_BASE="$VITE_API_BASE" npm run dev
+  npm run dev
 ) >/tmp/reservio-frontend.log 2>&1 &
 FRONTEND_PID=$!
 
@@ -97,24 +93,23 @@ echo
 
 echo "=== Reservio Started ==="
 echo "Frontend public URL: $FRONTEND_PUBLIC_URL"
-echo "Backend public URL : $BACKEND_PUBLIC_URL"
+echo "Backend local URL  : http://localhost:8080 (proxied by frontend)"
 echo
 echo "LINE callback URLs:"
-echo "  $BACKEND_PUBLIC_URL/login/oauth2/code/line-user"
-echo "  $BACKEND_PUBLIC_URL/login/oauth2/code/line-business"
+echo "  $FRONTEND_PUBLIC_URL/login/oauth2/code/line-user"
+echo "  $FRONTEND_PUBLIC_URL/login/oauth2/code/line-business"
 echo
 echo "Env used:"
 echo "  LINE_LOGIN_CHANNEL_ID=$LINE_CHANNEL_ID"
 echo "  LINE_LOGIN_SUCCESS_REDIRECT_PATH=$LINE_LOGIN_SUCCESS_REDIRECT_PATH"
 echo "  LINE_LOGIN_FAILURE_REDIRECT_PATH=$LINE_LOGIN_FAILURE_REDIRECT_PATH"
-echo "  VITE_API_BASE=$VITE_API_BASE"
+echo "  Vite proxy: /api,/oauth2,/login/oauth2 -> http://localhost:8080"
 echo
 echo "Logs:"
 echo "  Backend : /tmp/reservio-backend.log"
 echo "  Frontend: /tmp/reservio-frontend.log"
 echo "  Ngrok FE: /tmp/ngrok-frontend.log"
-echo "  Ngrok BE: /tmp/ngrok-backend.log"
 echo
 echo "Press Ctrl+C to stop all processes."
 
-wait "$BACKEND_PID" "$FRONTEND_PID" "$NGROK_FRONTEND_PID" "$NGROK_BACKEND_PID"
+wait "$BACKEND_PID" "$FRONTEND_PID" "$NGROK_FRONTEND_PID"
