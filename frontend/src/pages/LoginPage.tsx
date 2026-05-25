@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { api } from '../api';
+import { api, API_BASE } from '../api';
 import { useAuth } from '../state/AuthContext';
 import { useToast } from '../state/ToastContext';
 
@@ -125,10 +125,10 @@ export default function LoginPage() {
                 </div>
 
                 <div className="d-grid gap-2">
-                  <a href="/api/auth/line/user" className="btn btn-success btn-lg fw-bold">
+                  <a href={`${API_BASE}/api/auth/line/user`} className="btn btn-success btn-lg fw-bold">
                     使用 LINE 客戶登入
                   </a>
-                  <a href="/api/auth/line/business" className="btn btn-outline-success btn-lg fw-bold">
+                  <a href={`${API_BASE}/api/auth/line/business`} className="btn btn-outline-success btn-lg fw-bold">
                     使用 LINE 商家登入
                   </a>
                 </div>
