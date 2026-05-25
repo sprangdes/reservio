@@ -51,8 +51,12 @@ export default function BusinessInfoPage() {
       setServices([]);
       return;
     }
-    const res = await api.businessServices(businessId);
-    setServices(res.data || []);
+    try {
+      const res = await api.businessServices(businessId);
+      setServices(res?.data || []);
+    } catch (err) {
+      setErrorMessage(err.message || '載入服務項目失敗');
+    }
   };
 
   const {
@@ -168,6 +172,7 @@ export default function BusinessInfoPage() {
 
   useEffect(() => {
     if (didLoadRef.current) return;
+    if (!me?.business?.id) return;
     didLoadRef.current = true;
     void load();
     void loadCategories();

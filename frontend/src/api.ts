@@ -7,6 +7,7 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
       ...options.headers
     },
     ...options
