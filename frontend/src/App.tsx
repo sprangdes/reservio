@@ -15,6 +15,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ForgotPasswordVerifyPage from './pages/ForgotPasswordVerifyPage';
 import ForceChangePasswordPage from './pages/ForceChangePasswordPage';
 import { useAuth } from './state/AuthContext';
+import {JSX} from "react";
 
 function PasswordResetGuard({ children }: Readonly<{ children: JSX.Element }>) {
   const { me, loading } = useAuth();
