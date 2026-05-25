@@ -59,10 +59,13 @@ public class SecurityConfig {
                     String reason = exception.getClass().getSimpleName();
                     log.warn("LINE oauth login failed. reason={}, message={}", reason, exception.getMessage());
                     String target = lineOAuth2Properties.failureRedirectPath();
-                    UriComponentsBuilder builder =
-                            (target != null && (target.startsWith("http://") || target.startsWith("https://")))
-                                    ? UriComponentsBuilder.fromUriString(target)
-                                    : UriComponentsBuilder.fromPath(target == null || target.isBlank() ? "/login" : target);
+                    UriComponentsBuilder builder;
+                    if ((target != null && (target.startsWith("http://") || target.startsWith("https://")))) {
+                        builder = UriComponentsBuilder.fromUriString(target);
+                    } else {
+                        if (target == null || target.isBlank()) builder = UriComponentsBuilder.fromPath("/login");
+                        else builder = UriComponentsBuilder.fromPath(target);
+                    }
 
                     String failureRedirect = builder
                             .queryParam("lineLogin", "failed")
