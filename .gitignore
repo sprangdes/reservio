@@ -39,3 +39,9 @@ build/
 .DS_Store
 
 frontend/node_modules/
+
+# Local/secret env files
+.env
+.env.local
+frontend/.env
+frontend/.env.local
