@@ -3,13 +3,24 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FRONTEND_DIR="$ROOT_DIR/frontend"
+LOCAL_ENV_FILE="$ROOT_DIR/.env.local"
+FRONTEND_LOCAL_ENV_FILE="$FRONTEND_DIR/.env.local"
+SPRING_PROFILE="${SPRING_PROFILES_ACTIVE:-local}"
+
+if [[ -f "$LOCAL_ENV_FILE" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$LOCAL_ENV_FILE"
+  set +a
+fi
 
 LINE_CHANNEL_ID="${1:-${LINE_LOGIN_CHANNEL_ID:-}}"
 LINE_CHANNEL_SECRET="${2:-${LINE_LOGIN_CHANNEL_SECRET:-}}"
 
 if [[ -z "$LINE_CHANNEL_ID" || -z "$LINE_CHANNEL_SECRET" ]]; then
-  echo "Usage: $0 <LINE_CHANNEL_ID> <LINE_CHANNEL_SECRET>"
-  echo "or set env LINE_LOGIN_CHANNEL_ID and LINE_LOGIN_CHANNEL_SECRET"
+  echo "Error: LINE_LOGIN_CHANNEL_ID / LINE_LOGIN_CHANNEL_SECRET not found."
+  echo "Please set them in $LOCAL_ENV_FILE"
+  echo "or run: $0 <LINE_CHANNEL_ID> <LINE_CHANNEL_SECRET>"
   exit 1
 fi
 
@@ -34,6 +45,8 @@ cleanup() {
   [[ -n "${BACKEND_PID:-}" ]] && kill "$BACKEND_PID" 2>/dev/null || true
   # shellcheck disable=SC2015
   [[ -n "${NGROK_FRONTEND_PID:-}" ]] && kill "$NGROK_FRONTEND_PID" 2>/dev/null || true
+  # shellcheck disable=SC2015
+  [[ -n "${NGROK_TAIL_PID:-}" ]] && kill "$NGROK_TAIL_PID" 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
 
@@ -68,23 +81,26 @@ FRONTEND_PUBLIC_URL="$(wait_for_url_from_log /tmp/ngrok-frontend.log frontend)"
 
 LINE_LOGIN_SUCCESS_REDIRECT_PATH="$FRONTEND_PUBLIC_URL/login"
 LINE_LOGIN_FAILURE_REDIRECT_PATH="$FRONTEND_PUBLIC_URL/login"
+LINE_LOGIN_CALLBACK_BASE_URL="$FRONTEND_PUBLIC_URL"
 
 echo "Starting backend..."
 (
   cd "$ROOT_DIR"
   LINE_LOGIN_CHANNEL_ID="$LINE_CHANNEL_ID" \
   LINE_LOGIN_CHANNEL_SECRET="$LINE_CHANNEL_SECRET" \
+  LINE_LOGIN_CALLBACK_BASE_URL="$LINE_LOGIN_CALLBACK_BASE_URL" \
   LINE_LOGIN_SUCCESS_REDIRECT_PATH="$LINE_LOGIN_SUCCESS_REDIRECT_PATH" \
   LINE_LOGIN_FAILURE_REDIRECT_PATH="$LINE_LOGIN_FAILURE_REDIRECT_PATH" \
-  mvn spring-boot:run
-) >/tmp/reservio-backend.log 2>&1 &
+  SPRING_PROFILES_ACTIVE="$SPRING_PROFILE" \
+  mvn spring-boot:run 2>&1 | tee /tmp/reservio-backend.log | sed 's/^/[backend] /'
+) &
 BACKEND_PID=$!
 
 echo "Starting frontend..."
 (
   cd "$FRONTEND_DIR"
-  npm run dev
-) >/tmp/reservio-frontend.log 2>&1 &
+  VITE_API_BASE="" npm run dev 2>&1 | tee /tmp/reservio-frontend.log | sed 's/^/[frontend] /'
+) &
 FRONTEND_PID=$!
 
 sleep 2
@@ -101,8 +117,12 @@ echo "  $FRONTEND_PUBLIC_URL/login/oauth2/code/line-business"
 echo
 echo "Env used:"
 echo "  LINE_LOGIN_CHANNEL_ID=$LINE_CHANNEL_ID"
+echo "  SPRING_PROFILES_ACTIVE=$SPRING_PROFILE"
+echo "  Backend env file: $LOCAL_ENV_FILE"
+echo "  Frontend API base: VITE_API_BASE='' (forced by script)"
 echo "  LINE_LOGIN_SUCCESS_REDIRECT_PATH=$LINE_LOGIN_SUCCESS_REDIRECT_PATH"
 echo "  LINE_LOGIN_FAILURE_REDIRECT_PATH=$LINE_LOGIN_FAILURE_REDIRECT_PATH"
+echo "  LINE_LOGIN_CALLBACK_BASE_URL=$LINE_LOGIN_CALLBACK_BASE_URL"
 echo "  Vite proxy: /api,/oauth2,/login/oauth2 -> http://localhost:8080"
 echo
 echo "Logs:"
@@ -111,5 +131,8 @@ echo "  Frontend: /tmp/reservio-frontend.log"
 echo "  Ngrok FE: /tmp/ngrok-frontend.log"
 echo
 echo "Press Ctrl+C to stop all processes."
+
+tail -n +1 -f /tmp/ngrok-frontend.log 2>/dev/null | sed 's/^/[ngrok] /' &
+NGROK_TAIL_PID=$!
 
 wait "$BACKEND_PID" "$FRONTEND_PID" "$NGROK_FRONTEND_PID"
