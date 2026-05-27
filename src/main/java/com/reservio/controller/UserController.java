@@ -1,17 +1,19 @@
 package com.reservio.controller;
 
-import com.reservio.dto.ApiResponse;
-import com.reservio.dto.UserDTO;
+import com.reservio.dto.*;
+import com.reservio.entity.BusinessData;
 import com.reservio.entity.UserData;
+import com.reservio.exception.NoPreferedBusinessesException;
 import com.reservio.exception.UserNotFoundException;
+import com.reservio.service.BusinessDataService;
 import com.reservio.service.UserDataService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import static com.reservio.enums.ApiResponseMessageEnum.ERROR;
+import java.util.List;
+
+import static com.reservio.enums.ApiResponseMessageEnum.*;
 import static com.reservio.util.UserUtil.toUserDTO;
 
 @RestController
@@ -19,9 +21,11 @@ import static com.reservio.util.UserUtil.toUserDTO;
 public class UserController {
 
     private final UserDataService userDataService;
+    private final BusinessDataService businessDataService;
 
-    public UserController(UserDataService userDataService) {
+    public UserController(UserDataService userDataService, BusinessDataService businessDataService) {
         this.userDataService = userDataService;
+        this.businessDataService = businessDataService;
     }
 
     /**
@@ -63,5 +67,96 @@ public class UserController {
                         .build()
                     );
         }
+    }
+
+    @GetMapping("/businesses/{category}")
+    public ResponseEntity<ApiResponse<List<BusinessDTO>>> fetchBusinessByCategory(
+            @PathVariable String category) {
+        try {
+            // 正常流程
+            List<BusinessDTO> businessList = businessDataService.getBusinessByCategory(category).stream()
+                .map(this::toBusinessDTO)
+                .toList();
+            return ResponseEntity.ok(ApiResponse.<List<BusinessDTO>>builder()
+                .success(true)
+                .message(OK.getMessage())
+                .data(businessList)
+                .build()
+            );
+        } catch (Exception e) {
+            // 系統錯誤
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.<List<BusinessDTO>>builder()
+                    .success(false)
+                    .message(ERROR.getMessage())
+                    .build()
+                );
+        }
+    }
+
+    @PostMapping("/preferred-businesses")
+    public ResponseEntity<ApiResponse<Void>> setPreferredBusinesses(
+            @RequestBody SetPreferredBusinessesRequest request) {
+        try {
+            // 正常流程
+            userDataService.setPreferredBusinesses(request.getPreferredBusinesses());
+            return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .success(true)
+                .message(OK.getMessage())
+                .build()
+            );
+        } catch (Exception e) {
+            // 系統錯誤
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.<Void>builder()
+                    .success(false)
+                    .message(ERROR.getMessage())
+                    .build()
+                );
+        }
+    }
+
+    @GetMapping("/preferred-businesses")
+    public ResponseEntity<ApiResponse<List<BusinessDTO>>> getPreferredBusinesses() {
+        try {
+            // 正常流程
+            List<BusinessData> businessDataList = userDataService.getPreferredBusinesses();
+            List<BusinessDTO> result = businessDataList.stream()
+                .map(this::toBusinessDTO)
+                .toList();
+            return ResponseEntity.ok(ApiResponse.<List<BusinessDTO>>builder()
+                .success(true)
+                .message(OK.getMessage())
+                .data(result)
+                .build()
+            );
+        } catch (NoPreferedBusinessesException e) {
+            // 無偏好商家
+            return ResponseEntity.ok(ApiResponse.<List<BusinessDTO>>builder()
+                .success(false)
+                .message(NO_PREFERRED_BUSINESSES.getMessage())
+                .data(List.of())
+                .build()
+            );
+        } catch (Exception e) {
+            // 系統錯誤
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.<List<BusinessDTO>>builder()
+                    .success(false)
+                    .message(ERROR.getMessage())
+                    .build()
+                );
+        }
+    }
+
+    private BusinessDTO toBusinessDTO(BusinessData data) {
+        return BusinessDTO.builder()
+            .id(data.getId())
+            .name(data.getName())
+            .category(data.getCategory())
+            .phone(data.getPhone())
+            .address(data.getAddress())
+            .slotInterval(data.getSlotInterval())
+            .build();
     }
 }

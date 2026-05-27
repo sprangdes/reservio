@@ -191,6 +191,10 @@ public class BusinessDataService {
                 });
     }
 
+    public List<BusinessData> getBusinessByCategory(String category) {
+        return businessDataRepo.findByCategory(category);
+    }
+
     private boolean contentCheck(String content) {
         return content != null && !content.isEmpty();
     }

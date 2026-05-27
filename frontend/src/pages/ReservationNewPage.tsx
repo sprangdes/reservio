@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useToast } from '../state/ToastContext';
 import type { ServiceOption } from '../components/reservations/types';
+import { useAuth } from '../state/AuthContext';
 
 type SlotItem = { time: string; available: boolean };
 type NewReservationForm = {
@@ -16,8 +17,10 @@ type NewReservationForm = {
 
 export default function ReservationNewPage() {
   const { setSuccessMessage, setErrorMessage } = useToast();
+  const { me } = useAuth();
   const navigate = useNavigate();
   const [businesses, setBusinesses] = useState<Array<{ id: string | number; name: string }>>([]);
+  const [usingPreferred, setUsingPreferred] = useState(false);
   const [services, setServices] = useState<Array<ServiceOption & { duration?: number; active?: boolean }>>([]);
   const [disabledDates, setDisabledDates] = useState<string[]>([]);
   const [slots, setSlots] = useState<SlotItem[]>([]);
@@ -41,11 +44,17 @@ export default function ReservationNewPage() {
 
   useEffect(() => {
     const load = async () => {
-      const businessRes = await api.businesses();
-      setBusinesses(businessRes.data || []);
+      if (me?.role === 'ROLE_BUSINESS') {
+        const businessRes = await api.businesses();
+        setBusinesses(businessRes.data || []);
+        return;
+      }
+      const preferredRes = await api.getPreferredBusinesses();
+      setBusinesses(preferredRes.data || []);
+      setUsingPreferred(true);
     };
     void load();
-  }, []);
+  }, [me?.role]);
 
   useEffect(() => {
     if (!form.businessId) {
@@ -177,6 +186,11 @@ export default function ReservationNewPage() {
                 <form onSubmit={handleSubmit}>
                   <div className="mb-4">
                     <h6 className="text-primary fw-bold mb-3"><i className="bi bi-shop me-1"></i> 選擇預約店家</h6>
+                    {usingPreferred && businesses.length === 0 ? (
+                      <div className="alert alert-warning py-2 small">
+                        你尚未設定想預約店家，請先至「想預約店家」頁面設定。
+                      </div>
+                    ) : null}
                     <select className="form-select form-select-sm" id="businessId" name="businessId" value={form.businessId} onChange={handleChange} required>
                       <option value="" disabled>請選擇店家...</option>
                       {businesses.map((b) => (

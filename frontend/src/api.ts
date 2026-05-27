@@ -65,6 +65,12 @@ export const api = {
   me: () => request('/api/me'),
   dashboard: () => request('/api/dashboard'),
   businesses: () => request('/api/businesses'),
+  businessesByCategory: (category: string) => request(`/api/businesses/${encodeURIComponent(category)}`),
+  getPreferredBusinesses: () => request('/api/preferred-businesses'),
+  setPreferredBusinesses: (payload: unknown) => request('/api/preferred-businesses', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  }),
   businessServices: (id: string | number) => request(`/api/businesses/${id}/services`),
   disabledDates: (businessId: string | number) => request(`/api/reservations/disabled-dates?businessId=${businessId}`),
   slots: (date: string, duration: string | number, businessId: string | number) =>

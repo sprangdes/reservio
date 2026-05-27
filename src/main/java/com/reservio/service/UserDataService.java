@@ -2,8 +2,10 @@ package com.reservio.service;
 
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.UserData;
+import com.reservio.exception.NoPreferedBusinessesException;
 import com.reservio.exception.UserAlreadyExistsException;
 import com.reservio.exception.UserNotFoundException;
+import com.reservio.repo.BusinessDataRepo;
 import com.reservio.repo.UserDataRepo;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,17 +13,22 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static com.reservio.enums.Role.*;
+import java.util.List;
+
+import static com.reservio.enums.Role.ROLE_BUSINESS;
+import static com.reservio.enums.Role.ROLE_USER;
 
 @Service
 public class UserDataService {
 
     private final UserDataRepo userDataRepo;
     private final PasswordEncoder passwordEncoder;
+    private final BusinessDataRepo businessDataRepo;
 
-    public UserDataService(UserDataRepo userDataRepo, PasswordEncoder passwordEncoder) {
+    public UserDataService(UserDataRepo userDataRepo, PasswordEncoder passwordEncoder, BusinessDataRepo businessDataRepo) {
         this.userDataRepo = userDataRepo;
         this.passwordEncoder = passwordEncoder;
+        this.businessDataRepo = businessDataRepo;
     }
 
     @Transactional
@@ -82,6 +89,24 @@ public class UserDataService {
             throw new UserNotFoundException("找不到當前登入的使用者: " + username);
         }
         return user;
+    }
+
+    public void setPreferredBusinesses(List<Long> preferredBusinesses) {
+        UserData user = getCurrentUser();
+        user.setPreferredBusinesses(preferredBusinesses);
+        userDataRepo.save(user);
+    }
+
+    public List<BusinessData> getPreferredBusinesses() {
+        UserData user = getCurrentUser();
+        List<Long> preferBusinessIds = user.getPreferredBusinesses();
+        if (preferBusinessIds == null || preferBusinessIds.isEmpty()) {
+            throw new NoPreferedBusinessesException("使用者尚未設定任何喜愛的商家");
+        }
+
+        return user.getPreferredBusinesses().stream()
+                .map(id -> businessDataRepo.findById(id).orElse(null))
+                .toList();
     }
 
     private void accountExistCheck(String username, String email) {

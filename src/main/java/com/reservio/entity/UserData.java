@@ -57,4 +57,7 @@ public class UserData {
             orphanRemoval = false
     )
     private List<Reservation> reservations;
+
+    @Column(name = "preferred_businesses")
+    private List<Long> preferredBusinesses;
 }
