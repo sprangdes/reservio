@@ -14,6 +14,7 @@ import BusinessInfoPage from './pages/BusinessInfoPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ForgotPasswordVerifyPage from './pages/ForgotPasswordVerifyPage';
 import ForceChangePasswordPage from './pages/ForceChangePasswordPage';
+import PreferredBusinessesPage from './pages/PreferredBusinessesPage';
 import { useAuth } from './state/AuthContext';
 import {JSX} from "react";
 
@@ -106,6 +107,14 @@ export default function App() {
         element={
           <Layout>
             <MyReservationsPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/preferred-businesses"
+        element={
+          <Layout>
+            <PreferredBusinessesPage />
           </Layout>
         }
       />
