@@ -1,0 +1,9 @@
+.git
+.gitignore
+.idea
+target
+frontend
+*.log
+.DS_Store
+.env
+.env.local
