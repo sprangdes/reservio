@@ -1,4 +1,6 @@
 spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
@@ -19,18 +21,18 @@ spring:
         registration:
           line-user:
             provider: line
-            client-id: ${LINE_LOGIN_CHANNEL_ID}
-            client-secret: ${LINE_LOGIN_CHANNEL_SECRET}
+            client-id: ${app.line.login.channel-id}
+            client-secret: ${app.line.login.channel-secret}
             authorization-grant-type: authorization_code
-            redirect-uri: ${LINE_LOGIN_CALLBACK_BASE_URL:{baseUrl}}/login/oauth2/code/{registrationId}
+            redirect-uri: ${app.line.login.callback-base-url:{baseUrl}}/login/oauth2/code/{registrationId}
             scope:
               - profile
           line-business:
             provider: line
-            client-id: ${LINE_LOGIN_CHANNEL_ID}
-            client-secret: ${LINE_LOGIN_CHANNEL_SECRET}
+            client-id: ${app.line.login.channel-id}
+            client-secret: ${app.line.login.channel-secret}
             authorization-grant-type: authorization_code
-            redirect-uri: ${LINE_LOGIN_CALLBACK_BASE_URL:{baseUrl}}/login/oauth2/code/{registrationId}
+            redirect-uri: ${app.line.login.callback-base-url:{baseUrl}}/login/oauth2/code/{registrationId}
             scope:
               - profile
 
@@ -55,8 +57,3 @@ business:
 otp:
   expire-minute: 10
   max-attempts: 5
-
-app:
-  auth:
-    success-redirect-path: /login
-    failure-redirect-path: /login

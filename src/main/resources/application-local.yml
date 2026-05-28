@@ -1,10 +1,17 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/reservio}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/reservio
+    username: postgres
+    password:
 
 app:
+  line:
+    login:
+      channel-id: ${LINE_LOGIN_CHANNEL_ID}
+      channel-secret: ${LINE_LOGIN_CHANNEL_SECRET}
+      callback-base-url: http://localhost:8080
+  auth:
+    success-redirect-path: /login
+    failure-redirect-path: /login
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000,https://*.ngrok-free.app}
+    allowed-origins: http://localhost:5173,http://localhost:3000

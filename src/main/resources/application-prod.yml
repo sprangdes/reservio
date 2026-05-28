@@ -3,11 +3,15 @@ spring:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
-    driver-class-name: org.postgresql.Driver
 
 app:
+  line:
+    login:
+      channel-id: ${LINE_LOGIN_CHANNEL_ID}
+      channel-secret: ${LINE_LOGIN_CHANNEL_SECRET}
+      callback-base-url: https://www.reserv-io.com
   auth:
-    success-redirect-path: ${LINE_LOGIN_SUCCESS_REDIRECT_PATH}
-    failure-redirect-path: ${LINE_LOGIN_FAILURE_REDIRECT_PATH}
+    success-redirect-path: https://www.reserv-io.com/login
+    failure-redirect-path: https://www.reserv-io.com/login
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+    allowed-origins: https://reserv-io.com,https://www.reserv-io.com
