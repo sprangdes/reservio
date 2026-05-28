@@ -1,4 +1,4 @@
-export const API_BASE = import.meta.env.VITE_API_BASE || '';
+export const API_BASE = '';
 
 type Primitive = string | number | boolean;
 export type QueryParams = Record<string, Primitive | null | undefined>;
