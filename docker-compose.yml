@@ -1,0 +1,31 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: reservio-backend
+    restart: unless-stopped
+    env_file:
+      - .env.deploy
+    expose:
+      - "8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: reservio-frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: reservio-cloudflared
+    restart: unless-stopped
+    depends_on:
+      - frontend
+      - backend
+    command: tunnel --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./cloudflared:/etc/cloudflared:ro
