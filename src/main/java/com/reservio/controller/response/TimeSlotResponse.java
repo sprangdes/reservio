@@ -1,11 +1,11 @@
-package com.reservio.dto;
+package com.reservio.controller.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class TimeSlotDTO {
+public class TimeSlotResponse {
     private String time;
     private boolean available;
 }

@@ -1,6 +1,6 @@
 package com.reservio.service;
 
-import com.reservio.dto.ForceChangePasswordRequest;
+import com.reservio.controller.request.ForceChangePasswordRequest;
 import com.reservio.entity.UserData;
 import com.reservio.repo.UserDataRepo;
 import org.springframework.security.crypto.password.PasswordEncoder;

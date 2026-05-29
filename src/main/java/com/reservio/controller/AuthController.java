@@ -1,12 +1,13 @@
 package com.reservio.controller;
 
-import com.reservio.dto.*;
+import com.reservio.controller.request.*;
+import com.reservio.controller.response.ApiResponse;
+import com.reservio.controller.response.UserResponse;
 import com.reservio.entity.UserData;
 import com.reservio.exception.OtpVerificationException;
 import com.reservio.exception.UserAlreadyExistsException;
 import com.reservio.service.OtpService;
 import com.reservio.service.OtpAuthService;
-import com.reservio.service.OtpVerificationResult;
 import com.reservio.service.UserDataService;
 import com.reservio.service.AuthRateLimitService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,7 +27,7 @@ import org.springframework.security.web.authentication.logout.SecurityContextLog
 import org.springframework.web.bind.annotation.*;
 
 import static com.reservio.enums.ApiResponseMessageEnum.*;
-import static com.reservio.util.UserUtil.toUserDTO;
+import static com.reservio.util.UserUtil.toUserResponse;
 import java.util.List;
 
 @RestController
@@ -61,11 +62,11 @@ public class AuthController {
      * and returning a response indicating the success or failure of the operation.
      *
      * @param request the registration request containing the user's details such as username, email, and password
-     * @return a {@link ResponseEntity} containing an {@link ApiResponse} with a {@link UserDTO}
+     * @return a {@link ResponseEntity} containing an {@link ApiResponse} with a {@link UserResponse}
      *         if registration is successful, or an error message if the registration fails
      */
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<UserDTO>> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<ApiResponse<UserResponse>> register(@RequestBody RegisterRequest request) {
         try {
             // 正常流程
             UserData user = userDataService.registerUser(
@@ -74,16 +75,16 @@ public class AuthController {
                     request.getPassword()
             );
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.<UserDTO>builder()
+                    .body(ApiResponse.<UserResponse>builder()
                             .success(true)
                             .message(REGISTER.getMessage())
-                            .data(toUserDTO(user))
+                            .data(toUserResponse(user))
                             .build()
                     );
         } catch (UserAlreadyExistsException e) {
             // 帳號已被註冊
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.<UserDTO>builder()
+                    .body(ApiResponse.<UserResponse>builder()
                             .success(false)
                             .message(e.getMessage())
                             .build()
@@ -92,7 +93,7 @@ public class AuthController {
             log.error("Business registration failed", e);
             // 系統錯誤
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.<UserDTO>builder()
+                    .body(ApiResponse.<UserResponse>builder()
                             .success(false)
                             .message(ERROR.getMessage())
                             .build()
@@ -106,12 +107,12 @@ public class AuthController {
      * @param request the {@link RegisterBusinessRequest} object containing
      *                the necessary registration details such as username, email,
      *                password, business name, category, phone number, and address
-     * @return a {@link ResponseEntity} containing an {@link ApiResponse} with a {@link UserDTO}
+     * @return a {@link ResponseEntity} containing an {@link ApiResponse} with a {@link UserResponse}
      *         object if registration is successful, or an error message if the user
      *         already exists or a system error occurs
      */
     @PostMapping("/register-business")
-    public ResponseEntity<ApiResponse<UserDTO>> registerBusiness(@RequestBody RegisterBusinessRequest request) {
+    public ResponseEntity<ApiResponse<UserResponse>> registerBusiness(@RequestBody RegisterBusinessRequest request) {
         try {
             // 正常流程
             UserData user = userDataService.registerBusinessUser(
@@ -124,16 +125,16 @@ public class AuthController {
                     request.getAddress()
             );
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.<UserDTO>builder()
+                    .body(ApiResponse.<UserResponse>builder()
                             .success(true)
                             .message(BUSINESS_REGISTER.getMessage())
-                            .data(toUserDTO(user))
+                            .data(toUserResponse(user))
                             .build()
                     );
         } catch (UserAlreadyExistsException e) {
             // 帳號已被註冊
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.<UserDTO>builder()
+                    .body(ApiResponse.<UserResponse>builder()
                             .success(false)
                             .message(e.getMessage())
                             .build()
@@ -141,7 +142,7 @@ public class AuthController {
         } catch (Exception e) {
             // 系統錯誤
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.<UserDTO>builder()
+                    .body(ApiResponse.<UserResponse>builder()
                             .success(false)
                             .message(ERROR.getMessage())
                             .build()
@@ -160,7 +161,7 @@ public class AuthController {
      *         a success flag, and a confirmation message.
      */
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<UserDTO>> login(
+    public ResponseEntity<ApiResponse<UserResponse>> login(
             @RequestBody LoginRequest request,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
@@ -175,10 +176,10 @@ public class AuthController {
         securityContextRepository.saveContext(context, httpRequest, httpResponse);
 
         UserData user = userDataService.getCurrentUser();
-        return ResponseEntity.ok(ApiResponse.<UserDTO>builder()
+        return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
                 .success(true)
                 .message(LOGIN.getMessage())
-                .data(toUserDTO(user))
+                .data(toUserResponse(user))
                 .build()
         );
     }
@@ -212,7 +213,7 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password/verify-otp")
-    public ResponseEntity<ApiResponse<UserDTO>> verifyOtp(
+    public ResponseEntity<ApiResponse<UserResponse>> verifyOtp(
             @RequestBody VerifyOtpRequest request,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
@@ -231,13 +232,13 @@ public class AuthController {
             SecurityContextHolder.setContext(context);
             securityContextRepository.saveContext(context, httpRequest, httpResponse);
 
-            return ResponseEntity.ok(ApiResponse.<UserDTO>builder()
+            return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
                     .success(true)
                     .message("OTP 驗證成功")
-                    .data(toUserDTO(user))
+                    .data(toUserResponse(user))
                     .build());
         } catch (OtpVerificationException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.<UserDTO>builder()
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.<UserResponse>builder()
                     .success(false)
                     .message("OTP 驗證失敗")
                     .build());
@@ -245,12 +246,12 @@ public class AuthController {
     }
 
     @PostMapping("/force-change-password")
-    public ResponseEntity<ApiResponse<UserDTO>> forceChangePassword(@RequestBody ForceChangePasswordRequest request) {
+    public ResponseEntity<ApiResponse<UserResponse>> forceChangePassword(@RequestBody ForceChangePasswordRequest request) {
         UserData user = otpAuthService.forceChangePassword(request);
-        return ResponseEntity.ok(ApiResponse.<UserDTO>builder()
+        return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
                 .success(true)
                 .message("密碼更新成功")
-                .data(toUserDTO(user))
+                .data(toUserResponse(user))
                 .build());
     }
 

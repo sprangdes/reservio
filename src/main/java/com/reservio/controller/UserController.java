@@ -1,6 +1,9 @@
 package com.reservio.controller;
 
-import com.reservio.dto.*;
+import com.reservio.controller.request.SetPreferredBusinessesRequest;
+import com.reservio.controller.response.ApiResponse;
+import com.reservio.controller.response.BusinessResponse;
+import com.reservio.controller.response.UserResponse;
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.UserData;
 import com.reservio.exception.NoPreferedBusinessesException;
@@ -14,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 import static com.reservio.enums.ApiResponseMessageEnum.*;
-import static com.reservio.util.UserUtil.toUserDTO;
+import static com.reservio.util.UserUtil.toUserResponse;
 
 @RestController
 @RequestMapping("/api")
@@ -35,25 +38,25 @@ public class UserController {
      * it responds with a 404 status and an appropriate message. In case of other
      * unexpected errors, it returns a 500 status with a generic error message.
      *
-     * @return a ResponseEntity containing an ApiResponse with a UserDTO object
+     * @return a ResponseEntity containing an ApiResponse with a UserResponse object
      *         if the user exists, or an error message if the user is not found or
      *         in case of other errors.
      */
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<UserDTO>> me() {
+    public ResponseEntity<ApiResponse<UserResponse>> me() {
         try {
             // 正常流程
             UserData user = userDataService.getCurrentUser();
-            return ResponseEntity.ok(ApiResponse.<UserDTO>builder()
+            return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
                     .success(true)
                     .message("OK")
-                    .data(toUserDTO(user))
+                    .data(toUserResponse(user))
                     .build()
             );
         } catch (UserNotFoundException e) {
             // 找不到用戶
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.<UserDTO>builder()
+                    .body(ApiResponse.<UserResponse>builder()
                         .success(false)
                         .message(e.getMessage())
                         .build()
@@ -61,7 +64,7 @@ public class UserController {
         } catch (Exception e) {
             // 系統錯誤
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.<UserDTO>builder()
+                    .body(ApiResponse.<UserResponse>builder()
                         .success(false)
                         .message(ERROR.getMessage())
                         .build()
@@ -70,14 +73,14 @@ public class UserController {
     }
 
     @GetMapping("/businesses/{category}")
-    public ResponseEntity<ApiResponse<List<BusinessDTO>>> fetchBusinessByCategory(
+    public ResponseEntity<ApiResponse<List<BusinessResponse>>> fetchBusinessByCategory(
             @PathVariable String category) {
         try {
             // 正常流程
-            List<BusinessDTO> businessList = businessDataService.getBusinessByCategory(category).stream()
-                .map(this::toBusinessDTO)
+            List<BusinessResponse> businessList = businessDataService.getBusinessByCategory(category).stream()
+                .map(this::toBusinessResponse)
                 .toList();
-            return ResponseEntity.ok(ApiResponse.<List<BusinessDTO>>builder()
+            return ResponseEntity.ok(ApiResponse.<List<BusinessResponse>>builder()
                 .success(true)
                 .message(OK.getMessage())
                 .data(businessList)
@@ -86,7 +89,7 @@ public class UserController {
         } catch (Exception e) {
             // 系統錯誤
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.<List<BusinessDTO>>builder()
+                .body(ApiResponse.<List<BusinessResponse>>builder()
                     .success(false)
                     .message(ERROR.getMessage())
                     .build()
@@ -117,14 +120,14 @@ public class UserController {
     }
 
     @GetMapping("/preferred-businesses")
-    public ResponseEntity<ApiResponse<List<BusinessDTO>>> getPreferredBusinesses() {
+    public ResponseEntity<ApiResponse<List<BusinessResponse>>> getPreferredBusinesses() {
         try {
             // 正常流程
             List<BusinessData> businessDataList = userDataService.getPreferredBusinesses();
-            List<BusinessDTO> result = businessDataList.stream()
-                .map(this::toBusinessDTO)
+            List<BusinessResponse> result = businessDataList.stream()
+                .map(this::toBusinessResponse)
                 .toList();
-            return ResponseEntity.ok(ApiResponse.<List<BusinessDTO>>builder()
+            return ResponseEntity.ok(ApiResponse.<List<BusinessResponse>>builder()
                 .success(true)
                 .message(OK.getMessage())
                 .data(result)
@@ -132,7 +135,7 @@ public class UserController {
             );
         } catch (NoPreferedBusinessesException e) {
             // 無偏好商家
-            return ResponseEntity.ok(ApiResponse.<List<BusinessDTO>>builder()
+            return ResponseEntity.ok(ApiResponse.<List<BusinessResponse>>builder()
                 .success(false)
                 .message(NO_PREFERRED_BUSINESSES.getMessage())
                 .data(List.of())
@@ -141,7 +144,7 @@ public class UserController {
         } catch (Exception e) {
             // 系統錯誤
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.<List<BusinessDTO>>builder()
+                .body(ApiResponse.<List<BusinessResponse>>builder()
                     .success(false)
                     .message(ERROR.getMessage())
                     .build()
@@ -149,8 +152,8 @@ public class UserController {
         }
     }
 
-    private BusinessDTO toBusinessDTO(BusinessData data) {
-        return BusinessDTO.builder()
+    private BusinessResponse toBusinessResponse(BusinessData data) {
+        return BusinessResponse.builder()
             .id(data.getId())
             .name(data.getName())
             .category(data.getCategory())

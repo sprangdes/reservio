@@ -1,5 +1,6 @@
-package com.reservio.dto;
+package com.reservio.controller.response;
 
+import com.reservio.dto.DefaultWeekSlot;
 import jakarta.annotation.Nullable;
 import lombok.Builder;
 import lombok.Data;
@@ -8,7 +9,8 @@ import java.util.List;
 
 @Data
 @Builder
-public class DefaultSlotRequest {
+public class DefaultSlotResponse {
+
     @Nullable
     private Integer defaultInterval;
 

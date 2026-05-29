@@ -1,4 +1,4 @@
-package com.reservio.dto;
+package com.reservio.controller.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +11,7 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DateSlotRequest {
+public class DeleteAdjustedDateSlotRequest {
 
     private LocalDate date;
 }

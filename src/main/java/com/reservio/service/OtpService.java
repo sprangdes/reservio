@@ -1,8 +1,9 @@
 package com.reservio.service;
 
 import com.reservio.config.OtpProperties;
-import com.reservio.dto.RequestOtpRequest;
-import com.reservio.dto.VerifyOtpRequest;
+import com.reservio.controller.request.OtpVerificationResult;
+import com.reservio.controller.request.RequestOtpRequest;
+import com.reservio.controller.request.VerifyOtpRequest;
 import com.reservio.entity.Otp;
 import com.reservio.entity.UserData;
 import com.reservio.exception.OtpVerificationException;

@@ -1,4 +1,4 @@
-package com.reservio.dto;
+package com.reservio.controller.request;
 
 import lombok.Data;
 
@@ -7,6 +7,7 @@ import java.time.LocalTime;
 
 @Data
 public class ReservationCreateRequest {
+
     private Long businessId;
     private LocalDate reservationDate;
     private LocalTime startTime;

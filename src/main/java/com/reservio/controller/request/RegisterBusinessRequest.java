@@ -1,9 +1,10 @@
-package com.reservio.dto;
+package com.reservio.controller.request;
 
 import lombok.Data;
 
 @Data
 public class RegisterBusinessRequest {
+
     private String username;
     private String email;
     private String password;

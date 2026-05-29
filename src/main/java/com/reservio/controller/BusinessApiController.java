@@ -1,6 +1,7 @@
 package com.reservio.controller;
 
-import com.reservio.dto.*;
+import com.reservio.controller.request.*;
+import com.reservio.controller.response.*;
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.ServiceItem;
 import com.reservio.exception.DateSlotNotFoundException;
@@ -36,20 +37,20 @@ public class BusinessApiController {
     }
 
     /**
-     * Retrieves a list of businesses and transforms the data into BusinessDTO objects.
+     * Retrieves a list of businesses and transforms the data into BusinessResponse objects.
      * Provides a response indicating the success or failure of the operation.
      *
-     * @return ResponseEntity containing ApiResponse with a List of BusinessDTO objects if the operation is successful.
+     * @return ResponseEntity containing ApiResponse with a List of BusinessResponse objects if the operation is successful.
      *         In case of an error, ResponseEntity will contain ApiResponse with success set to false and an error message.
      */
     @GetMapping("/businesses")
-    public ResponseEntity<ApiResponse<List<BusinessDTO>>> getBusinesses() {
+    public ResponseEntity<ApiResponse<List<BusinessResponse>>> getBusinesses() {
         try {
             // 正常流程
-            List<BusinessDTO> allBusinesses = businessDataService.getAllBusinesses().stream()
-                    .map(this::toBusinessDTO)
+            List<BusinessResponse> allBusinesses = businessDataService.getAllBusinesses().stream()
+                    .map(this::toBusinessResponse)
                     .toList();
-            return ResponseEntity.ok(ApiResponse.<List<BusinessDTO>>builder()
+            return ResponseEntity.ok(ApiResponse.<List<BusinessResponse>>builder()
                     .success(true)
                     .message(OK.getMessage())
                     .data(allBusinesses)
@@ -58,7 +59,7 @@ public class BusinessApiController {
         } catch (Exception e) {
             // 系統錯誤
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.<List<BusinessDTO>>builder()
+                    .body(ApiResponse.<List<BusinessResponse>>builder()
                             .success(false)
                             .message(ERROR.getMessage())
                             .build()
@@ -100,17 +101,17 @@ public class BusinessApiController {
      * Retrieves a list of services associated with a specific business.
      *
      * @param businessId the unique identifier of the business whose services are to be retrieved
-     * @return a ResponseEntity containing an ApiResponse with a list of ServiceItemDTO objects if successful,
+     * @return a ResponseEntity containing an ApiResponse with a list of ServiceItemResponse objects if successful,
      *         or an error message if an exception occurs
      */
     @GetMapping("/businesses/{businessId}/services")
-    public ResponseEntity<ApiResponse<List<ServiceItemDTO>>> getBusinessServices(@PathVariable Long businessId) {
+    public ResponseEntity<ApiResponse<List<ServiceItemResponse>>> getBusinessServices(@PathVariable Long businessId) {
         try {
             // 正常流程
-            List<ServiceItemDTO> services = serviceItemService.getServicesByBusinessId(businessId).stream()
-                    .map(this::toServiceItemDTO)
+            List<ServiceItemResponse> services = serviceItemService.getServicesByBusinessId(businessId).stream()
+                    .map(this::toServiceItemResponse)
                     .toList();
-            return ResponseEntity.ok(ApiResponse.<List<ServiceItemDTO>>builder()
+            return ResponseEntity.ok(ApiResponse.<List<ServiceItemResponse>>builder()
                     .success(true)
                     .message(OK.getMessage())
                     .data(services)
@@ -119,7 +120,7 @@ public class BusinessApiController {
         } catch (Exception e) {
             // 系統錯誤
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.<List<ServiceItemDTO>>builder()
+                    .body(ApiResponse.<List<ServiceItemResponse>>builder()
                             .success(false)
                             .message(ERROR.getMessage())
                             .build()
@@ -131,17 +132,17 @@ public class BusinessApiController {
      * Retrieves a list of active services associated with a business.
      *
      * @param businessId the unique identifier of the business whose active services are to be retrieved
-     * @return a {@code ResponseEntity} containing an {@code ApiResponse} with a list of {@code ActiveServiceItemDTO} objects if the operation is successful;
+     * @return a {@code ResponseEntity} containing an {@code ApiResponse} with a list of {@code ActiveServiceItemResponse} objects if the operation is successful;
      *         otherwise, an {@code ApiResponse} indicating an error status
      */
     @GetMapping("/businesses/{businessId}/services/active")
-    public ResponseEntity<ApiResponse<List<ActiveServiceItemDTO>>> getActiveServices(@PathVariable Long businessId) {
+    public ResponseEntity<ApiResponse<List<ActiveServiceItemResponse>>> getActiveServices(@PathVariable Long businessId) {
         try {
             // 正常流程
-            List<ActiveServiceItemDTO> activeServices = serviceItemService.getActiveServicesByBusinessId(businessId).stream()
-                    .map(this::toActiveServiceItemDTO)
+            List<ActiveServiceItemResponse> activeServices = serviceItemService.getActiveServicesByBusinessId(businessId).stream()
+                    .map(this::toActiveServiceItemResponse)
                     .toList();
-            return ResponseEntity.ok(ApiResponse.<List<ActiveServiceItemDTO>>builder()
+            return ResponseEntity.ok(ApiResponse.<List<ActiveServiceItemResponse>>builder()
                     .success(true)
                     .message(OK.getMessage())
                     .data(activeServices)
@@ -150,7 +151,7 @@ public class BusinessApiController {
         } catch (Exception e) {
             // 系統錯誤
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.<List<ActiveServiceItemDTO>>builder()
+                    .body(ApiResponse.<List<ActiveServiceItemResponse>>builder()
                             .success(false)
                             .message(ERROR.getMessage())
                             .build()
@@ -166,21 +167,21 @@ public class BusinessApiController {
      *         or an error message if the request fails
      */
     @PostMapping("/businesses/services")
-    public ResponseEntity<ApiResponse<ServiceItemDTO>> addServiceItem(@RequestBody ServiceItemRequest request) {
+    public ResponseEntity<ApiResponse<ServiceItemResponse>> addServiceItem(@RequestBody ServiceItemRequest request) {
         try {
             // 正常流程
             ServiceItem item = serviceItemService.saveServiceItem(request.getName(), request.getDuration());
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.<ServiceItemDTO>builder()
+                    .body(ApiResponse.<ServiceItemResponse>builder()
                             .success(true)
                             .message(ADD_SERVICE.getMessage())
-                            .data(toServiceItemDTO(item))
+                            .data(toServiceItemResponse(item))
                             .build()
                     );
         } catch (NotBusinessAccountException e) {
             // 非商家帳戶無法新增服務
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.<ServiceItemDTO>builder()
+                    .body(ApiResponse.<ServiceItemResponse>builder()
                             .success(false)
                             .message(NOT_BUSINESS_ACCOUNT_CANT_ADD_SERVICE.getMessage())
                             .build()
@@ -188,7 +189,7 @@ public class BusinessApiController {
         } catch (Exception e) {
             //系統錯誤
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.<ServiceItemDTO>builder()
+                    .body(ApiResponse.<ServiceItemResponse>builder()
                             .success(false)
                             .message(ERROR.getMessage())
                             .build()
@@ -397,27 +398,27 @@ public class BusinessApiController {
      * Updates the business information based on the provided request.
      *
      * @param request an {@link UpdateBusinessInfoRequest} object containing the new business information to be updated.
-     * @return a {@link ResponseEntity} containing an {@link ApiResponse} with a {@link BusinessDTO} object if the update is successful.
+     * @return a {@link ResponseEntity} containing an {@link ApiResponse} with a {@link BusinessResponse} object if the update is successful.
      *         The response includes the updated business information, a success flag, and a message.
      *         If the requester is not a business account, a response with an error message and forbidden status is returned.
      *         For any other exceptions, a response with an error message and internal server error status is returned.
      */
     @PostMapping("/businesses/info/update")
-    public ResponseEntity<ApiResponse<BusinessDTO>> updateBusinessInfo(@RequestBody UpdateBusinessInfoRequest request) {
+    public ResponseEntity<ApiResponse<BusinessResponse>> updateBusinessInfo(@RequestBody UpdateBusinessInfoRequest request) {
         try {
             // 正常流程
             BusinessData businessData = businessDataService.updateBusinessInfo(request);
             return ResponseEntity.status(HttpStatus.OK)
-                    .body(ApiResponse.<BusinessDTO>builder()
+                    .body(ApiResponse.<BusinessResponse>builder()
                             .success(true)
                             .message(UPDATE_BUSINESS_INFO.getMessage())
-                            .data(toBusinessDTO(businessData))
+                            .data(toBusinessResponse(businessData))
                             .build()
                     );
         } catch (NotBusinessAccountException e) {
             // 非商家帳號無法修改商家資訊
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.<BusinessDTO>builder()
+                    .body(ApiResponse.<BusinessResponse>builder()
                             .success(false)
                             .message(UPDATE_BUSINESS_INFO_ERROR.getMessage())
                             .build()
@@ -425,7 +426,7 @@ public class BusinessApiController {
         } catch (Exception e) {
             // 系統錯誤
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.<BusinessDTO>builder()
+                    .body(ApiResponse.<BusinessResponse>builder()
                             .success(false)
                             .message(ERROR.getMessage())
                             .build()
@@ -680,8 +681,8 @@ public class BusinessApiController {
         }
     }
 
-    private BusinessDTO toBusinessDTO(BusinessData data) {
-        return BusinessDTO.builder()
+    private BusinessResponse toBusinessResponse(BusinessData data) {
+        return BusinessResponse.builder()
                 .id(data.getId())
                 .name(data.getName())
                 .category(data.getCategory())
@@ -691,8 +692,8 @@ public class BusinessApiController {
                 .build();
     }
 
-    private ServiceItemDTO toServiceItemDTO(ServiceItem item) {
-        return ServiceItemDTO.builder()
+    private ServiceItemResponse toServiceItemResponse(ServiceItem item) {
+        return ServiceItemResponse.builder()
                 .id(item.getId())
                 .name(item.getName())
                 .duration(item.getDuration())
@@ -700,8 +701,8 @@ public class BusinessApiController {
                 .build();
     }
 
-    private ActiveServiceItemDTO toActiveServiceItemDTO(ServiceItem item) {
-        return ActiveServiceItemDTO.builder()
+    private ActiveServiceItemResponse toActiveServiceItemResponse(ServiceItem item) {
+        return ActiveServiceItemResponse.builder()
                 .id(item.getId())
                 .name(item.getName())
                 .build();

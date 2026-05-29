@@ -1,6 +1,10 @@
 package com.reservio.controller;
 
-import com.reservio.dto.*;
+import com.reservio.controller.request.QueryReservationRequest;
+import com.reservio.controller.request.ReservationCancelRequest;
+import com.reservio.controller.request.ReservationCreateRequest;
+import com.reservio.controller.request.ReservationStatusUpdateRequest;
+import com.reservio.controller.response.*;
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.Reservation;
 import com.reservio.entity.UserData;
@@ -45,23 +49,23 @@ public class ReservationApiController {
      * @param size      Number of items per page.
      * @param sortBy    Field to sort by.
      * @param sortDir   Sorting direction (asc/desc).
-     * @return ResponseEntity containing ApiResponse with PageResponse of ReservationDTO.
+     * @return ResponseEntity containing ApiResponse with PageResponse of ReservationResponse.
      */
     @PostMapping("/reservations/customer/query")
-    public ResponseEntity<ApiResponse<PageResponse<ReservationDTO>>> queryReservationForCustomer(
-            @RequestBody QueryReservationCondition condition,
+    public ResponseEntity<ApiResponse<PageResponse<ReservationResponse>>> queryReservationForCustomer(
+            @RequestBody QueryReservationRequest condition,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "reservationDate") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
-        Page<ReservationDTO> items = reservationService.queryReservationsForCustomerPage(
+        Page<ReservationResponse> items = reservationService.queryReservationsForCustomerPage(
                 condition,
                 page,
                 size,
                 sortBy,
                 sortDir)
-                .map(this::toReservationDTO);
-        return ResponseEntity.ok(ApiResponse.<PageResponse<ReservationDTO>>builder()
+                .map(this::toReservationResponse);
+        return ResponseEntity.ok(ApiResponse.<PageResponse<ReservationResponse>>builder()
                 .success(true)
                 .message(OK.getMessage())
                 .data(toPageResponse(items, sortBy, sortDir))
@@ -76,23 +80,23 @@ public class ReservationApiController {
      * @param size      Number of items per page.
      * @param sortBy    Field to sort by.
      * @param sortDir   Sorting direction (asc/desc).
-     * @return ResponseEntity containing ApiResponse with PageResponse of ReservationDTO.
+     * @return ResponseEntity containing ApiResponse with PageResponse of ReservationResponse.
      */
     @PostMapping("/reservations/business/query")
-    public ResponseEntity<ApiResponse<PageResponse<ReservationDTO>>> queryReservationsForBusiness(
-            @RequestBody QueryReservationCondition condition,
+    public ResponseEntity<ApiResponse<PageResponse<ReservationResponse>>> queryReservationsForBusiness(
+            @RequestBody QueryReservationRequest condition,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "reservationDate") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
-        Page<ReservationDTO> items = reservationService.queryReservationsForBusinessPage(
+        Page<ReservationResponse> items = reservationService.queryReservationsForBusinessPage(
                 condition,
                 page,
                 size,
                 sortBy,
                 sortDir)
-                .map(this::toReservationDTO);
-        return ResponseEntity.ok(ApiResponse.<PageResponse<ReservationDTO>>builder()
+                .map(this::toReservationResponse);
+        return ResponseEntity.ok(ApiResponse.<PageResponse<ReservationResponse>>builder()
                 .success(true)
                 .message(OK.getMessage())
                 .data(toPageResponse(items, sortBy, sortDir))
@@ -103,10 +107,10 @@ public class ReservationApiController {
      * Create a new reservation.
      *
      * @param request Reservation creation request.
-     * @return ResponseEntity containing ApiResponse with ReservationDTO.
+     * @return ResponseEntity containing ApiResponse with ReservationResponse.
      */
     @PostMapping("/reservations")
-    public ResponseEntity<ApiResponse<ReservationDTO>> createReservation(
+    public ResponseEntity<ApiResponse<ReservationResponse>> createReservation(
             @RequestBody ReservationCreateRequest request) {
         BusinessData business = businessDataService.getBusinessById(request.getBusinessId());
         Reservation reservation = Reservation.builder()
@@ -123,10 +127,10 @@ public class ReservationApiController {
         Reservation saved = reservationService.saveReservation(reservation);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.<ReservationDTO>builder()
+                .body(ApiResponse.<ReservationResponse>builder()
                         .success(true)
                         .message(NEW_RESERVATION.getMessage())
-                        .data(toReservationDTO(saved))
+                        .data(toReservationResponse(saved))
                         .build());
     }
 
@@ -199,24 +203,24 @@ public class ReservationApiController {
      * @param dateStr   Date in string format (e.g., "2023-09-25").
      * @param duration  Duration in minutes.
      * @param businessId Optional business ID for filtering slots.
-     * @return ResponseEntity containing ApiResponse with List of TimeSlotDTO.
+     * @return ResponseEntity containing ApiResponse with List of TimeSlotResponse.
      */
     @GetMapping("/reservations/slots")
-    public ResponseEntity<ApiResponse<List<TimeSlotDTO>>> getTimeSlotsForDate(
+    public ResponseEntity<ApiResponse<List<TimeSlotResponse>>> getTimeSlotsForDate(
             @RequestParam("date") String dateStr,
             @RequestParam("duration") int duration,
             @RequestParam(value = "businessId", required = false) Long businessId) {
         try {
             LocalDate date = LocalDate.parse(dateStr);
-            List<TimeSlotDTO> slots = reservationTimeService.getTimeSlotsForDate(date, duration, businessId);
-            return ResponseEntity.ok(ApiResponse.<List<TimeSlotDTO>>builder()
+            List<TimeSlotResponse> slots = reservationTimeService.getTimeSlotsForDate(date, duration, businessId);
+            return ResponseEntity.ok(ApiResponse.<List<TimeSlotResponse>>builder()
                     .success(true)
                     .message(OK.getMessage())
                     .data(slots)
                     .build());
         } catch (Exception e) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.<List<TimeSlotDTO>>builder()
+                    .body(ApiResponse.<List<TimeSlotResponse>>builder()
                             .success(false)
                             .message(DATE_FORMAT_ERROR.getMessage())
                             .data(Collections.emptyList())
@@ -246,9 +250,9 @@ public class ReservationApiController {
      * @return ResponseEntity containing ApiResponse with success status, message, and a list of reserved businesses.
      */
     @GetMapping("/reservations/customer/reserved-businesses")
-    public ResponseEntity<ApiResponse<List<BusinessDTO>>> getReservedBusinesses() {
-        List<BusinessDTO> reservedBusinesses = reservationService.getReservedBusinesses();
-        return ResponseEntity.ok(ApiResponse.<List<BusinessDTO>>builder()
+    public ResponseEntity<ApiResponse<List<BusinessResponse>>> getReservedBusinesses() {
+        List<BusinessResponse> reservedBusinesses = reservationService.getReservedBusinesses();
+        return ResponseEntity.ok(ApiResponse.<List<BusinessResponse>>builder()
                 .success(true)
                 .message(OK.getMessage())
                 .data(reservedBusinesses)
@@ -261,13 +265,13 @@ public class ReservationApiController {
      * @return ResponseEntity containing ApiResponse with success status, message, and a list of reservations.
      */
     @GetMapping("/reservations/today")
-    public ResponseEntity<ApiResponse<CalendarDTO>> getTodayReservations() {
-        List<ReservationDTO> reservations = reservationService.getTodayReservations()
+    public ResponseEntity<ApiResponse<CalendarResponse>> getTodayReservations() {
+        List<ReservationResponse> reservations = reservationService.getTodayReservations()
                 .stream()
-                .map(this::toReservationDTO)
+                .map(this::toReservationResponse)
                 .toList();
-        CalendarDTO calendar = reservationService.buildCalendarDTO(reservations);
-        return ResponseEntity.ok(ApiResponse.<CalendarDTO>builder()
+        CalendarResponse calendar = reservationService.buildCalendarResponse(reservations);
+        return ResponseEntity.ok(ApiResponse.<CalendarResponse>builder()
                 .success(true)
                 .message(OK.getMessage())
                 .data(calendar)
@@ -280,13 +284,13 @@ public class ReservationApiController {
      * @return ResponseEntity containing ApiResponse with success status, message, and a list of reservations.
      */
     @GetMapping("reservations/week")
-    public ResponseEntity<ApiResponse<CalendarDTO>> getWeekReservations() {
-        List<ReservationDTO> reservations = reservationService.getWeekReservations()
+    public ResponseEntity<ApiResponse<CalendarResponse>> getWeekReservations() {
+        List<ReservationResponse> reservations = reservationService.getWeekReservations()
                 .stream()
-                .map(this::toReservationDTO)
+                .map(this::toReservationResponse)
                 .toList();
-        CalendarDTO calendar = reservationService.buildCalendarDTO(reservations);
-        return ResponseEntity.ok(ApiResponse.<CalendarDTO>builder()
+        CalendarResponse calendar = reservationService.buildCalendarResponse(reservations);
+        return ResponseEntity.ok(ApiResponse.<CalendarResponse>builder()
                 .success(true)
                 .message(OK.getMessage())
                 .data(calendar)
@@ -299,23 +303,23 @@ public class ReservationApiController {
      * @return ResponseEntity containing ApiResponse with success status, message, and a list of reservations.
      */
     @GetMapping("reservations/month")
-    public ResponseEntity<ApiResponse<CalendarDTO>> getMonthReservations() {
-        List<ReservationDTO> reservations = reservationService.getMonthReservations()
+    public ResponseEntity<ApiResponse<CalendarResponse>> getMonthReservations() {
+        List<ReservationResponse> reservations = reservationService.getMonthReservations()
                 .stream()
-                .map(this::toReservationDTO)
+                .map(this::toReservationResponse)
                 .toList();
-        CalendarDTO calendar = reservationService.buildCalendarDTO(reservations);
-        return ResponseEntity.ok(ApiResponse.<CalendarDTO>builder()
+        CalendarResponse calendar = reservationService.buildCalendarResponse(reservations);
+        return ResponseEntity.ok(ApiResponse.<CalendarResponse>builder()
                 .success(true)
                 .message(OK.getMessage())
                 .data(calendar)
                 .build());
     }
 
-    private ReservationDTO toReservationDTO(Reservation reservation) {
+    private ReservationResponse toReservationResponse(Reservation reservation) {
         UserData user = reservation.getUser();
         BusinessData business = reservation.getBusiness();
-        return ReservationDTO.builder()
+        return ReservationResponse.builder()
                 .id(reservation.getId())
                 .userId(user != null ? user.getId() : null)
                 .username(user != null ? user.getUsername() : null)
@@ -334,8 +338,8 @@ public class ReservationApiController {
                 .build();
     }
 
-    private PageResponse<ReservationDTO> toPageResponse(Page<ReservationDTO> page, String sortBy, String sortDir) {
-        return PageResponse.<ReservationDTO>builder()
+    private PageResponse<ReservationResponse> toPageResponse(Page<ReservationResponse> page, String sortBy, String sortDir) {
+        return PageResponse.<ReservationResponse>builder()
                 .content(page.getContent())
                 .page(page.getNumber())
                 .size(page.getSize())

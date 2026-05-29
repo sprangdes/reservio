@@ -1,6 +1,6 @@
 package com.reservio.service;
 
-import com.reservio.dto.TimeSlotDTO;
+import com.reservio.controller.response.TimeSlotResponse;
 import com.reservio.entity.DateAvailableHours;
 import com.reservio.entity.DefaultAvailableHour;
 import com.reservio.entity.Reservation;
@@ -47,11 +47,7 @@ public class ReservationTimeService {
         return slots;
     }
 
-    public List<TimeSlotDTO> getTimeSlotsForDate(LocalDate date, int durationMinutes) {
-        return getTimeSlotsForDate(date, durationMinutes, 1L);
-    }
-
-    public List<TimeSlotDTO> getTimeSlotsForDate(LocalDate date, int durationMinutes, Long businessId) {
+    public List<TimeSlotResponse> getTimeSlotsForDate(LocalDate date, int durationMinutes, Long businessId) {
         List<String> allSlots;
 
         Long resolvedBusinessId = businessId != null ? businessId : 1L;
@@ -89,13 +85,9 @@ public class ReservationTimeService {
                         slotStartTime.isBefore(res.getEndTime()) && res.getStartTime().isBefore(slotEndTime)
                     );
 
-                    return new TimeSlotDTO(slotTime, !isPast && !isConflict);
+                    return new TimeSlotResponse(slotTime, !isPast && !isConflict);
                 })
                 .toList();
-    }
-
-    public List<String> getDisabledDates() {
-        return getDisabledDates(1L);
     }
 
     public List<String> getDisabledDates(Long businessId) {
