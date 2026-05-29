@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -43,6 +44,15 @@ public class ApiExceptionHandler {
                 .body(ApiResponse.<Void>builder()
                         .success(false)
                         .message("帳號或密碼錯誤")
+                        .build());
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResponseStatus(ResponseStatusException ex) {
+        return ResponseEntity.status(ex.getStatusCode())
+                .body(ApiResponse.<Void>builder()
+                        .success(false)
+                        .message(ex.getReason() != null ? ex.getReason() : "請稍後再試")
                         .build());
     }
 

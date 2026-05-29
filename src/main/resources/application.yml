@@ -45,10 +45,11 @@ server:
   forward-headers-strategy: framework
   servlet:
     session:
-      timeout: 5m
+      timeout: 30m
       cookie:
         same-site: none
         secure: true
+        http-only: true
         max-age: 5m
 
 business:
