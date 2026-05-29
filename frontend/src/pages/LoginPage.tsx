@@ -54,6 +54,7 @@ export default function LoginPage() {
     setLocalError('');
     try {
       const res = await api.login({ username, password });
+      setPassword('');
       setMe(res.data);
       setSuccessMessage('登入成功');
       if (res?.data?.mustChangePassword) {
@@ -61,7 +62,8 @@ export default function LoginPage() {
         return;
       }
       navigate('/');
-    } catch (err) {
+    } catch (err: any) {
+      setPassword('');
       setLocalError('使用者名稱或密碼不正確，請再試一次。');
       setErrorMessage(err.message);
     }
