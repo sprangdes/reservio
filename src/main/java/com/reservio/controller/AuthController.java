@@ -8,6 +8,7 @@ import com.reservio.service.OtpService;
 import com.reservio.service.OtpAuthService;
 import com.reservio.service.OtpVerificationResult;
 import com.reservio.service.UserDataService;
+import com.reservio.service.AuthRateLimitService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -36,6 +37,7 @@ public class AuthController {
     private final UserDataService userDataService;
     private final OtpService otpService;
     private final OtpAuthService otpAuthService;
+    private final AuthRateLimitService authRateLimitService;
     private final AuthenticationManager authenticationManager;
     private final SecurityContextRepository securityContextRepository;
 
@@ -43,11 +45,13 @@ public class AuthController {
             UserDataService userDataService,
             OtpService otpService,
             OtpAuthService otpAuthService,
+            AuthRateLimitService authRateLimitService,
             AuthenticationManager authenticationManager,
             SecurityContextRepository securityContextRepository) {
         this.userDataService = userDataService;
         this.otpService = otpService;
         this.otpAuthService = otpAuthService;
+        this.authRateLimitService = authRateLimitService;
         this.authenticationManager = authenticationManager;
         this.securityContextRepository = securityContextRepository;
     }
@@ -160,6 +164,7 @@ public class AuthController {
             @RequestBody LoginRequest request,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
+        authRateLimitService.checkLogin(httpRequest.getRemoteAddr(), request.getUsername());
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
@@ -195,7 +200,10 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password/request-otp")
-    public ResponseEntity<ApiResponse<Void>> requestOtp(@RequestBody RequestOtpRequest request) {
+    public ResponseEntity<ApiResponse<Void>> requestOtp(
+            @RequestBody RequestOtpRequest request,
+            HttpServletRequest httpRequest) {
+        authRateLimitService.checkOtpRequest(httpRequest.getRemoteAddr(), request.getEmailOrUsername());
         otpService.requestForgotPasswordOtp(request);
         return ResponseEntity.ok(ApiResponse.<Void>builder()
                 .success(true)
@@ -208,6 +216,7 @@ public class AuthController {
             @RequestBody VerifyOtpRequest request,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
+        authRateLimitService.checkOtpVerify(httpRequest.getRemoteAddr(), request.getEmailOrUsername());
         try {
             OtpVerificationResult result = otpService.verifyForgotPasswordOtp(request);
             UserData user = result.getUser();
