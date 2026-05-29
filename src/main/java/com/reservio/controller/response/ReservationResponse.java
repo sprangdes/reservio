@@ -1,4 +1,4 @@
-package com.reservio.dto;
+package com.reservio.controller.response;
 
 import com.reservio.enums.ReservationStatus;
 import lombok.AllArgsConstructor;
@@ -14,7 +14,7 @@ import java.time.LocalTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ReservationDTO {
+public class ReservationResponse {
     private Long id;
     private Long userId;
     private String username;

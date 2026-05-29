@@ -15,6 +15,8 @@ import static com.reservio.enums.Role.ROLE_USER;
 @Service
 public class LineAuthService {
 
+    public static final String LINE_LOCAL = "@line.local";
+
     private final UserDataRepo userDataRepo;
     private final PasswordEncoder passwordEncoder;
 
@@ -36,8 +38,7 @@ public class LineAuthService {
         String normalized = base.isBlank() ? UUID.randomUUID().toString().replace("-", "") : base;
         String usernamePrefix = role.equals(ROLE_BUSINESS.name()) ? "line_b_" : "line_u_";
 
-        String fallbackUsername = ensureUniqueUsername(usernamePrefix + normalized);
-        String username = fallbackUsername;
+        String username = ensureUniqueUsername(usernamePrefix + normalized);
         if (displayName != null && !displayName.isBlank()) {
             String cleanedDisplayName = displayName.trim()
                     .replaceAll("\\s+", "_")
@@ -82,15 +83,15 @@ public class LineAuthService {
     }
 
     private String ensureUniqueEmail(String normalizedLineId, String role) {
-        String base = normalizedLineId + "." + role.toLowerCase(Locale.ROOT) + "@line.local";
+        String base = normalizedLineId + "." + role.toLowerCase(Locale.ROOT) + LINE_LOCAL;
         if (!userDataRepo.existsByEmail(base)) {
             return base;
         }
 
         int suffix = 1;
-        while (userDataRepo.existsByEmail(normalizedLineId + suffix + "." + role.toLowerCase(Locale.ROOT) + "@line.local")) {
+        while (userDataRepo.existsByEmail(normalizedLineId + suffix + "." + role.toLowerCase(Locale.ROOT) + LINE_LOCAL)) {
             suffix++;
         }
-        return normalizedLineId + suffix + "." + role.toLowerCase(Locale.ROOT) + "@line.local";
+        return normalizedLineId + suffix + "." + role.toLowerCase(Locale.ROOT) + LINE_LOCAL;
     }
 }

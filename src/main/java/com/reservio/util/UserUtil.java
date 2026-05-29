@@ -1,20 +1,20 @@
 package com.reservio.util;
 
-import com.reservio.dto.BusinessDTO;
-import com.reservio.dto.UserDTO;
+import com.reservio.controller.response.BusinessResponse;
+import com.reservio.controller.response.UserResponse;
 import com.reservio.entity.UserData;
 
 public class UserUtil {
 
     private UserUtil() {}
 
-    public static UserDTO toUserDTO(UserData user) {
+    public static UserResponse toUserResponse(UserData user) {
         if (user == null) {
             return null;
         }
-        BusinessDTO businessDTO = null;
+        BusinessResponse businessResponse = null;
         if (user.getBusinessData() != null) {
-            businessDTO = BusinessDTO.builder()
+            businessResponse = BusinessResponse.builder()
                     .id(user.getBusinessData().getId())
                     .name(user.getBusinessData().getName())
                     .category(user.getBusinessData().getCategory())
@@ -23,13 +23,13 @@ public class UserUtil {
                     .slotInterval(user.getBusinessData().getSlotInterval())
                     .build();
         }
-        return UserDTO.builder()
+        return UserResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .role(user.getRole())
                 .mustChangePassword(user.getMustChangePassword())
-                .business(businessDTO)
+                .business(businessResponse)
                 .build();
     }
 }

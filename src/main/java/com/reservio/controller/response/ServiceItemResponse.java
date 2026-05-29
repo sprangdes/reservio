@@ -1,4 +1,4 @@
-package com.reservio.dto;
+package com.reservio.controller.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,11 +9,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class BusinessDTO {
+public class ServiceItemResponse {
     private Long id;
     private String name;
-    private String category;
-    private String phone;
-    private String address;
-    private Integer slotInterval;
+    private Integer duration;
+    private Boolean active;
 }

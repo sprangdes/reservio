@@ -1,4 +1,4 @@
-package com.reservio.dto;
+package com.reservio.controller.request;
 
 import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
@@ -13,10 +13,9 @@ import java.time.LocalTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DateSlotResponse {
+public class SaveDateSlotRequest {
 
     private LocalDate date;
-
     private boolean open;
 
     @Nullable

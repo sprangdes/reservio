@@ -1,7 +1,7 @@
 package com.reservio.controller;
 
-import com.reservio.dto.ApiResponse;
-import com.reservio.dto.DashboardDTO;
+import com.reservio.controller.response.ApiResponse;
+import com.reservio.controller.response.DashboardResponse;
 import com.reservio.entity.UserData;
 import com.reservio.service.ReservationService;
 import com.reservio.service.UserDataService;
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import static com.reservio.enums.ApiResponseMessageEnum.*;
-import static com.reservio.util.UserUtil.toUserDTO;
+import static com.reservio.util.UserUtil.toUserResponse;
 
 @RestController
 @RequestMapping("/api")
@@ -27,16 +27,16 @@ public class DashboardController {
     }
 
     @GetMapping("/dashboard")
-    public ResponseEntity<ApiResponse<DashboardDTO>> dashboard() {
+    public ResponseEntity<ApiResponse<DashboardResponse>> dashboard() {
         try {
             // 正常流程
             UserData currentUser = userDataService.getCurrentUser();
-            DashboardDTO dashboard = DashboardDTO.builder()
-                    .user(toUserDTO(currentUser))
+            DashboardResponse dashboard = DashboardResponse.builder()
+                    .user(toUserResponse(currentUser))
                     .todayCount(reservationService.countTodayReservations())
                     .pendingCount(reservationService.countPendingReservations())
                     .build();
-            return ResponseEntity.ok(ApiResponse.<DashboardDTO>builder()
+            return ResponseEntity.ok(ApiResponse.<DashboardResponse>builder()
                     .success(true)
                     .message(OK.getMessage())
                     .data(dashboard)
@@ -44,7 +44,7 @@ public class DashboardController {
         } catch (Exception e) {
             // 系統錯誤
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.<DashboardDTO>builder()
+                    .body(ApiResponse.<DashboardResponse>builder()
                             .success(false)
                             .message(ERROR.getMessage())
                             .build()

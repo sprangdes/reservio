@@ -1,4 +1,4 @@
-package com.reservio.dto;
+package com.reservio.controller.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,6 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class PageResponse<T> {
+
     private List<T> content;
     private int page;
     private int size;

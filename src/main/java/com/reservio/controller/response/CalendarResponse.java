@@ -1,4 +1,4 @@
-package com.reservio.dto;
+package com.reservio.controller.response;
 
 import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
@@ -12,9 +12,9 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CalendarDTO {
+public class CalendarResponse {
 
-    private List<ReservationDTO> reservations;
+    private List<ReservationResponse> reservations;
 
     @Nullable
     private List<String> users;

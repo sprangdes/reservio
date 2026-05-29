@@ -1,6 +1,5 @@
-package com.reservio.dto;
+package com.reservio.controller.response;
 
-import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,19 +9,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UpdateBusinessInfoRequest {
-    @Nullable
+public class BusinessResponse {
+    private Long id;
     private String name;
-
-    @Nullable
     private String category;
-
-    @Nullable
     private String phone;
-
-    @Nullable
     private String address;
-
-    @Nullable
     private Integer slotInterval;
 }

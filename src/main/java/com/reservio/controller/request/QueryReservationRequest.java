@@ -1,4 +1,4 @@
-package com.reservio.dto;
+package com.reservio.controller.request;
 
 import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
@@ -12,7 +12,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class QueryReservationCondition {
+public class QueryReservationRequest {
     @Nullable
     private LocalDate startDate;
 

@@ -1,9 +1,9 @@
 package com.reservio.service;
 
-import com.reservio.dto.BusinessDTO;
-import com.reservio.dto.CalendarDTO;
-import com.reservio.dto.QueryReservationCondition;
-import com.reservio.dto.ReservationDTO;
+import com.reservio.controller.response.BusinessResponse;
+import com.reservio.controller.response.CalendarResponse;
+import com.reservio.controller.request.QueryReservationRequest;
+import com.reservio.controller.response.ReservationResponse;
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.Reservation;
 import com.reservio.entity.UserData;
@@ -105,7 +105,7 @@ public class ReservationService {
     }
 
     public Page<Reservation> queryReservationsForCustomerPage(
-            QueryReservationCondition condition,
+            QueryReservationRequest condition,
             int page,
             int size,
             String sortBy,
@@ -127,7 +127,7 @@ public class ReservationService {
     }
 
     public Page<Reservation> queryReservationsForBusinessPage(
-            QueryReservationCondition condition,
+            QueryReservationRequest condition,
             int page,
             int size,
             String sortBy,
@@ -150,12 +150,12 @@ public class ReservationService {
         return reservationRepo.findAll(spec, pageable);
     }
 
-    public List<BusinessDTO> getReservedBusinesses() {
+    public List<BusinessResponse> getReservedBusinesses() {
         UserData currentUser = userDataService.getCurrentUser();
         List<Reservation> customerReservations = reservationRepo.findAllByUser(currentUser);
         return customerReservations.stream()
                 .map(Reservation::getBusiness)
-                .map(this::toBusinessDTO)
+                .map(this::toBusinessResponse)
                 .distinct()
                 .toList();
     }
@@ -357,8 +357,8 @@ public class ReservationService {
         );
     }
 
-    public CalendarDTO buildCalendarDTO(List<ReservationDTO> reservations) {
-        return CalendarDTO.builder()
+    public CalendarResponse buildCalendarResponse(List<ReservationResponse> reservations) {
+        return CalendarResponse.builder()
                 .users(getUserSort(reservations))
                 .reservations(reservations)
                 .build();
@@ -401,7 +401,7 @@ public class ReservationService {
     }
 
     private static Specification<Reservation> keywordSpecificationForBusiness(
-            QueryReservationCondition condition,
+            QueryReservationRequest condition,
             Specification<Reservation> spec) {
         if (condition.getKeyword() != null) {
             spec = spec.and(ReservationSpecification.keywordLikeForBusiness(condition.getKeyword()));
@@ -410,7 +410,7 @@ public class ReservationService {
     }
 
     private static Specification<Reservation> keywordSpecificationForCustomer(
-            QueryReservationCondition condition,
+            QueryReservationRequest condition,
             Specification<Reservation> spec) {
         if (condition.getKeyword() != null) {
             spec = spec.and(ReservationSpecification.keywordLikeForCustomer(condition.getKeyword()));
@@ -419,7 +419,7 @@ public class ReservationService {
     }
 
     private static Specification<Reservation> statusSpecification(
-            QueryReservationCondition condition,
+            QueryReservationRequest condition,
             Specification<Reservation> spec) {
         if (condition.getStatus() != null && !condition.getStatus().isBlank()) {
             try {
@@ -447,7 +447,7 @@ public class ReservationService {
     }
 
     private static Specification<Reservation> serviceSpecification(
-            QueryReservationCondition condition,
+            QueryReservationRequest condition,
             Specification<Reservation> spec) {
         if (condition.getService() != null) {
             spec = spec.and(ReservationSpecification.serviceIs(condition.getService()));
@@ -456,7 +456,7 @@ public class ReservationService {
     }
 
     private static Specification<Reservation> timeSpecification(
-            QueryReservationCondition condition,
+            QueryReservationRequest condition,
             Specification<Reservation> spec) {
         if (condition.getStartDate() != null && condition.getEndDate() != null) {
             spec = spec.and(ReservationSpecification.dateBetween(condition.getStartDate(), condition.getEndDate()));
@@ -469,7 +469,7 @@ public class ReservationService {
     }
 
     private static Specification<Reservation> businessSpecification(
-            QueryReservationCondition condition,
+            QueryReservationRequest condition,
             Specification<Reservation> spec) {
         if (condition.getBusinessId() != null) {
             spec = spec.and(ReservationSpecification.businessIs(condition.getBusinessId()));
@@ -477,8 +477,8 @@ public class ReservationService {
         return spec;
     }
 
-    private BusinessDTO toBusinessDTO(BusinessData data) {
-        return BusinessDTO.builder()
+    private BusinessResponse toBusinessResponse(BusinessData data) {
+        return BusinessResponse.builder()
                 .id(data.getId())
                 .name(data.getName())
                 .category(data.getCategory())
@@ -488,18 +488,18 @@ public class ReservationService {
                 .build();
     }
 
-    private List<String> getUserSort(List<ReservationDTO> reservations) {
+    private List<String> getUserSort(List<ReservationResponse> reservations) {
         UserData currentUser = userDataService.getCurrentUser();
         if (currentUser.getRole().equals(ROLE_BUSINESS.name())) {
             return reservations.stream()
-                    .map(ReservationDTO::getBusinessName)
+                    .map(ReservationResponse::getBusinessName)
                     .filter(Objects::nonNull)
                     .distinct()
                     .sorted()
                     .toList();
         } else {
             return reservations.stream()
-                    .map(ReservationDTO::getUsername)
+                    .map(ReservationResponse::getUsername)
                     .filter(Objects::nonNull)
                     .distinct()
                     .sorted()
