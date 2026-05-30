@@ -21,13 +21,13 @@ jobs:
           fetch-depth: 0
 
       - name: Checkout pushed tag
-        shell: pwsh
+        shell: powershell
         run: |
           git fetch --force --tags
           git checkout $env:GITHUB_REF_NAME
 
       - name: Deploy docker compose
-        shell: pwsh
+        shell: powershell
         run: |
           docker compose down
           docker compose up -d --build
