@@ -20,15 +20,57 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Checkout pushed tag
+      - name: Prepare deploy request for scheduled task
         shell: powershell
         run: |
-          git fetch --force --tags
-          git checkout $env:GITHUB_REF_NAME
+          $repoPath = 'C:\Users\dist6\reservio'
+          $tagFile = Join-Path $repoPath '.deploy-tag'
 
-      - name: Deploy docker compose
+          if (!(Test-Path $repoPath)) {
+            throw "Deploy path not found: $repoPath"
+          }
+
+          Set-Content -Path $tagFile -Value $env:GITHUB_REF_NAME -Encoding ASCII
+          Write-Host "Prepared deploy tag file: $tagFile"
+
+      - name: Trigger scheduled deployment task
         shell: powershell
         run: |
-          docker compose down
-          docker compose up -d --build
-          docker compose ps
+          $taskName = 'ReservioDeploy'
+          schtasks /Run /TN $taskName
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to trigger scheduled task '$taskName'. Create it first in Windows Task Scheduler."
+          }
+
+      - name: Wait for deployment task to finish
+        shell: powershell
+        run: |
+          $taskName = 'ReservioDeploy'
+          $maxWaitSeconds = 900
+          $elapsed = 0
+
+          while ($elapsed -lt $maxWaitSeconds) {
+            $state = (schtasks /Query /TN $taskName /FO LIST /V | Select-String '^Status:\s*(.+)$').Matches.Groups[1].Value.Trim()
+            Write-Host "Task status: $state"
+
+            if ($state -notmatch 'Running') {
+              break
+            }
+
+            Start-Sleep -Seconds 10
+            $elapsed += 10
+          }
+
+          if ($elapsed -ge $maxWaitSeconds) {
+            throw "Deployment task timed out after $maxWaitSeconds seconds."
+          }
+
+      - name: Show deploy log
+        shell: powershell
+        run: |
+          $logPath = 'C:\Users\dist6\reservio\.deploy-last.log'
+          if (Test-Path $logPath) {
+            Get-Content $logPath -Tail 200
+          } else {
+            Write-Host "Deploy log not found at $logPath"
+          }
