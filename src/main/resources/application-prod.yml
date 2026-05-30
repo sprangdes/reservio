@@ -15,3 +15,8 @@ app:
     failure-redirect-path: https://www.reserv-io.com/login
   cors:
     allowed-origins: https://reserv-io.com,https://www.reserv-io.com
+
+logging:
+  level:
+    org.springframework.security.web.csrf: DEBUG
+    org.springframework.security.web.access: DEBUG
