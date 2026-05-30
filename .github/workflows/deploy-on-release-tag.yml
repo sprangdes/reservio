@@ -1,0 +1,34 @@
+name: Deploy on Release Tag
+
+on:
+  push:
+    tags:
+      - 'release-v*'
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy on Windows Runner
+    runs-on: [self-hosted, windows, reservio-deploy]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout pushed tag
+        shell: pwsh
+        run: |
+          git fetch --force --tags
+          git checkout $env:GITHUB_REF_NAME
+
+      - name: Deploy docker compose
+        shell: pwsh
+        run: |
+          docker compose down
+          docker compose up -d --build
+          docker compose ps
