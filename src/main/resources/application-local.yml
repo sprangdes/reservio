@@ -4,6 +4,13 @@ spring:
     username: postgres
     password:
 
+server:
+  servlet:
+    session:
+      cookie:
+        same-site: lax
+        secure: false
+
 app:
   line:
     login:
