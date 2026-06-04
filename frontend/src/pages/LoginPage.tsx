@@ -45,7 +45,8 @@ export default function LoginPage() {
     }
 
     if (lineLogin === 'failed') {
-      setLocalError(`LINE 登入失敗${reason ? `（${reason}）` : ''}`);
+      const reasonText = reason ? `（${reason}）` : '';
+      setLocalError(`LINE 登入失敗${reasonText}`);
     }
   }, [location.search]);
 

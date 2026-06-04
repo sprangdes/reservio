@@ -9,6 +9,12 @@ type Business = {
   category?: string;
 };
 
+const mergePreferredBusinessIds = (currentIds: number[], preferredBusinesses: Business[]) => {
+  const merged = new Set<number>(currentIds);
+  preferredBusinesses.forEach((item) => merged.add(Number(item.id)));
+  return Array.from(merged);
+};
+
 export default function PreferredBusinessesPage() {
   const { setSuccessMessage, setErrorMessage } = useToast();
   const navigate = useNavigate();
@@ -55,11 +61,7 @@ export default function PreferredBusinessesPage() {
         const businessList = (businessRes?.data || []) as Business[];
         const preferredList = (preferredRes?.data || []) as Business[];
         setBusinessesByCategory((prev) => ({ ...prev, [activeCategory]: businessList }));
-        setSelectedIds((prev) => {
-          const merged = new Set<number>(prev);
-          preferredList.forEach((item) => merged.add(Number(item.id)));
-          return Array.from(merged);
-        });
+        setSelectedIds((prev) => mergePreferredBusinessIds(prev, preferredList));
       } catch (err) {
         const error = err as Error;
         setErrorMessage(error.message || '載入分類店家失敗');
@@ -93,6 +95,35 @@ export default function PreferredBusinessesPage() {
     }
   };
 
+  let categoryContent = <div className="alert alert-warning mb-0">目前沒有可用的商家分類</div>;
+  if (categoryLoading) {
+    categoryContent = <div className="text-center py-4 text-muted">載入分類店家中...</div>;
+  } else if (activeBusinesses.length === 0 && categories.length > 0) {
+    categoryContent = <div className="alert alert-light border mb-0">此分類目前沒有店家</div>;
+  } else if (categories.length > 0) {
+    categoryContent = (
+      <div className="row g-3">
+        {activeBusinesses.map((business) => {
+          const checked = selectedIds.includes(Number(business.id));
+          return (
+            <div className="col-md-6" key={business.id}>
+              <button
+                type="button"
+                className={`card h-100 w-100 text-start border shadow-sm ${checked ? 'border-primary bg-primary-subtle' : 'border-light'}`}
+                onClick={() => toggleBusiness(Number(business.id))}
+              >
+                <div className="card-body d-flex justify-content-between align-items-center">
+                  <div className="fw-bold">{business.name}</div>
+                  {checked ? <span className="badge text-bg-primary">已選取</span> : null}
+                </div>
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <main>
       <div className="container my-5">
@@ -122,33 +153,7 @@ export default function PreferredBusinessesPage() {
                       ))}
                     </ul>
 
-                    {categories.length === 0 ? (
-                      <div className="alert alert-warning mb-0">目前沒有可用的商家分類</div>
-                    ) : categoryLoading ? (
-                      <div className="text-center py-4 text-muted">載入分類店家中...</div>
-                    ) : activeBusinesses.length === 0 ? (
-                      <div className="alert alert-light border mb-0">此分類目前沒有店家</div>
-                    ) : (
-                      <div className="row g-3">
-                        {activeBusinesses.map((business) => {
-                          const checked = selectedIds.includes(Number(business.id));
-                          return (
-                            <div className="col-md-6" key={business.id}>
-                              <button
-                                type="button"
-                                className={`card h-100 w-100 text-start border shadow-sm ${checked ? 'border-primary bg-primary-subtle' : 'border-light'}`}
-                                onClick={() => toggleBusiness(Number(business.id))}
-                              >
-                                <div className="card-body d-flex justify-content-between align-items-center">
-                                  <div className="fw-bold">{business.name}</div>
-                                  {checked ? <span className="badge text-bg-primary">已選取</span> : null}
-                                </div>
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                    {categoryContent}
                   </>
                 )}
               </div>

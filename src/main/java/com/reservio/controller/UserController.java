@@ -6,7 +6,6 @@ import com.reservio.controller.response.BusinessResponse;
 import com.reservio.controller.response.UserResponse;
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.UserData;
-import com.reservio.exception.NoPreferedBusinessesException;
 import com.reservio.exception.UserNotFoundException;
 import com.reservio.service.BusinessDataService;
 import com.reservio.service.UserDataService;
@@ -131,14 +130,6 @@ public class UserController {
                 .success(true)
                 .message(OK.getMessage())
                 .data(result)
-                .build()
-            );
-        } catch (NoPreferedBusinessesException e) {
-            // 無偏好商家
-            return ResponseEntity.ok(ApiResponse.<List<BusinessResponse>>builder()
-                .success(false)
-                .message(NO_PREFERRED_BUSINESSES.getMessage())
-                .data(List.of())
                 .build()
             );
         } catch (Exception e) {

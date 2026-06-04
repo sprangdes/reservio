@@ -1,10 +1,20 @@
 import React from 'react';
+import * as bootstrap from 'bootstrap';
+import flatpickr from 'flatpickr';
+import { MandarinTraditional } from 'flatpickr/dist/l10n/zh-tw';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.min.css';
+import 'flatpickr/dist/flatpickr.min.css';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './state/AuthContext';
 import { ToastProvider } from './state/ToastContext';
 import './styles.css';
+
+(globalThis as any).bootstrap = bootstrap;
+(globalThis as any).flatpickr = flatpickr;
+flatpickr.localize(MandarinTraditional);
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

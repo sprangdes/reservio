@@ -2,7 +2,6 @@ package com.reservio.service;
 
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.UserData;
-import com.reservio.exception.NoPreferedBusinessesException;
 import com.reservio.exception.UserAlreadyExistsException;
 import com.reservio.exception.UserNotFoundException;
 import com.reservio.repo.BusinessDataRepo;
@@ -101,7 +100,7 @@ public class UserDataService {
         UserData user = getCurrentUser();
         List<Long> preferBusinessIds = user.getPreferredBusinesses();
         if (preferBusinessIds == null || preferBusinessIds.isEmpty()) {
-            throw new NoPreferedBusinessesException("使用者尚未設定任何喜愛的商家");
+            return List.of();
         }
 
         return user.getPreferredBusinesses().stream()

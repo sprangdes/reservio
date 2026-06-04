@@ -19,7 +19,7 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'ngrok-skip-browser-warning': 'true',
-    ...(options.headers as Record<string, string> || {})
+    ...options.headers as Record<string, string>
   };
 
   if (shouldAttachCsrfToken(method)) {
@@ -36,7 +36,7 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
   });
 
   if (response.status === 204) {
-    return null as T;
+    return null;
   }
 
   const data = (await response.json().catch((): null => null)) as { message?: string } | null;
