@@ -1,3 +1,5 @@
+import { UnauthorizedError, emitSessionActivity, emitSessionExpired } from './sessionEvents';
+
 export const API_BASE = '';
 
 type Primitive = string | number | boolean;
@@ -36,14 +38,21 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
   });
 
   if (response.status === 204) {
+    emitSessionActivity();
     return null;
   }
 
   const data = (await response.json().catch((): null => null)) as { message?: string } | null;
+  if (response.status === 401 && !path.startsWith('/api/auth/login')) {
+    emitSessionExpired();
+    throw new UnauthorizedError(data?.message || undefined);
+  }
+
   if (!response.ok) {
     const message = data?.message || 'Request failed';
     throw new Error(message);
   }
+  emitSessionActivity();
   return data as T;
 }
 
@@ -84,6 +93,7 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(payload)
   }),
+  session: () => request('/api/session'),
   me: () => request('/api/me'),
   dashboard: () => request('/api/dashboard'),
   businesses: () => request('/api/businesses'),

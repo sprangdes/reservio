@@ -17,6 +17,22 @@ import ForceChangePasswordPage from './pages/ForceChangePasswordPage';
 import PreferredBusinessesPage from './pages/PreferredBusinessesPage';
 import { useAuth } from './state/AuthContext';
 import {JSX} from "react";
+import SessionTimeoutManager from './components/SessionTimeoutManager';
+
+function RequireAuth({ children }: Readonly<{ children: JSX.Element }>) {
+  const { me, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return null;
+  }
+
+  if (!me) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  return children;
+}
 
 function PasswordResetGuard({ children }: Readonly<{ children: JSX.Element }>) {
   const { me, loading } = useAuth();
@@ -37,7 +53,9 @@ function PasswordResetGuard({ children }: Readonly<{ children: JSX.Element }>) {
 export default function App() {
   return (
     <PasswordResetGuard>
-      <Routes>
+      <>
+        <SessionTimeoutManager />
+        <Routes>
       <Route
         path="/"
         element={
@@ -90,7 +108,9 @@ export default function App() {
         path="/force-change-password"
         element={
           <Layout>
-            <ForceChangePasswordPage />
+            <RequireAuth>
+              <ForceChangePasswordPage />
+            </RequireAuth>
           </Layout>
         }
       />
@@ -98,7 +118,9 @@ export default function App() {
         path="/reservation/new"
         element={
           <Layout>
-            <ReservationNewPage />
+            <RequireAuth>
+              <ReservationNewPage />
+            </RequireAuth>
           </Layout>
         }
       />
@@ -106,7 +128,9 @@ export default function App() {
         path="/my/reservations"
         element={
           <Layout>
-            <MyReservationsPage />
+            <RequireAuth>
+              <MyReservationsPage />
+            </RequireAuth>
           </Layout>
         }
       />
@@ -114,7 +138,9 @@ export default function App() {
         path="/preferred-businesses"
         element={
           <Layout>
-            <PreferredBusinessesPage />
+            <RequireAuth>
+              <PreferredBusinessesPage />
+            </RequireAuth>
           </Layout>
         }
       />
@@ -122,7 +148,9 @@ export default function App() {
         path="/reservation/today/manage"
         element={
           <Layout>
-            <ManageTodayPage />
+            <RequireAuth>
+              <ManageTodayPage />
+            </RequireAuth>
           </Layout>
         }
       />
@@ -130,7 +158,9 @@ export default function App() {
         path="/reservation/manage"
         element={
           <Layout>
-            <ManageAllPage />
+            <RequireAuth>
+              <ManageAllPage />
+            </RequireAuth>
           </Layout>
         }
       />
@@ -138,7 +168,9 @@ export default function App() {
         path="/reservation/pending/manage"
         element={
           <Layout>
-            <ManagePendingPage />
+            <RequireAuth>
+              <ManagePendingPage />
+            </RequireAuth>
           </Layout>
         }
       />
@@ -146,7 +178,9 @@ export default function App() {
         path="/service/manage"
         element={
           <Layout>
-            <ServiceManagementPage />
+            <RequireAuth>
+              <ServiceManagementPage />
+            </RequireAuth>
           </Layout>
         }
       />
@@ -154,12 +188,15 @@ export default function App() {
         path="/business/info"
         element={
           <Layout>
-            <BusinessInfoPage />
+            <RequireAuth>
+              <BusinessInfoPage />
+            </RequireAuth>
           </Layout>
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        </Routes>
+      </>
     </PasswordResetGuard>
   );
 }

@@ -45,12 +45,11 @@ server:
   forward-headers-strategy: framework
   servlet:
     session:
-      timeout: 30m
+      timeout: 15m
       cookie:
         same-site: none
         secure: true
         http-only: true
-        max-age: 5m
 
 business:
   category: "美容美髮,診所醫療,餐飲服務,其他諮詢"
