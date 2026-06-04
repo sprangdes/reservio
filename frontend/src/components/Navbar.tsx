@@ -67,13 +67,13 @@ export default function Navbar() {
                       我的預約
                     </Link>
                   </li>
-                  {me.role !== 'ROLE_BUSINESS' ? (
-                    <li className="nav-item">
-                      <Link className="nav-link" to="/preferred-businesses">
-                        想預約店家
-                      </Link>
-                    </li>
-                  ) : null}
+                  {me.role === 'ROLE_BUSINESS' ? null : (
+                      <li className="nav-item">
+                        <Link className="nav-link" to="/preferred-businesses">
+                          想預約店家
+                        </Link>
+                      </li>
+                  )}
                   {me.role === 'ROLE_BUSINESS' ? (
                     <li className="nav-item">
                       <Link className="nav-link" to="/business/info">

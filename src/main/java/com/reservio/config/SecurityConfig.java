@@ -143,7 +143,7 @@ public class SecurityConfig {
 
     /**
      * Spring Security SPA CSRF handler:
-     * - Header token (X-XSRF-TOKEN): use plain value from cookie
+     * - Header token (X-XSRF-TOKEN): use plain value from a cookie
      * - Form param token (_csrf): allow XOR token for SSR forms/BREACH protection
      */
     static final class SpaCsrfTokenRequestHandler extends CsrfTokenRequestAttributeHandler {
