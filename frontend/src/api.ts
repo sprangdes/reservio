@@ -81,6 +81,10 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(payload)
   }),
+  setupBusiness: (payload: unknown) => request('/api/businesses/setup', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  }),
   requestPasswordResetOtp: (payload: unknown) => request('/api/auth/forgot-password/request-otp', {
     method: 'POST',
     body: JSON.stringify(payload)

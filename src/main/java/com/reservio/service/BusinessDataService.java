@@ -3,6 +3,7 @@ package com.reservio.service;
 import com.reservio.controller.request.DefaultSlotRequest;
 import com.reservio.controller.request.DeleteAdjustedDateSlotRequest;
 import com.reservio.controller.request.SaveDateSlotRequest;
+import com.reservio.controller.request.SetupBusinessRequest;
 import com.reservio.controller.request.UpdateBusinessInfoRequest;
 import com.reservio.controller.response.DateSlotResponse;
 import com.reservio.controller.response.DefaultSlotResponse;
@@ -16,12 +17,15 @@ import com.reservio.repo.BusinessDataRepo;
 import com.reservio.repo.DateAvailableHoursRepo;
 import com.reservio.repo.DefaultAvailableHoursRepo;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import static com.reservio.enums.Role.ROLE_BUSINESS;
 
 @Service
 public class BusinessDataService {
@@ -48,6 +52,28 @@ public class BusinessDataService {
 
     public BusinessData getBusinessById(Long id) {
         return businessDataRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("找不到店家: " + id));
+    }
+
+    @Transactional
+    public BusinessData setupCurrentBusiness(SetupBusinessRequest request) {
+        var user = userDataService.getCurrentUser();
+        if (!ROLE_BUSINESS.name().equals(user.getRole())) {
+            throw new NotBusinessAccountException("用戶為非商家帳號");
+        }
+        if (user.getBusinessData() != null) {
+            throw new IllegalStateException("商家資訊已建立");
+        }
+
+        BusinessData businessData = BusinessData.builder()
+                .name(required(request.getBusinessName(), "商家名稱"))
+                .category(required(request.getCategory(), "服務類別"))
+                .phone(required(request.getPhone(), "商家電話"))
+                .address(required(request.getAddress(), "商家地址"))
+                .slotInterval(30)
+                .user(user)
+                .build();
+        user.setBusinessData(businessData);
+        return businessDataRepo.save(businessData);
     }
 
     public BusinessData updateBusinessInfo(UpdateBusinessInfoRequest request) {
@@ -207,6 +233,13 @@ public class BusinessDataService {
 
     private boolean intervalCheck(Integer interval) {
         return interval != null && interval > 0;
+    }
+
+    private String required(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(fieldName + "為必填");
+        }
+        return value.trim();
     }
 
     private Optional<DefaultAvailableHour> findDefaultAvailableHour(
