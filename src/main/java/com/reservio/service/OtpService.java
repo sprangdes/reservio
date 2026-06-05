@@ -9,7 +9,6 @@ import com.reservio.entity.UserData;
 import com.reservio.exception.OtpVerificationException;
 import com.reservio.repo.OtpRepo;
 import com.reservio.repo.UserDataRepo;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 
-@Slf4j
 @Service
 public class OtpService {
 
@@ -27,16 +25,19 @@ public class OtpService {
     private final OtpRepo otpRepo;
     private final PasswordEncoder passwordEncoder;
     private final OtpProperties otpProperties;
+    private final PasswordResetMailService passwordResetMailService;
 
     public OtpService(
             UserDataRepo userDataRepo,
             OtpRepo otpRepo,
             PasswordEncoder passwordEncoder,
-            OtpProperties otpProperties) {
+            OtpProperties otpProperties,
+            PasswordResetMailService passwordResetMailService) {
         this.userDataRepo = userDataRepo;
         this.otpRepo = otpRepo;
         this.passwordEncoder = passwordEncoder;
         this.otpProperties = otpProperties;
+        this.passwordResetMailService = passwordResetMailService;
     }
 
     @Transactional
@@ -57,7 +58,6 @@ public class OtpService {
         }
 
         String otpPlain = generateSixDigitOtp();
-        log.info("Generated OTP: {}", otpPlain); // TODO: 之後要移除
         Otp otp = Otp.builder()
                 .user(user)
                 .otpHash(passwordEncoder.encode(otpPlain))
@@ -65,7 +65,7 @@ public class OtpService {
                 .build();
         otpRepo.save(otp);
 
-        // TODO: send otpPlain via email provider
+        passwordResetMailService.sendPasswordResetOtp(user.getEmail(), otpPlain, otpProperties.getExpireMinute());
     }
 
     @Transactional

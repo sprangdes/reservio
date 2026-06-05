@@ -57,3 +57,10 @@ business:
 otp:
   expire-minute: 10
   max-attempts: 5
+
+app:
+  mail:
+    from: ${APP_MAIL_FROM:noreply@reserv-io.com}
+    sender-name: ${APP_MAIL_SENDER_NAME:Reservio}
+    reply-to: ${APP_MAIL_REPLY_TO:support@reserv-io.com}
+    password-reset-subject: ${APP_MAIL_PASSWORD_RESET_SUBJECT:Reservio 密碼重設驗證碼}
