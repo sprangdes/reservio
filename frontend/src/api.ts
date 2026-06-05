@@ -16,6 +16,26 @@ function shouldAttachCsrfToken(method: string): boolean {
   return ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
 }
 
+async function ensureCsrfToken(): Promise<string | null> {
+  const existingToken = getCookie('XSRF-TOKEN');
+  if (existingToken) {
+    return existingToken;
+  }
+
+  const response = await fetch(`${API_BASE}/api/csrf`, {
+    credentials: 'include',
+    headers: {
+      'ngrok-skip-browser-warning': 'true'
+    }
+  });
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = await response.json().catch((): null => null) as { token?: string } | null;
+  return getCookie('XSRF-TOKEN') || data?.token || null;
+}
+
 async function request<T = any>(path: string, options: RequestInit = {}): Promise<T> {
   const method = options.method || 'GET';
   const headers: Record<string, string> = {
@@ -25,7 +45,7 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
   };
 
   if (shouldAttachCsrfToken(method)) {
-    const csrfToken = getCookie('XSRF-TOKEN');
+    const csrfToken = await ensureCsrfToken();
     if (csrfToken) {
       headers['X-XSRF-TOKEN'] = csrfToken;
     }
