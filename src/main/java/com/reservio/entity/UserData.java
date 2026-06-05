@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -59,5 +60,6 @@ public class UserData {
     private List<Reservation> reservations;
 
     @Column(name = "preferred_businesses")
-    private List<Long> preferredBusinesses;
+    @Builder.Default
+    private List<Long> preferredBusinesses = new ArrayList<>();
 }
