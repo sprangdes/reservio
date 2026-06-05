@@ -97,6 +97,43 @@ public class BusinessApiController {
         }
     }
 
+    @PostMapping("/businesses/setup")
+    public ResponseEntity<ApiResponse<BusinessResponse>> setupBusiness(@RequestBody SetupBusinessRequest request) {
+        try {
+            BusinessData businessData = businessDataService.setupCurrentBusiness(request);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.<BusinessResponse>builder()
+                            .success(true)
+                            .message("商家資訊建立成功")
+                            .data(toBusinessResponse(businessData))
+                            .build());
+        } catch (NotBusinessAccountException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.<BusinessResponse>builder()
+                            .success(false)
+                            .message(e.getMessage())
+                            .build());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.<BusinessResponse>builder()
+                            .success(false)
+                            .message(e.getMessage())
+                            .build());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.<BusinessResponse>builder()
+                            .success(false)
+                            .message(e.getMessage())
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.<BusinessResponse>builder()
+                            .success(false)
+                            .message(ERROR.getMessage())
+                            .build());
+        }
+    }
+
     /**
      * Retrieves a list of services associated with a specific business.
      *

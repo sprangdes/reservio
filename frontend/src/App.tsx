@@ -15,6 +15,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ForgotPasswordVerifyPage from './pages/ForgotPasswordVerifyPage';
 import ForceChangePasswordPage from './pages/ForceChangePasswordPage';
 import PreferredBusinessesPage from './pages/PreferredBusinessesPage';
+import BusinessSetupPage from './pages/BusinessSetupPage';
 import { useAuth } from './state/AuthContext';
 import {JSX} from "react";
 import SessionTimeoutManager from './components/SessionTimeoutManager';
@@ -50,10 +51,23 @@ function PasswordResetGuard({ children }: Readonly<{ children: JSX.Element }>) {
   return children;
 }
 
+function BusinessSetupGuard({ children }: Readonly<{ children: JSX.Element }>) {
+  const { me, loading } = useAuth();
+  const location = useLocation();
+  const allowPaths = ['/business/setup', '/force-change-password'];
+
+  if (!loading && me?.role === 'ROLE_BUSINESS' && !me.business && !allowPaths.includes(location.pathname)) {
+    return <Navigate to="/business/setup" replace />;
+  }
+
+  return children;
+}
+
 export default function App() {
   return (
     <PasswordResetGuard>
-      <>
+      <BusinessSetupGuard>
+        <>
         <SessionTimeoutManager />
         <Routes>
       <Route
@@ -185,6 +199,16 @@ export default function App() {
         }
       />
       <Route
+        path="/business/setup"
+        element={
+          <Layout>
+            <RequireAuth>
+              <BusinessSetupPage />
+            </RequireAuth>
+          </Layout>
+        }
+      />
+      <Route
         path="/business/info"
         element={
           <Layout>
@@ -196,7 +220,8 @@ export default function App() {
       />
       <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </>
+        </>
+      </BusinessSetupGuard>
     </PasswordResetGuard>
   );
 }
