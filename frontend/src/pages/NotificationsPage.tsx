@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../state/AuthContext';
 import { useToast } from '../state/ToastContext';
+import { emitNotificationsChanged } from '../notificationEvents';
 
 interface NotificationItem {
   id: number;
@@ -37,13 +38,17 @@ export default function NotificationsPage() {
   }, []);
 
   const open = async (item: NotificationItem) => {
-    if (!item.read) await api.markNotificationRead(item.id);
+    if (!item.read) {
+      await api.markNotificationRead(item.id);
+      emitNotificationsChanged();
+    }
     navigate(me?.role === 'ROLE_BUSINESS' ? '/reservation/manage' : '/my/reservations');
   };
 
   const markAllRead = async () => {
     await api.markAllNotificationsRead();
     await load();
+    emitNotificationsChanged();
   };
 
   return (
