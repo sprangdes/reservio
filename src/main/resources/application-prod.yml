@@ -1,5 +1,12 @@
 spring:
   datasource:
+    hikari:
+      max-lifetime: 600000
+      idle-timeout: 300000
+      keepalive-time: 120000
+      validation-timeout: 5000
+      maximum-pool-size: 5
+      minimum-idle: 1
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
