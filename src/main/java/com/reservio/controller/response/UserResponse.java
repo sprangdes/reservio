@@ -13,6 +13,7 @@ public class UserResponse {
     private Long id;
     private String username;
     private String email;
+    private Boolean emailVerified;
     private String role;
     private Boolean mustChangePassword;
     private BusinessResponse business;

@@ -7,6 +7,7 @@ import jakarta.mail.internet.MimeMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
@@ -23,6 +24,21 @@ public class PasswordResetMailService {
     }
 
     public void sendPasswordResetOtp(String recipientEmail, String otp, int expireMinutes) {
+        send(recipientEmail, mailProperties.getPasswordResetSubject(),
+                buildPlainText(otp, expireMinutes), buildHtml(otp, expireMinutes));
+    }
+
+    public void sendEmailVerificationOtp(String recipientEmail, String otp, int expireMinutes) {
+        send(recipientEmail, "Reservio Email 驗證碼",
+                "您的 Reservio Email 驗證碼是 %s，將於 %d 分鐘後失效。".formatted(otp, expireMinutes),
+                "<p>您的 Reservio Email 驗證碼是：</p><h1>%s</h1><p>%d 分鐘後失效。</p>".formatted(otp, expireMinutes));
+    }
+
+    public void sendNotification(String recipientEmail, String subject, String content) {
+        send(recipientEmail, subject, content, "<p>%s</p>".formatted(HtmlUtils.htmlEscape(content)));
+    }
+
+    private void send(String recipientEmail, String subject, String plainText, String html) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(
@@ -40,8 +56,8 @@ public class PasswordResetMailService {
             if (mailProperties.getReplyTo() != null && !mailProperties.getReplyTo().isBlank()) {
                 helper.setReplyTo(mailProperties.getReplyTo());
             }
-            helper.setSubject(mailProperties.getPasswordResetSubject());
-            helper.setText(buildPlainText(otp, expireMinutes), buildHtml(otp, expireMinutes));
+            helper.setSubject(subject);
+            helper.setText(plainText, html);
 
             mailSender.send(message);
         } catch (MessagingException | UnsupportedEncodingException e) {

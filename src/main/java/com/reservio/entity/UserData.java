@@ -29,6 +29,10 @@ public class UserData {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(name = "email_verified", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean emailVerified = false;
+
     @Column(nullable = false)
     private String password;
 

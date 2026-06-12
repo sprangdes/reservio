@@ -20,7 +20,7 @@ public class ApiExceptionHandler {
                         .build());
     }
 
-    @ExceptionHandler({UserNotFoundException.class, IllegalArgumentException.class})
+    @ExceptionHandler({UserNotFoundException.class, IllegalArgumentException.class, OtpVerificationException.class})
     public ResponseEntity<ApiResponse<Void>> handleBadRequest(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.<Void>builder()

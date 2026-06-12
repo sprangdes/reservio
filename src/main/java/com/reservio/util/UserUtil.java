@@ -27,6 +27,7 @@ public class UserUtil {
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
+                .emailVerified(user.getEmailVerified())
                 .role(user.getRole())
                 .mustChangePassword(user.getMustChangePassword())
                 .business(businessResponse)
