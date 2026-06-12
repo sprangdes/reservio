@@ -32,7 +32,7 @@ Profile config is in:
 Start all services by injecting secrets at runtime:
 
 ```bash
-SPRING_DATASOURCE_URL='jdbc:postgresql://<neon-pooler-host>/<db>?sslmode=require' \
+SPRING_DATASOURCE_URL='jdbc:postgresql://<host>/<db>?sslmode=require' \
 SPRING_DATASOURCE_USERNAME='<db_user>' \
 SPRING_DATASOURCE_PASSWORD='<db_password>' \
 LINE_LOGIN_CHANNEL_ID='<line_channel_id>' \
@@ -46,8 +46,6 @@ APP_MAIL_REPLY_TO='support@reserv-io.com' \
 CLOUDFLARE_TUNNEL_TOKEN='<cloudflare_tunnel_token>' \
 docker compose up -d --build
 ```
-
-For Neon in production, prefer the pooled endpoint (`-pooler` in the hostname) for the runtime app. Keep direct connections for admin tasks such as schema migrations.
 
 Stop:
 

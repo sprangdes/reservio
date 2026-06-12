@@ -3,16 +3,6 @@ spring:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
-    hikari:
-      minimum-idle: 0
-      maximum-pool-size: 5
-      idle-timeout: 60000
-      max-lifetime: 240000
-      connection-timeout: 30000
-      validation-timeout: 5000
-      initialization-fail-timeout: 0
-      data-source-properties:
-        tcpKeepAlive: true
   mail:
     host: ${MAIL_HOST}
     port: ${MAIL_PORT:587}
