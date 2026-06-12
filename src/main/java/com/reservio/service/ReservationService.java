@@ -37,12 +37,15 @@ public class ReservationService {
 
     private final ReservationRepo reservationRepo;
     private final UserDataService userDataService;
+    private final ReservationNotificationService reservationNotificationService;
 
     public ReservationService(
             ReservationRepo reservationRepo,
-            UserDataService userDataService) {
+            UserDataService userDataService,
+            ReservationNotificationService reservationNotificationService) {
         this.reservationRepo = reservationRepo;
         this.userDataService = userDataService;
+        this.reservationNotificationService = reservationNotificationService;
     }
 
     /**
@@ -65,7 +68,9 @@ public class ReservationService {
         reservation.setCreatedBy(SYSTEM.name());
         reservation.setDeletedFlag(false);
 
-        return reservationRepo.save(reservation);
+        Reservation saved = reservationRepo.save(reservation);
+        reservationNotificationService.notifyNewReservation(saved);
+        return saved;
     }
 
     /**
@@ -202,6 +207,7 @@ public class ReservationService {
         reservation.setUpdatedAt(LocalDateTime.now());
         reservation.setUpdatedBy(currentUser.getUsername());
         reservationRepo.save(reservation);
+        reservationNotificationService.notifyBusinessOfCustomerChange(reservation);
     }
 
     /**
@@ -215,8 +221,12 @@ public class ReservationService {
     public void updateReservationStatus(Long id, ReservationStatus newStatus) {
         UserData actor = userDataService.getCurrentUser();
 
-        Reservation reservation = reservationRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("找不到該筆預約資料: " + id));
+        BusinessData businessData = actor.getBusinessData();
+        if (businessData == null) {
+            throw new IllegalStateException("非店家帳號無法變更預約狀態");
+        }
+        Reservation reservation = reservationRepo.findByIdAndBusiness(id, businessData)
+                .orElseThrow(() -> new IllegalArgumentException("找不到該店家的預約或無權限操作: " + id));
 
         if (isEnded(reservation)) {
             markCompleted(reservation);
@@ -236,6 +246,7 @@ public class ReservationService {
         }
 
         reservationRepo.save(reservation);
+        reservationNotificationService.notifyCustomerOfBusinessChange(reservation);
     }
 
     /**
@@ -281,6 +292,7 @@ public class ReservationService {
         reservation.setUpdatedAt(LocalDateTime.now());
         reservation.setUpdatedBy(actor.getUsername());
         reservationRepo.save(reservation);
+        reservationNotificationService.notifyCustomerOfBusinessChange(reservation);
     }
 
     @Scheduled(cron = "0 */5 * * * * ")

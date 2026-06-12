@@ -10,6 +10,22 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [hoverEnabled, setHoverEnabled] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!me) {
+      setUnreadCount(0);
+      return;
+    }
+    const load = () => {
+      void api.notificationUnreadCount()
+        .then((res) => setUnreadCount(Number(res?.data?.count || 0)))
+        .catch(() => setUnreadCount(0));
+    };
+    load();
+    const timer = globalThis.setInterval(load, 60000);
+    return () => globalThis.clearInterval(timer);
+  }, [me]);
 
   useEffect(() => {
     const media = globalThis.matchMedia('(max-width: 768px)');
@@ -81,6 +97,14 @@ export default function Navbar() {
                       </Link>
                     </li>
                   ) : null}
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/notifications">
+                      通知 {unreadCount > 0 ? <span className="badge bg-danger">{unreadCount}</span> : null}
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/notifications/settings">通知設定</Link>
+                  </li>
                 </>
               ) : null}
             </ul>
@@ -91,6 +115,11 @@ export default function Navbar() {
                   <span className="navbar-text me-3 text-white text-white-strong">
                     <i className="bi bi-person-circle"></i> 你好，<strong>{String(me.username || '')}</strong>！
                   </span>
+                  {!me.emailVerified ? (
+                    <Link to="/notifications/settings" className="btn btn-warning btn-sm me-2">
+                      驗證 Email
+                    </Link>
+                  ) : null}
                   <button type="button" onClick={handleLogout} className="btn btn-outline-light btn-sm px-3 rounded-pill">
                     登出
                   </button>

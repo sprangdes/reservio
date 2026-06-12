@@ -5,6 +5,8 @@ import { api } from '../api';
 interface AuthUser {
   role?: string;
   username?: string;
+  email?: string;
+  emailVerified?: boolean;
   business?: {
     id?: string | number;
     name?: string;

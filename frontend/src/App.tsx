@@ -16,6 +16,8 @@ import ForgotPasswordVerifyPage from './pages/ForgotPasswordVerifyPage';
 import ForceChangePasswordPage from './pages/ForceChangePasswordPage';
 import PreferredBusinessesPage from './pages/PreferredBusinessesPage';
 import BusinessSetupPage from './pages/BusinessSetupPage';
+import NotificationsPage from './pages/NotificationsPage';
+import NotificationSettingsPage from './pages/NotificationSettingsPage';
 import { useAuth } from './state/AuthContext';
 import {JSX} from "react";
 import SessionTimeoutManager from './components/SessionTimeoutManager';
@@ -197,6 +199,14 @@ export default function App() {
             </RequireAuth>
           </Layout>
         }
+      />
+      <Route
+        path="/notifications"
+        element={<Layout><RequireAuth><NotificationsPage /></RequireAuth></Layout>}
+      />
+      <Route
+        path="/notifications/settings"
+        element={<Layout><RequireAuth><NotificationSettingsPage /></RequireAuth></Layout>}
       />
       <Route
         path="/business/setup"

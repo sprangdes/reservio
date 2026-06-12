@@ -119,6 +119,23 @@ export const api = {
   }),
   session: () => request('/api/session'),
   me: () => request('/api/me'),
+  notifications: (page = 0, size = 20) => request(`/api/notifications?page=${page}&size=${size}`),
+  notificationUnreadCount: () => request('/api/notifications/unread-count'),
+  markNotificationRead: (id: string | number) => request(`/api/notifications/${id}/read`, { method: 'POST' }),
+  markAllNotificationsRead: () => request('/api/notifications/read-all', { method: 'POST' }),
+  notificationPreferences: () => request('/api/notifications/preferences'),
+  updateNotificationPreferences: (payload: unknown) => request('/api/notifications/preferences', {
+    method: 'PUT',
+    body: JSON.stringify(payload)
+  }),
+  requestEmailVerification: (payload: unknown) => request('/api/email-verification/request', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  }),
+  verifyEmail: (payload: unknown) => request('/api/email-verification/verify', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  }),
   dashboard: () => request('/api/dashboard'),
   businesses: () => request('/api/businesses'),
   businessesByCategory: (category: string) => request(`/api/businesses/${encodeURIComponent(category)}`),
