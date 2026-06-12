@@ -188,7 +188,7 @@ export default function ReservationNewPage() {
                     <h6 className="text-primary fw-bold mb-3"><i className="bi bi-shop me-1"></i> 選擇預約店家</h6>
                     {usingPreferred && businesses.length === 0 ? (
                       <div className="alert alert-warning py-2 small">
-                        你尚未設定想預約店家，請先至「想預約店家」頁面設定。
+                        你尚未設定想預約店家，請先至右上角使用者選單設定。
                       </div>
                     ) : null}
                     <select className="form-select form-select-sm" id="businessId" name="businessId" value={form.businessId} onChange={handleChange} required>
