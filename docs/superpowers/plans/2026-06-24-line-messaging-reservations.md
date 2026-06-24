@@ -88,16 +88,16 @@
 
 工作內容：
 
-- [ ] 增加 `LINE_CREDENTIAL_ENCRYPTION_KEY`，使用 authenticated encryption 保存 secret 與 token。
-- [ ] 產生不可猜測、可輪替的商家 webhook key。
-- [ ] 建立取得設定、儲存設定、停用串接與輪替 webhook key 的 API。
-- [ ] API 回應只顯示遮罩後憑證，禁止回傳密文或明文。
-- [ ] 驗證目前登入者只能管理自己的商家 channel。
-- [ ] 後台頁面顯示 webhook URL、Channel ID、Secret、Access Token 與啟用狀態。
-- [ ] Secret 與 token 欄位留白時表示不修改既有值。
-- [ ] 增加 controller、ownership、加解密與遮罩測試。
-- [ ] 執行後端測試與 `npm run build`。
-- [ ] Commit：`feat: add business LINE channel settings`
+- [x] 增加 `LINE_CREDENTIAL_ENCRYPTION_KEY`，使用 AES-256-GCM authenticated encryption 保存 secret 與 token。
+- [x] 產生不可猜測、可輪替的商家 webhook key。
+- [x] 建立取得設定、儲存設定、停用串接與輪替 webhook key 的 API。
+- [x] API 回應只顯示遮罩後憑證，禁止回傳密文或明文。
+- [x] 驗證目前登入者只能管理自己的商家 channel。
+- [x] 後台頁面顯示 webhook URL、Channel ID、Secret、Access Token 與啟用狀態。
+- [x] Secret 與 token 欄位留白時表示不修改既有值。
+- [x] 增加 controller、ownership、加解密與遮罩測試。
+- [x] 執行後端測試、資料庫 context 測試、前端 typecheck 與 `npm run build`。
+- [x] Commit：`feat: add business LINE channel settings`
 
 完成標準：
 

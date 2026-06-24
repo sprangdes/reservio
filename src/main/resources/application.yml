@@ -59,6 +59,10 @@ otp:
   max-attempts: 5
 
 app:
+  line:
+    messaging:
+      credential-encryption-key: ${LINE_CREDENTIAL_ENCRYPTION_KEY:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=}
+      webhook-base-url: ${LINE_WEBHOOK_BASE_URL:http://localhost:8080}
   mail:
     from: ${APP_MAIL_FROM:noreply@reserv-io.com}
     sender-name: ${APP_MAIL_SENDER_NAME:Reservio}

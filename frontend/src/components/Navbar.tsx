@@ -175,11 +175,18 @@ export default function Navbar() {
                     </button>
                   </li>
                   {me.role === 'ROLE_BUSINESS' ? (
-                    <li className="nav-item mobile-menu__item">
-                      <Link className="nav-link" to="/business/info">
-                        商家資訊
-                      </Link>
-                    </li>
+                    <>
+                      <li className="nav-item mobile-menu__item">
+                        <Link className="nav-link" to="/business/info">
+                          商家資訊
+                        </Link>
+                      </li>
+                      <li className="nav-item mobile-menu__item">
+                        <Link className="nav-link" to="/business/line-integration">
+                          LINE 串接
+                        </Link>
+                      </li>
+                    </>
                   ) : (
                     <li className="nav-item mobile-menu__item">
                       <button type="button" className="nav-link mobile-menu__button" onClick={() => openSettingsPanel('preferred-businesses')}>
@@ -270,11 +277,18 @@ export default function Navbar() {
                     </button>
                     <ul className="dropdown-menu dropdown-menu-end user-menu__dropdown">
                       {me.role === 'ROLE_BUSINESS' ? (
-                        <li>
-                          <Link className="dropdown-item user-menu__item" to="/business/info">
-                            商家資訊
-                          </Link>
-                        </li>
+                        <>
+                          <li>
+                            <Link className="dropdown-item user-menu__item" to="/business/info">
+                              商家資訊
+                            </Link>
+                          </li>
+                          <li>
+                            <Link className="dropdown-item user-menu__item" to="/business/line-integration">
+                              LINE 串接
+                            </Link>
+                          </li>
+                        </>
                       ) : (
                         <li>
                           <button
