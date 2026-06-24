@@ -1,8 +1,8 @@
 spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/reservio}
-    username: ${SPRING_DATASOURCE_USERNAME:reservio}
-    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:}}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
   mail:
     host: ${MAIL_HOST:localhost}
     port: ${MAIL_PORT:1025}
