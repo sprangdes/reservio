@@ -1,6 +1,7 @@
 package com.reservio.entity;
 
 import com.reservio.enums.ReservationStatus;
+import com.reservio.enums.ReservationSource;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,6 +44,11 @@ public class Reservation {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ReservationStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20, columnDefinition = "varchar(20) default 'WEB'")
+    @Builder.Default
+    private ReservationSource source = ReservationSource.WEB;
 
     @Column(length = 100)
     private String title;

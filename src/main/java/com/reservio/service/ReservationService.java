@@ -10,6 +10,7 @@ import com.reservio.entity.UserData;
 import com.reservio.enums.ReservationStatus;
 import com.reservio.exception.UserNotFoundException;
 import com.reservio.repo.ReservationRepo;
+import com.reservio.repo.ServiceItemRepo;
 import com.reservio.service.specification.ReservationSpecification;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.reservio.enums.ReservationStatus.*;
+import static com.reservio.enums.ReservationSource.WEB;
 import static com.reservio.enums.Role.ROLE_BUSINESS;
 import static com.reservio.enums.SystemEnum.*;
 import static org.springframework.data.domain.Sort.Direction.*;
@@ -38,14 +40,20 @@ public class ReservationService {
     private final ReservationRepo reservationRepo;
     private final UserDataService userDataService;
     private final ReservationNotificationService reservationNotificationService;
+    private final ServiceItemRepo serviceItemRepo;
+    private final ReservationCommandService reservationCommandService;
 
     public ReservationService(
             ReservationRepo reservationRepo,
             UserDataService userDataService,
-            ReservationNotificationService reservationNotificationService) {
+            ReservationNotificationService reservationNotificationService,
+            ServiceItemRepo serviceItemRepo,
+            ReservationCommandService reservationCommandService) {
         this.reservationRepo = reservationRepo;
         this.userDataService = userDataService;
         this.reservationNotificationService = reservationNotificationService;
+        this.serviceItemRepo = serviceItemRepo;
+        this.reservationCommandService = reservationCommandService;
     }
 
     /**
@@ -63,14 +71,22 @@ public class ReservationService {
         if (user == null) {
             throw new UserNotFoundException("無法為不存在的使用者建立預約");
         }
-        reservation.setUser(user);
-        reservation.setCreatedAt(LocalDateTime.now());
-        reservation.setCreatedBy(SYSTEM.name());
-        reservation.setDeletedFlag(false);
-
-        Reservation saved = reservationRepo.save(reservation);
-        reservationNotificationService.notifyNewReservation(saved);
-        return saved;
+        BusinessData business = reservation.getBusiness();
+        if (business == null || business.getId() == null) {
+            throw new IllegalArgumentException("預約商家不可為空");
+        }
+        var serviceItem = serviceItemRepo.findByBusinessIdAndName(business.getId(), reservation.getTitle())
+                .orElseThrow(() -> new IllegalArgumentException("找不到服務項目: " + reservation.getTitle()));
+        return reservationCommandService.createReservation(
+                user,
+                business,
+                serviceItem,
+                reservation.getReservationDate(),
+                reservation.getStartTime(),
+                WEB,
+                reservation.getDescription(),
+                reservation.getRemark()
+        );
     }
 
     /**

@@ -47,15 +47,15 @@
 
 工作內容：
 
-- [ ] 建立商家 LINE channel 與 LINE 客戶資料模型及唯一索引。
-- [ ] 在 `Reservation` 記錄預約來源，例如 `WEB`、`LINE`。
-- [ ] 從現有 `ReservationService.saveReservation()` 抽出不依賴 `getCurrentUser()` 的預約建立 use case。
-- [ ] 明確傳入 customer、business、service、date、start time 與 source。
-- [ ] 在同一資料庫交易內重新驗證時段並建立預約。
-- [ ] 保留網站既有 API 行為，改由網站流程呼叫新的 use case。
-- [ ] 增加單元測試：成功建立、時段衝突、非該商家服務、停用服務與無效日期。
-- [ ] 執行 `./mvnw test` 或 `mvn test`，確認既有測試沒有退化。
-- [ ] Commit：`refactor: extract reservation creation use case`
+- [x] 建立商家 LINE channel 與 LINE 客戶資料模型及唯一索引。
+- [x] 在 `Reservation` 記錄預約來源，例如 `WEB`、`LINE`。
+- [x] 從現有 `ReservationService.saveReservation()` 抽出不依賴 `getCurrentUser()` 的預約建立 use case。
+- [x] 明確傳入 customer、business、service、date、start time 與 source。
+- [x] 在同一資料庫交易內重新驗證時段並建立預約。
+- [x] 保留網站既有 API 行為，改由網站流程呼叫新的 use case。
+- [x] 增加單元測試：成功建立、時段衝突、非該商家服務、停用服務與無效日期。
+- [x] 執行 `mvn -Dtest='*Test,!DatabaseConnectionTest' test`，24 項測試通過；`DatabaseConnectionTest` 仍需外部資料庫設定。
+- [x] Commit：`refactor: extract reservation creation use case`
 
 完成標準：
 
