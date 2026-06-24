@@ -13,10 +13,20 @@ Run with:
 - `SPRING_PROFILES_ACTIVE=local`
 - `LINE_LOGIN_CHANNEL_ID=<your_local_line_channel_id>`
 - `LINE_LOGIN_CHANNEL_SECRET=<your_local_line_channel_secret>`
+- Optional when testing LINE Messaging settings locally:
+  - `LINE_CREDENTIAL_ENCRYPTION_KEY=<base64_encoded_32_byte_key>`
+  - `LINE_WEBHOOK_BASE_URL=<public_https_base_url>`
 - Optional for password reset email testing: `MAIL_HOST=localhost`, `MAIL_PORT=1025` with a local SMTP catcher such as Mailpit or MailHog.
 
 Profile config is in:
 - `src/main/resources/application-local.yml`
+
+Local uses a development-only encryption key when `LINE_CREDENTIAL_ENCRYPTION_KEY` is omitted.
+Use a stable custom key before saving real LINE credentials. Generate one with:
+
+```bash
+openssl rand -base64 32
+```
 
 ### Frontend
 Run `frontend` with your IDE/npm run config (Vite default).
@@ -37,6 +47,7 @@ POSTGRES_USER='reservio' \
 POSTGRES_PASSWORD='<strong_db_password>' \
 LINE_LOGIN_CHANNEL_ID='<line_channel_id>' \
 LINE_LOGIN_CHANNEL_SECRET='<line_channel_secret>' \
+LINE_CREDENTIAL_ENCRYPTION_KEY='<base64_encoded_32_byte_key>' \
 MAIL_HOST='smtp-relay.brevo.com' \
 MAIL_PORT='587' \
 MAIL_USERNAME='<smtp_username>' \
@@ -56,6 +67,7 @@ POSTGRES_PASSWORD=<strong_db_password>
 
 LINE_LOGIN_CHANNEL_ID=<line_channel_id>
 LINE_LOGIN_CHANNEL_SECRET=<line_channel_secret>
+LINE_CREDENTIAL_ENCRYPTION_KEY=<base64_encoded_32_byte_key>
 
 MAIL_HOST=smtp-relay.brevo.com
 MAIL_PORT=587

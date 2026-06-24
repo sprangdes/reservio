@@ -38,6 +38,15 @@ public class ApiExceptionHandler {
                         .build());
     }
 
+    @ExceptionHandler(NotBusinessAccountException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNotBusinessAccount(NotBusinessAccountException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.<Void>builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .build());
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiResponse<Void>> handleAuth(AuthenticationException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

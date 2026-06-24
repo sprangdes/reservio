@@ -124,6 +124,13 @@ export const api = {
   markNotificationRead: (id: string | number) => request(`/api/notifications/${id}/read`, { method: 'POST' }),
   markAllNotificationsRead: () => request('/api/notifications/read-all', { method: 'POST' }),
   notificationPreferences: () => request('/api/notifications/preferences'),
+  lineIntegrationSettings: () => request('/api/integrations/line/settings'),
+  saveLineIntegrationSettings: (payload: unknown) => request('/api/integrations/line/settings', {
+    method: 'PUT',
+    body: JSON.stringify(payload)
+  }),
+  disableLineIntegration: () => request('/api/integrations/line/settings/disable', { method: 'POST' }),
+  rotateLineWebhookKey: () => request('/api/integrations/line/settings/rotate-webhook-key', { method: 'POST' }),
   updateNotificationPreferences: (payload: unknown) => request('/api/notifications/preferences', {
     method: 'PUT',
     body: JSON.stringify(payload)
