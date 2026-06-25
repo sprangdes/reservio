@@ -3,6 +3,7 @@ package com.reservio.line.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.reservio.line.entity.BusinessLineChannel;
+import com.reservio.line.message.LineReplyMessage;
 import com.reservio.line.security.LineCredentialCipher;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -10,6 +11,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Component
@@ -31,10 +34,31 @@ public class LineMessagingClient {
     }
 
     public void replyText(BusinessLineChannel channel, String replyToken, String text) {
+        reply(channel, replyToken, new LineReplyMessage(text, List.of()));
+    }
+
+    public void reply(BusinessLineChannel channel, String replyToken, LineReplyMessage replyMessage) {
         String accessToken = cipher.decrypt(channel.getAccessTokenCiphertext());
+        Map<String, Object> message = new LinkedHashMap<>();
+        message.put("type", "text");
+        message.put("text", replyMessage.text());
+        if (replyMessage.options() != null && !replyMessage.options().isEmpty()) {
+            List<Map<String, Object>> items = new ArrayList<>();
+            for (String option : replyMessage.options()) {
+                items.add(Map.of(
+                        "type", "action",
+                        "action", Map.of(
+                                "type", "message",
+                                "label", option,
+                                "text", option
+                        )
+                ));
+            }
+            message.put("quickReply", Map.of("items", items));
+        }
         String requestBody = serialize(Map.of(
                 "replyToken", replyToken,
-                "messages", List.of(Map.of("type", "text", "text", text))
+                "messages", List.of(message)
         ));
         restClient.post()
                 .uri(REPLY_URL)

@@ -174,21 +174,21 @@ IDLE
 
 工作內容：
 
-- [ ] 以 `(business_id, line_user_id)` 保存唯一 active conversation。
-- [ ] 「立即預約」建立或重設流程，回覆啟用中的服務 Quick Reply。
-- [ ] 服務選擇必須驗證屬於目前商家且仍為 active。
-- [ ] 支援 `6/29`、`06/29`、`2026/6/29`，未指定年份時選擇最近且非過去的日期。
-- [ ] 日期不營業時維持 `ENTERING_DATE`，回覆「當日不營業」。
-- [ ] 無可用時段時維持 `ENTERING_DATE`，提示改選其他日期。
-- [ ] 有時段時使用 Quick Reply 顯示可預約時間。
-- [ ] 收集姓名與電話，電話採最小格式驗證。
-- [ ] 確認訊息列出商家、服務、日期、時間、姓名與電話。
-- [ ] 客戶選擇確認後呼叫 `ReservationCommandService` 建立預約。
-- [ ] 如果最後確認時時段已被占用，返回日期／時段選擇，不建立預約。
-- [ ] 「取消」或「重新開始」可隨時清除目前流程。
-- [ ] conversation 超過 30 分鐘視為過期，下一則訊息提示重新開始。
-- [ ] 對每個 state 增加成功、錯誤輸入、過期和重複 event 測試。
-- [ ] Commit：`feat: add LINE reservation conversation`
+- [x] 以 `(business_id, line_user_id)` 保存唯一 active conversation。
+- [x] 「立即預約」建立或重設流程，回覆啟用中的服務 Quick Reply。
+- [x] 服務選擇必須驗證屬於目前商家且仍為 active。
+- [x] 支援 `6/29`、`06/29`、`2026/6/29`，未指定年份時選擇最近且非過去的日期。
+- [x] 日期不營業時維持 `ENTERING_DATE`，回覆「當日不營業」。
+- [x] 無可用時段時維持 `ENTERING_DATE`，提示改選其他日期。
+- [x] 有時段時使用 Quick Reply 顯示可預約時間。
+- [x] 收集姓名與電話，電話採最小格式驗證。
+- [x] 確認訊息列出商家、服務、日期、時間、姓名與電話。
+- [x] 客戶選擇確認後呼叫 `ReservationCommandService` 建立預約。
+- [x] 如果最後確認時時段已被占用，返回日期／時段選擇，不建立預約。
+- [x] 「取消」或「重新開始」可隨時清除目前流程。
+- [x] conversation 超過 30 分鐘視為過期，下一則訊息提示重新開始。
+- [x] 對各 state 增加成功、錯誤輸入、過期測試；重複 event 沿用 Phase 3 event ID 去重。
+- [x] Commit：`feat: add LINE reservation conversation`
 
 完成標準：
 

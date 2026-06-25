@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.reservio.line.entity.LineWebhookEvent;
 import com.reservio.line.enums.LineWebhookEventStatus;
+import com.reservio.line.conversation.LineReservationConversation;
+import com.reservio.line.message.LineReplyMessage;
 import com.reservio.line.repo.LineWebhookEventRepo;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -16,19 +18,19 @@ import java.time.LocalDateTime;
 public class LineWebhookWorker {
 
     private static final int MAX_ATTEMPTS = 3;
-    private static final String IMMEDIATE_RESERVATION = "立即預約";
-    private static final String IMMEDIATE_RESERVATION_REPLY = "請選擇想預約的服務項目。";
-
     private final LineWebhookEventRepo eventRepo;
     private final LineMessagingClient messagingClient;
+    private final LineReservationConversation reservationConversation;
     private final ObjectMapper objectMapper;
 
     public LineWebhookWorker(
             LineWebhookEventRepo eventRepo,
             LineMessagingClient messagingClient,
+            LineReservationConversation reservationConversation,
             ObjectMapper objectMapper) {
         this.eventRepo = eventRepo;
         this.messagingClient = messagingClient;
+        this.reservationConversation = reservationConversation;
         this.objectMapper = objectMapper;
     }
 
@@ -46,12 +48,14 @@ public class LineWebhookWorker {
     private void processOne(LineWebhookEvent event, LocalDateTime now) {
         try {
             JsonNode payload = objectMapper.readTree(event.getPayload());
-            if (isImmediateReservationMessage(payload)) {
-                messagingClient.replyText(
-                        event.getChannel(),
-                        event.getReplyToken(),
-                        IMMEDIATE_RESERVATION_REPLY
-                );
+            if (isTextMessage(payload)) {
+                String lineUserId = payload.path("source").path("userId").asText(null);
+                String text = payload.path("message").path("text").asText();
+                if (lineUserId != null && event.getReplyToken() != null) {
+                    LineReplyMessage reply = reservationConversation.handle(
+                            event.getChannel(), lineUserId, text);
+                    messagingClient.reply(event.getChannel(), event.getReplyToken(), reply);
+                }
             }
             event.setStatus(LineWebhookEventStatus.PROCESSED);
             event.setProcessedAt(now);
@@ -68,10 +72,9 @@ public class LineWebhookWorker {
         }
     }
 
-    private boolean isImmediateReservationMessage(JsonNode payload) {
+    private boolean isTextMessage(JsonNode payload) {
         return "message".equals(payload.path("type").asText())
-                && "text".equals(payload.path("message").path("type").asText())
-                && IMMEDIATE_RESERVATION.equals(payload.path("message").path("text").asText());
+                && "text".equals(payload.path("message").path("type").asText());
     }
 
     private String failureMessage(Exception exception) {

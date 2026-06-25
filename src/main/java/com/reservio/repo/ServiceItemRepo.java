@@ -12,4 +12,5 @@ public interface ServiceItemRepo extends JpaRepository<ServiceItem, Long> {
     List<ServiceItem> findAllByBusinessId(Long businessId);
     List<ServiceItem> findAllByBusinessIdAndActiveTrue(Long businessId);
     Optional<ServiceItem> findByBusinessIdAndName(Long businessId, String name);
+    Optional<ServiceItem> findByBusinessIdAndNameAndActiveTrue(Long businessId, String name);
 }

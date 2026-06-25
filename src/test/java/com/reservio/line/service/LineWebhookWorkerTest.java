@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.reservio.line.entity.BusinessLineChannel;
 import com.reservio.line.entity.LineWebhookEvent;
 import com.reservio.line.enums.LineWebhookEventStatus;
+import com.reservio.line.conversation.LineReservationConversation;
+import com.reservio.line.message.LineReplyMessage;
 import com.reservio.line.repo.LineWebhookEventRepo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,13 +28,16 @@ class LineWebhookWorkerTest {
 
     @Mock private LineWebhookEventRepo eventRepo;
     @Mock private LineMessagingClient messagingClient;
+    @Mock private LineReservationConversation reservationConversation;
 
     private LineWebhookWorker worker;
     private BusinessLineChannel channel;
 
     @BeforeEach
     void setUp() {
-        worker = new LineWebhookWorker(eventRepo, messagingClient, new ObjectMapper());
+        worker = new LineWebhookWorker(
+                eventRepo, messagingClient, reservationConversation, new ObjectMapper()
+        );
         channel = BusinessLineChannel.builder().id(4L).build();
     }
 
@@ -42,10 +47,14 @@ class LineWebhookWorkerTest {
         when(eventRepo.findTop50ByStatusAndNextAttemptAtBeforeOrderById(
                 any(LineWebhookEventStatus.class), any(LocalDateTime.class)
         )).thenReturn(List.of(event));
+        LineReplyMessage reply = new LineReplyMessage(
+                "想預約什麼項目？", List.of("剪髮", "取消")
+        );
+        when(reservationConversation.handle(channel, "line-user", "立即預約")).thenReturn(reply);
 
         worker.processPendingEvents();
 
-        verify(messagingClient).replyText(channel, "reply-token", "請選擇想預約的服務項目。");
+        verify(messagingClient).reply(channel, "reply-token", reply);
         assertThat(event.getStatus()).isEqualTo(LineWebhookEventStatus.PROCESSED);
         assertThat(event.getProcessedAt()).isNotNull();
         assertThat(event.getFailureReason()).isNull();
@@ -63,7 +72,7 @@ class LineWebhookWorkerTest {
 
         worker.processPendingEvents();
 
-        verify(messagingClient, never()).replyText(any(), any(), any());
+        verify(messagingClient, never()).reply(any(), any(), any());
         assertThat(event.getStatus()).isEqualTo(LineWebhookEventStatus.PROCESSED);
     }
 
@@ -74,8 +83,10 @@ class LineWebhookWorkerTest {
         when(eventRepo.findTop50ByStatusAndNextAttemptAtBeforeOrderById(
                 any(LineWebhookEventStatus.class), any(LocalDateTime.class)
         )).thenReturn(List.of(event));
+        LineReplyMessage reply = new LineReplyMessage("回覆", List.of());
+        when(reservationConversation.handle(channel, "line-user", "立即預約")).thenReturn(reply);
         doThrow(new IllegalStateException("LINE API 503"))
-                .when(messagingClient).replyText(channel, "reply-token", "請選擇想預約的服務項目。");
+                .when(messagingClient).reply(channel, "reply-token", reply);
 
         worker.processPendingEvents();
 
@@ -91,8 +102,10 @@ class LineWebhookWorkerTest {
         when(eventRepo.findTop50ByStatusAndNextAttemptAtBeforeOrderById(
                 any(LineWebhookEventStatus.class), any(LocalDateTime.class)
         )).thenReturn(List.of(event));
+        LineReplyMessage reply = new LineReplyMessage("回覆", List.of());
+        when(reservationConversation.handle(channel, "line-user", "立即預約")).thenReturn(reply);
         doThrow(new IllegalStateException("LINE API 503"))
-                .when(messagingClient).replyText(channel, "reply-token", "請選擇想預約的服務項目。");
+                .when(messagingClient).reply(channel, "reply-token", reply);
 
         worker.processPendingEvents();
 
@@ -120,6 +133,7 @@ class LineWebhookWorkerTest {
                   "type": "message",
                   "webhookEventId": "event-1",
                   "replyToken": "reply-token",
+                  "source": {"type":"user","userId":"line-user"},
                   "message": {"type": "text", "text": "立即預約"}
                 }
                 """;
