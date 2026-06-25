@@ -4,8 +4,12 @@ import com.reservio.entity.BusinessData;
 import com.reservio.entity.Reservation;
 import com.reservio.entity.UserData;
 import com.reservio.enums.ReservationStatus;
+import com.reservio.enums.ReservationSource;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -45,4 +49,18 @@ public interface ReservationRepo extends JpaRepository<Reservation, Long>, JpaSp
     List<Reservation> getAllByBusinessAndReservationDateBetweenAndStatusIn(BusinessData businessData, LocalDate startOfWeek, LocalDate endOfWeek, List<ReservationStatus> statuses);
 
     List<Reservation> getAllByUserAndReservationDateBetweenAndStatusIn(UserData currentUser, LocalDate startOfWeek, LocalDate endOfWeek, List<ReservationStatus> statuses);
+
+    @Modifying
+    @Query("""
+            update Reservation reservation
+               set reservation.user = :targetUser
+             where reservation.business = :business
+               and reservation.user = :sourceUser
+               and reservation.source = :source
+            """)
+    int transferLineReservations(
+            @Param("business") BusinessData business,
+            @Param("sourceUser") UserData sourceUser,
+            @Param("targetUser") UserData targetUser,
+            @Param("source") ReservationSource source);
 }
