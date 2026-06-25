@@ -80,7 +80,9 @@ class ReservationCommandServiceTest {
                 LocalTime.of(10, 0),
                 ReservationSource.LINE,
                 "希望靠窗",
-                "首次來店"
+                "首次來店",
+                "王小明",
+                "0912-345-678"
         );
 
         ArgumentCaptor<Reservation> captor = ArgumentCaptor.forClass(Reservation.class);
@@ -95,6 +97,8 @@ class ReservationCommandServiceTest {
         assertThat(saved.getTitle()).isEqualTo("剪髮");
         assertThat(saved.getDescription()).isEqualTo("希望靠窗");
         assertThat(saved.getRemark()).isEqualTo("首次來店");
+        assertThat(saved.getCustomerName()).isEqualTo("王小明");
+        assertThat(saved.getCustomerPhone()).isEqualTo("0912-345-678");
         assertThat(saved.getSource()).isEqualTo(ReservationSource.LINE);
         assertThat(saved.getCreatedBy()).isEqualTo("LINE");
         assertThat(result).isSameAs(saved);
@@ -111,7 +115,7 @@ class ReservationCommandServiceTest {
 
         assertThatThrownBy(() -> service.createReservation(
                 customer, business, serviceItem, date, LocalTime.of(10, 0),
-                ReservationSource.LINE, null, null
+                ReservationSource.LINE, null, null, null, null
         ))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("該時段已被預約");
@@ -128,7 +132,7 @@ class ReservationCommandServiceTest {
 
         assertThatThrownBy(() -> service.createReservation(
                 customer, business, serviceItem, LocalDate.now().plusDays(2), LocalTime.of(10, 0),
-                ReservationSource.LINE, null, null
+                ReservationSource.LINE, null, null, null, null
         ))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("服務項目不屬於指定商家");
@@ -144,7 +148,7 @@ class ReservationCommandServiceTest {
 
         assertThatThrownBy(() -> service.createReservation(
                 customer, business, serviceItem, LocalDate.now().plusDays(2), LocalTime.of(10, 0),
-                ReservationSource.LINE, null, null
+                ReservationSource.LINE, null, null, null, null
         ))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("服務項目目前未開放預約");
@@ -156,7 +160,7 @@ class ReservationCommandServiceTest {
     void rejectsPastDate() {
         assertThatThrownBy(() -> service.createReservation(
                 customer, business, serviceItem, LocalDate.now().minusDays(1), LocalTime.of(10, 0),
-                ReservationSource.LINE, null, null
+                ReservationSource.LINE, null, null, null, null
         ))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("預約日期不可早於今天");

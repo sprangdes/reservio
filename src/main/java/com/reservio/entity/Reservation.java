@@ -59,6 +59,12 @@ public class Reservation {
     @Column(length = 255)
     private String remark;
 
+    @Column(name = "customer_name", length = 255)
+    private String customerName;
+
+    @Column(name = "customer_phone", length = 50)
+    private String customerPhone;
+
     @Column(length = 255)
     private String cancelReason;
 

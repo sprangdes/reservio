@@ -50,7 +50,9 @@ public class ReservationCommandService {
             LocalTime startTime,
             ReservationSource source,
             String description,
-            String remark) {
+            String remark,
+            String customerName,
+            String customerPhone) {
         validateRequiredInputs(customer, requestedBusiness, requestedService, reservationDate, startTime, source);
 
         BusinessData business = businessDataRepo.findByIdForUpdate(requestedBusiness.getId())
@@ -71,6 +73,8 @@ public class ReservationCommandService {
                 .title(service.getName())
                 .description(description)
                 .remark(remark)
+                .customerName(customerName)
+                .customerPhone(customerPhone)
                 .source(source)
                 .createdAt(LocalDateTime.now())
                 .createdBy(source.name())
