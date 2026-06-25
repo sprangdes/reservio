@@ -19,8 +19,11 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class LineRichMenuService {
@@ -32,6 +35,18 @@ public class LineRichMenuService {
 
     private static final int WIDTH = 2500;
     private static final int HEIGHT = 843;
+    private static final int FONT_SIZE = 72;
+    private static final List<String> LABELS = List.of(
+            "立即預約",
+            "我的預約",
+            "查詢可預約時段"
+    );
+    private static final List<String> PREFERRED_FONT_FAMILIES = List.of(
+            "Noto Sans CJK TC",
+            "Noto Sans TC",
+            "PingFang TC",
+            "Microsoft JhengHei"
+    );
 
     private final BusinessLineChannelRepo channelRepo;
     private final UserDataService userDataService;
@@ -145,6 +160,14 @@ public class LineRichMenuService {
         );
     }
 
+    static String preferredFontFamily(Set<String> availableFamilies) {
+        return PREFERRED_FONT_FAMILIES.stream()
+                .filter(availableFamilies::contains)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "Rich Menu 圖片產生失敗：執行環境缺少可用的中文字型"));
+    }
+
     private byte[] renderRichMenuImage() {
         System.setProperty("java.awt.headless", "true");
         BufferedImage image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
@@ -159,9 +182,23 @@ public class LineRichMenuService {
                     new Color(230, 236, 240),
                     new Color(230, 236, 240)
             };
-            String[] labels = {"立即預約", "我的預約", "查詢可預約時段"};
             int third = WIDTH / 3;
-            graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 72));
+            Set<String> availableFamilies = Arrays.stream(
+                            GraphicsEnvironment.getLocalGraphicsEnvironment()
+                                    .getAvailableFontFamilyNames())
+                    .collect(Collectors.toSet());
+            Font font = new Font(
+                    preferredFontFamily(availableFamilies),
+                    Font.BOLD,
+                    FONT_SIZE
+            );
+            LABELS.forEach(label -> {
+                if (font.canDisplayUpTo(label) != -1) {
+                    throw new IllegalStateException(
+                            "Rich Menu 圖片產生失敗：中文字型無法顯示選單文字");
+                }
+            });
+            graphics.setFont(font);
             FontMetrics metrics = graphics.getFontMetrics();
             for (int index = 0; index < 3; index++) {
                 int x = index * third;
@@ -169,7 +206,7 @@ public class LineRichMenuService {
                 graphics.setColor(colors[index]);
                 graphics.fillRect(x, 0, width, HEIGHT);
                 graphics.setColor(index == 0 ? Color.WHITE : new Color(80, 92, 101));
-                String label = labels[index];
+                String label = LABELS.get(index);
                 int textX = x + (width - metrics.stringWidth(label)) / 2;
                 int textY = (HEIGHT - metrics.getHeight()) / 2 + metrics.getAscent();
                 graphics.drawString(label, textX, textY);

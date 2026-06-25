@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -160,6 +161,20 @@ class LineRichMenuServiceTest {
                         LineRichMenuService.MY_RESERVATIONS_ACTION,
                         LineRichMenuService.AVAILABILITY_ACTION
                 );
+    }
+
+    @Test
+    void prefersNotoTraditionalChineseFontWhenAvailable() {
+        assertThat(LineRichMenuService.preferredFontFamily(
+                Set.of("Dialog", "PingFang TC", "Noto Sans CJK TC")))
+                .isEqualTo("Noto Sans CJK TC");
+    }
+
+    @Test
+    void rejectsRuntimeWithoutSupportedChineseFont() {
+        assertThatThrownBy(() -> LineRichMenuService.preferredFontFamily(Set.of("Dialog")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("中文字型");
     }
 
     @Test
