@@ -235,7 +235,7 @@ class LineReservationConversationTest {
                 .thenReturn(customer);
         when(reservationCommandService.createReservation(
                 customer, business, haircut, existing.getReservationDate(), existing.getStartTime(),
-                ReservationSource.LINE, null, "LINE 預約"
+                ReservationSource.LINE, null, "LINE 預約", "王小明", "0912-345-678"
         )).thenReturn(saved);
 
         LineReplyMessage reply = conversationService.handle(channel, "line-user", "確認");
@@ -267,7 +267,7 @@ class LineReservationConversationTest {
         when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
         when(lineCustomerService.getOrCreateUser(any(), any(), any(), any())).thenReturn(customer);
         when(reservationCommandService.createReservation(
-                any(), any(), any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
         )).thenThrow(new IllegalStateException("該時段已被預約"));
 
         LineReplyMessage reply = conversationService.handle(channel, "line-user", "確認");
@@ -291,7 +291,7 @@ class LineReservationConversationTest {
         assertThat(existing.getState()).isEqualTo(LineConversationState.IDLE);
         assertThat(cancelled.text()).isEqualTo("已取消目前的預約流程。");
         verify(reservationCommandService, never()).createReservation(
-                any(), any(), any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
         );
     }
 

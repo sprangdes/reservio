@@ -85,7 +85,9 @@ public class ReservationService {
                 reservation.getStartTime(),
                 WEB,
                 reservation.getDescription(),
-                reservation.getRemark()
+                reservation.getRemark(),
+                null,
+                null
         );
     }
 

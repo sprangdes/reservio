@@ -322,7 +322,7 @@ public class ReservationApiController {
         return ReservationResponse.builder()
                 .id(reservation.getId())
                 .userId(user != null ? user.getId() : null)
-                .username(user != null ? user.getUsername() : null)
+                .username(displayCustomerName(reservation, user))
                 .businessId(business != null ? business.getId() : null)
                 .businessName(business != null ? business.getName() : null)
                 .reservationDate(reservation.getReservationDate())
@@ -336,6 +336,14 @@ public class ReservationApiController {
                 .createdAt(reservation.getCreatedAt())
                 .updatedAt(reservation.getUpdatedAt())
                 .build();
+    }
+
+    private String displayCustomerName(Reservation reservation, UserData user) {
+        String customerName = reservation.getCustomerName();
+        if (customerName != null && !customerName.isBlank()) {
+            return customerName;
+        }
+        return user != null ? user.getUsername() : null;
     }
 
     private PageResponse<ReservationResponse> toPageResponse(Page<ReservationResponse> page, String sortBy, String sortDir) {

@@ -98,7 +98,11 @@ public class ReservationSpecification {
     private static Specification<Reservation> customerNameLike(String customerName) {
         return (root, query, criteriaBuilder) -> {
             if (customerName == null) return null;
-            return criteriaBuilder.like(root.get(USER).get(USERNAME), "%" + customerName + "%");
+            String pattern = "%" + customerName + "%";
+            return criteriaBuilder.or(
+                    criteriaBuilder.like(root.get("customerName"), pattern),
+                    criteriaBuilder.like(root.get(USER).get(USERNAME), pattern)
+            );
         };
     }
 

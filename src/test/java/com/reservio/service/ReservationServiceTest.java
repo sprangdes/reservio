@@ -60,7 +60,9 @@ class ReservationServiceTest {
                 LocalTime.of(10, 0),
                 ReservationSource.WEB,
                 "description",
-                "remark"
+                "remark",
+                null,
+                null
         )).thenReturn(saved);
 
         ReservationService service = new ReservationService(
@@ -82,7 +84,9 @@ class ReservationServiceTest {
                 LocalTime.of(10, 0),
                 ReservationSource.WEB,
                 "description",
-                "remark"
+                "remark",
+                null,
+                null
         );
     }
 }

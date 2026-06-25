@@ -240,7 +240,9 @@ public class LineReservationConversation {
                     conversation.getStartTime(),
                     ReservationSource.LINE,
                     null,
-                    "LINE 預約"
+                    "LINE 預約",
+                    conversation.getCustomerName(),
+                    conversation.getPhone()
             );
             conversation.setState(LineConversationState.COMPLETED);
             log.info(
