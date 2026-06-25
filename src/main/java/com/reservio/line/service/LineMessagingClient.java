@@ -18,10 +18,13 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 public class LineMessagingClient {
 
+    private static final Logger log = LoggerFactory.getLogger(LineMessagingClient.class);
     private static final String REPLY_URL = "https://api.line.me/v2/bot/message/reply";
     private static final String BOT_INFO_URL = "https://api.line.me/v2/bot/info";
     private static final String WEBHOOK_ENDPOINT_URL =
@@ -68,7 +71,7 @@ public class LineMessagingClient {
                 "replyToken", replyToken,
                 "messages", List.of(message)
         ));
-        execute(() -> {
+        execute(channel, "reply", () -> {
             restClient.post()
                     .uri(REPLY_URL)
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
@@ -95,7 +98,7 @@ public class LineMessagingClient {
 
     public String createRichMenu(BusinessLineChannel channel, Map<String, Object> definition) {
         String accessToken = accessToken(channel);
-        String response = execute(() -> restClient.post()
+        String response = execute(channel, "create_rich_menu", () -> restClient.post()
                 .uri(RICH_MENU_URL)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -113,7 +116,7 @@ public class LineMessagingClient {
             BusinessLineChannel channel,
             String richMenuId,
             byte[] image) {
-        execute(() -> {
+        execute(channel, "upload_rich_menu_image", () -> {
             restClient.post()
                     .uri("https://api-data.line.me/v2/bot/richmenu/{richMenuId}/content", richMenuId)
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken(channel))
@@ -126,7 +129,7 @@ public class LineMessagingClient {
     }
 
     public void setDefaultRichMenu(BusinessLineChannel channel, String richMenuId) {
-        execute(() -> {
+        execute(channel, "set_default_rich_menu", () -> {
             restClient.post()
                     .uri("https://api.line.me/v2/bot/user/all/richmenu/{richMenuId}", richMenuId)
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken(channel))
@@ -137,7 +140,7 @@ public class LineMessagingClient {
     }
 
     public void deleteRichMenu(BusinessLineChannel channel, String richMenuId) {
-        execute(() -> {
+        execute(channel, "delete_rich_menu", () -> {
             restClient.delete()
                     .uri("https://api.line.me/v2/bot/richmenu/{richMenuId}", richMenuId)
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken(channel))
@@ -148,7 +151,7 @@ public class LineMessagingClient {
     }
 
     private String authorizedGet(BusinessLineChannel channel, String url) {
-        return execute(() -> restClient.get()
+        return execute(channel, operationName(url), () -> restClient.get()
                 .uri(url)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken(channel))
                 .retrieve()
@@ -167,25 +170,71 @@ public class LineMessagingClient {
         }
     }
 
-    private <T> T execute(Supplier<T> request) {
+    private String operationName(String url) {
+        if (BOT_INFO_URL.equals(url)) {
+            return "get_bot_info";
+        }
+        if (WEBHOOK_ENDPOINT_URL.equals(url)) {
+            return "get_webhook_endpoint";
+        }
+        return "get";
+    }
+
+    private <T> T execute(
+            BusinessLineChannel channel,
+            String operation,
+            Supplier<T> request) {
+        long startedAt = System.nanoTime();
+        Long businessId = channel.getBusiness() == null
+                ? null
+                : channel.getBusiness().getId();
         try {
-            return request.get();
+            T response = request.get();
+            log.info(
+                    "line_api business_id={} operation={} latency_ms={} outcome=SUCCESS",
+                    businessId,
+                    operation,
+                    elapsedMillis(startedAt)
+            );
+            return response;
         } catch (RestClientResponseException exception) {
             int status = exception.getStatusCode().value();
             if (status == 401 || status == 403) {
+                logFailure(businessId, operation, startedAt, LineApiError.AUTHORIZATION);
                 throw new LineApiException(
                         LineApiError.AUTHORIZATION, "LINE API authorization failed", exception);
             }
             if (status == 429) {
+                logFailure(businessId, operation, startedAt, LineApiError.RATE_LIMIT);
                 throw new LineApiException(
                         LineApiError.RATE_LIMIT, "LINE API rate limit exceeded", exception);
             }
+            logFailure(businessId, operation, startedAt, LineApiError.OTHER);
             throw new LineApiException(
                     LineApiError.OTHER, "LINE API request failed: " + status, exception);
         } catch (ResourceAccessException exception) {
+            logFailure(businessId, operation, startedAt, LineApiError.TIMEOUT);
             throw new LineApiException(
                     LineApiError.TIMEOUT, "LINE API request timed out", exception);
         }
+    }
+
+    private void logFailure(
+            Long businessId,
+            String operation,
+            long startedAt,
+            LineApiError error) {
+        log.warn(
+                "line_api business_id={} operation={} latency_ms={} outcome=FAILED error_type={}",
+                businessId,
+                operation,
+                elapsedMillis(startedAt),
+                error
+        );
+    }
+
+    private long elapsedMillis(long startedAt) {
+        return (System.nanoTime() - startedAt) / 1_000_000;
     }
 
     private String serialize(Map<String, Object> body) {

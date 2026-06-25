@@ -98,7 +98,11 @@ public class LineRichMenuService {
                 try {
                     messagingClient.deleteRichMenu(channel, oldRichMenuId);
                 } catch (LineApiException exception) {
-                    log.warn("Unable to delete previous LINE Rich Menu {}", oldRichMenuId);
+                    log.warn(
+                            "line_rich_menu_cleanup_failed business_id={} error_type={}",
+                            channel.getBusiness().getId(),
+                            exception.getError()
+                    );
                 }
             }
             channel.setRichMenuId(newRichMenuId);

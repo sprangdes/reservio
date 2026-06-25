@@ -17,6 +17,9 @@ import com.reservio.repo.ServiceItemRepo;
 import com.reservio.service.ReservationCommandService;
 import com.reservio.service.ReservationTimeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +33,8 @@ import java.util.List;
 @Service
 public class LineReservationConversation {
 
+    private static final Logger log =
+            LoggerFactory.getLogger(LineReservationConversation.class);
     private static final String START = "立即預約";
     private static final String RESTART = "重新開始";
     private static final String CANCEL = "取消";
@@ -238,11 +243,24 @@ public class LineReservationConversation {
                     "LINE 預約"
             );
             conversation.setState(LineConversationState.COMPLETED);
+            log.info(
+                    "line_reservation_completed business_id={} event_id={} conversation_state={}",
+                    conversation.getBusiness().getId(),
+                    eventId(),
+                    conversation.getState()
+            );
             return messageFactory.text("預約已送出，預約編號：" + reservation.getId() + "。");
         } catch (IllegalStateException exception) {
             conversation.setState(LineConversationState.ENTERING_DATE);
             conversation.setReservationDate(null);
             conversation.setStartTime(null);
+            log.warn(
+                    "line_reservation_conflict business_id={} event_id={} conversation_state={} error_type={}",
+                    conversation.getBusiness().getId(),
+                    eventId(),
+                    conversation.getState(),
+                    exception.getClass().getSimpleName()
+            );
             return messageFactory.text("此時段剛被預約，請重新輸入想預約的日期。");
         }
     }
@@ -300,5 +318,16 @@ public class LineReservationConversation {
         conversation.setUpdatedAt(now);
         conversation.setExpiresAt(now.plusMinutes(30));
         conversationRepo.save(conversation);
+        log.info(
+                "line_conversation_saved business_id={} event_id={} conversation_state={}",
+                conversation.getBusiness().getId(),
+                eventId(),
+                conversation.getState()
+        );
+    }
+
+    private String eventId() {
+        String eventId = MDC.get("event_id");
+        return eventId == null ? "none" : eventId;
     }
 }

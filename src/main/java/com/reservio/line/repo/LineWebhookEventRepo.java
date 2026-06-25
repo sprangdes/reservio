@@ -5,6 +5,7 @@ import com.reservio.line.enums.LineWebhookEventStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 public interface LineWebhookEventRepo extends JpaRepository<LineWebhookEvent, Long> {
@@ -13,5 +14,10 @@ public interface LineWebhookEventRepo extends JpaRepository<LineWebhookEvent, Lo
     List<LineWebhookEvent> findTop50ByStatusAndNextAttemptAtBeforeOrderById(
             LineWebhookEventStatus status,
             LocalDateTime nextAttemptAt
+    );
+
+    long deleteByStatusInAndReceivedAtBefore(
+            Collection<LineWebhookEventStatus> statuses,
+            LocalDateTime receivedAt
     );
 }

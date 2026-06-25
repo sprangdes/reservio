@@ -31,6 +31,12 @@ app:
     messaging:
       credential-encryption-key: ${LINE_CREDENTIAL_ENCRYPTION_KEY}
       webhook-base-url: ${LINE_WEBHOOK_BASE_URL:https://www.reserv-io.com}
+      worker-delay-ms: ${LINE_WORKER_DELAY_MS:1000}
+      rate-limit-per-minute: ${LINE_RATE_LIMIT_PER_MINUTE:20}
+      rate-limit-window-seconds: ${LINE_RATE_LIMIT_WINDOW_SECONDS:60}
+      event-retention-days: ${LINE_EVENT_RETENTION_DAYS:30}
+      conversation-retention-days: ${LINE_CONVERSATION_RETENTION_DAYS:14}
+      cleanup-cron: ${LINE_CLEANUP_CRON:0 30 3 * * *}
   auth:
     success-redirect-path: https://www.reserv-io.com/login
     failure-redirect-path: https://www.reserv-io.com/login
@@ -39,5 +45,6 @@ app:
 
 logging:
   level:
-    org.springframework.security.web.csrf: DEBUG
-    org.springframework.security.web.access: DEBUG
+    com.reservio.line: INFO
+    org.springframework.security.web.csrf: WARN
+    org.springframework.security.web.access: WARN
