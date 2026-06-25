@@ -31,6 +31,7 @@ class LineWebhookWorkerTest {
     @Mock private LineMessagingClient messagingClient;
     @Mock private LineReservationConversation reservationConversation;
     @Mock private LineMessageRateLimiter rateLimiter;
+    @Mock private LineAccountLinkService accountLinkService;
 
     private LineWebhookWorker worker;
     private BusinessLineChannel channel;
@@ -38,7 +39,12 @@ class LineWebhookWorkerTest {
     @BeforeEach
     void setUp() {
         worker = new LineWebhookWorker(
-                eventRepo, messagingClient, reservationConversation, rateLimiter, new ObjectMapper()
+                eventRepo,
+                messagingClient,
+                reservationConversation,
+                rateLimiter,
+                accountLinkService,
+                new ObjectMapper()
         );
         channel = BusinessLineChannel.builder().id(4L).build();
         channel.setBusiness(com.reservio.entity.BusinessData.builder().id(8L).build());
@@ -181,6 +187,35 @@ class LineWebhookWorkerTest {
         assertThat(event.getStatus()).isEqualTo(LineWebhookEventStatus.FAILED);
         assertThat(event.getAttemptCount()).isEqualTo(3);
         assertThat(event.getProcessedAt()).isNull();
+    }
+
+    @Test
+    void completesAccountLinkWebhookWithoutRateLimiting() {
+        LineWebhookEvent event = pendingEvent(0, """
+                {
+                  "type":"accountLink",
+                  "webhookEventId":"event-link",
+                  "replyToken":"reply-token",
+                  "source":{"type":"user","userId":"line-user"},
+                  "link":{"result":"ok","nonce":"nonce-value"}
+                }
+                """);
+        when(eventRepo.findTop50ByStatusAndNextAttemptAtBeforeOrderById(
+                any(LineWebhookEventStatus.class), any(LocalDateTime.class)
+        )).thenReturn(List.of(event));
+        when(accountLinkService.complete(channel, "line-user", "ok", "nonce-value"))
+                .thenReturn(2);
+
+        worker.processPendingEvents();
+
+        verify(accountLinkService).complete(channel, "line-user", "ok", "nonce-value");
+        verify(messagingClient).replyText(
+                channel,
+                "reply-token",
+                "Reservio 帳號綁定成功，既有 LINE 預約已同步。"
+        );
+        verify(rateLimiter, never()).tryAcquire(any(), any());
+        assertThat(event.getStatus()).isEqualTo(LineWebhookEventStatus.PROCESSED);
     }
 
     private LineWebhookEvent pendingEvent(int attempts, String payload) {

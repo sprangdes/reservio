@@ -16,6 +16,7 @@ import com.reservio.line.repo.LineConversationRepo;
 import com.reservio.line.repo.LineCustomerRepo;
 import com.reservio.line.repo.LineWebhookEventRepo;
 import com.reservio.line.security.LineCredentialCipher;
+import com.reservio.line.service.LineAccountLinkService;
 import com.reservio.line.service.LineCustomerService;
 import com.reservio.line.service.LineMessageRateLimiter;
 import com.reservio.line.service.LineMessagingClient;
@@ -146,6 +147,7 @@ class LineReservationIntegrationTest {
                 mock(LineMessagingClient.class),
                 conversation,
                 new LineMessageRateLimiter(100, 60),
+                mock(LineAccountLinkService.class),
                 objectMapper
         );
     }

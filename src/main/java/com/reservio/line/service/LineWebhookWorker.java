@@ -26,6 +26,7 @@ public class LineWebhookWorker {
     private final LineMessagingClient messagingClient;
     private final LineReservationConversation reservationConversation;
     private final LineMessageRateLimiter rateLimiter;
+    private final LineAccountLinkService accountLinkService;
     private final ObjectMapper objectMapper;
 
     public LineWebhookWorker(
@@ -33,11 +34,13 @@ public class LineWebhookWorker {
             LineMessagingClient messagingClient,
             LineReservationConversation reservationConversation,
             LineMessageRateLimiter rateLimiter,
+            LineAccountLinkService accountLinkService,
             ObjectMapper objectMapper) {
         this.eventRepo = eventRepo;
         this.messagingClient = messagingClient;
         this.reservationConversation = reservationConversation;
         this.rateLimiter = rateLimiter;
+        this.accountLinkService = accountLinkService;
         this.objectMapper = objectMapper;
     }
 
@@ -80,6 +83,8 @@ public class LineWebhookWorker {
                 }
             } else if (isPostback(payload)) {
                 processPostback(event, payload);
+            } else if (isAccountLink(payload)) {
+                processAccountLink(event, payload);
             }
             event.setStatus(LineWebhookEventStatus.PROCESSED);
             event.setProcessedAt(now);
@@ -114,6 +119,10 @@ public class LineWebhookWorker {
 
     private boolean isPostback(JsonNode payload) {
         return "postback".equals(payload.path("type").asText());
+    }
+
+    private boolean isAccountLink(JsonNode payload) {
+        return "accountLink".equals(payload.path("type").asText());
     }
 
     private boolean isInteractiveEvent(JsonNode payload) {
@@ -154,6 +163,22 @@ public class LineWebhookWorker {
         } else if (LineRichMenuService.MY_RESERVATIONS_ACTION.equals(data)
                 || LineRichMenuService.AVAILABILITY_ACTION.equals(data)) {
             messagingClient.replyText(event.getChannel(), event.getReplyToken(), "功能準備中");
+        }
+    }
+
+    private void processAccountLink(LineWebhookEvent event, JsonNode payload) {
+        String lineUserId = payload.path("source").path("userId").asText(null);
+        String result = payload.path("link").path("result").asText(null);
+        String nonce = payload.path("link").path("nonce").asText(null);
+        if (lineUserId == null || result == null || nonce == null) {
+            throw new IllegalArgumentException("LINE Account Link callback 資料不完整");
+        }
+        accountLinkService.complete(event.getChannel(), lineUserId, result, nonce);
+        if (event.getReplyToken() != null) {
+            String reply = "ok".equals(result)
+                    ? "Reservio 帳號綁定成功，既有 LINE 預約已同步。"
+                    : "Reservio 帳號綁定未完成，請重新操作。";
+            messagingClient.replyText(event.getChannel(), event.getReplyToken(), reply);
         }
     }
 
