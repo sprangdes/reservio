@@ -76,4 +76,32 @@ class LineCustomerServiceTest {
         assertThat(existing.getPhone()).isEqualTo("0912345678");
         verify(lineCustomerRepo).save(existing);
     }
+
+    @Test
+    void usesLinkedReservioUserForExistingCustomer() {
+        UserData syntheticUser = UserData.builder().id(30L).username("line_customer").build();
+        UserData linkedUser = UserData.builder().id(40L).username("reservio-user").build();
+        LineCustomer existing = LineCustomer.builder()
+                .id(1L)
+                .user(syntheticUser)
+                .linkedUser(linkedUser)
+                .displayName("舊名字")
+                .phone("0900")
+                .build();
+        when(lineCustomerRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
+                .thenReturn(Optional.of(existing));
+        LineCustomerService service = new LineCustomerService(
+                lineCustomerRepo, userDataRepo, passwordEncoder
+        );
+
+        UserData result = service.getOrCreateUser(
+                BusinessData.builder().id(8L).build(),
+                "line-user",
+                "王小明",
+                "0912345678"
+        );
+
+        assertThat(result).isSameAs(linkedUser);
+        verify(lineCustomerRepo).save(existing);
+    }
 }
