@@ -10,6 +10,7 @@ import com.reservio.line.conversation.LineDateParser;
 import com.reservio.line.conversation.LineReservationConversation;
 import com.reservio.line.entity.BusinessLineChannel;
 import com.reservio.line.message.LineMessageFactory;
+import com.reservio.line.config.LineMessagingProperties;
 import com.reservio.line.enums.LineConversationState;
 import com.reservio.line.repo.BusinessLineChannelRepo;
 import com.reservio.line.repo.LineConversationRepo;
@@ -132,6 +133,8 @@ class LineReservationIntegrationTest {
                 reservationTimeService,
                 reservationCommandService,
                 customerService,
+                mock(LineAccountLinkService.class),
+                new LineMessagingProperties(encryptionKey, "https://www.reserv-io.com"),
                 new LineDateParser(),
                 new LineMessageFactory()
         );

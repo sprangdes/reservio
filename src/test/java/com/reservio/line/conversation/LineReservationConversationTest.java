@@ -13,6 +13,10 @@ import com.reservio.line.message.LineMessageFactory;
 import com.reservio.line.message.LineReplyMessage;
 import com.reservio.line.repo.LineConversationRepo;
 import com.reservio.line.service.LineCustomerService;
+import com.reservio.line.service.LineCustomerResolution;
+import com.reservio.line.service.LineAccountLinkService;
+import com.reservio.line.config.LineMessagingProperties;
+import com.reservio.line.entity.LineCustomer;
 import com.reservio.repo.ServiceItemRepo;
 import com.reservio.service.ReservationCommandService;
 import com.reservio.service.ReservationTimeService;
@@ -46,6 +50,7 @@ class LineReservationConversationTest {
     @Mock private ReservationTimeService reservationTimeService;
     @Mock private ReservationCommandService reservationCommandService;
     @Mock private LineCustomerService lineCustomerService;
+    @Mock private LineAccountLinkService accountLinkService;
 
     private final Clock clock = Clock.fixed(
             Instant.parse("2026-06-25T01:00:00Z"),
@@ -64,6 +69,8 @@ class LineReservationConversationTest {
                 reservationTimeService,
                 reservationCommandService,
                 lineCustomerService,
+                accountLinkService,
+                new LineMessagingProperties("ignored", "https://www.reserv-io.com"),
                 new LineDateParser(clock),
                 new LineMessageFactory(),
                 clock
@@ -228,11 +235,19 @@ class LineReservationConversationTest {
     void confirmCreatesLineReservationWithoutLogin() {
         LineConversation existing = completedInputConversation();
         UserData customer = UserData.builder().id(30L).build();
+        LineCustomer lineCustomer = LineCustomer.builder()
+                .id(3L)
+                .business(business)
+                .user(customer)
+                .lineUserId("line-user")
+                .build();
         Reservation saved = Reservation.builder().id(99L).build();
         when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user")).thenReturn(Optional.of(existing));
         when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
-        when(lineCustomerService.getOrCreateUser(business, "line-user", "王小明", "0912-345-678"))
-                .thenReturn(customer);
+        when(lineCustomerService.resolveCustomer(
+                business, "line-user", "王小明", "0912-345-678"))
+                .thenReturn(new LineCustomerResolution(lineCustomer, customer, false));
+        when(accountLinkService.create(channel, lineCustomer)).thenReturn("request-token");
         when(reservationCommandService.createReservation(
                 customer, business, haircut, existing.getReservationDate(), existing.getStartTime(),
                 ReservationSource.LINE, null, "LINE 預約", "王小明", "0912-345-678"
@@ -242,6 +257,38 @@ class LineReservationConversationTest {
 
         assertThat(existing.getState()).isEqualTo(LineConversationState.COMPLETED);
         assertThat(reply.text()).contains("預約已送出", "99");
+        assertThat(reply.actionLabel()).isEqualTo("綁定 Reservio 帳號");
+        assertThat(reply.actionUri()).isEqualTo(
+                "https://www.reserv-io.com/line/account-link?request=request-token");
+    }
+
+    @Test
+    void linkedCustomerDoesNotReceiveAccountLinkPrompt() {
+        LineConversation existing = completedInputConversation();
+        UserData customer = UserData.builder().id(40L).build();
+        LineCustomer lineCustomer = LineCustomer.builder()
+                .id(3L)
+                .business(business)
+                .user(UserData.builder().id(30L).build())
+                .linkedUser(customer)
+                .lineUserId("line-user")
+                .build();
+        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
+                .thenReturn(Optional.of(existing));
+        when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
+        when(lineCustomerService.resolveCustomer(
+                business, "line-user", "王小明", "0912-345-678"))
+                .thenReturn(new LineCustomerResolution(lineCustomer, customer, true));
+        when(reservationCommandService.createReservation(
+                customer, business, haircut, existing.getReservationDate(), existing.getStartTime(),
+                ReservationSource.LINE, null, "LINE 預約", "王小明", "0912-345-678"
+        )).thenReturn(Reservation.builder().id(100L).build());
+
+        LineReplyMessage reply = conversationService.handle(channel, "line-user", "確認");
+
+        assertThat(reply.text()).contains("100");
+        assertThat(reply.actionUri()).isNull();
+        verify(accountLinkService, never()).create(any(), any());
     }
 
     @Test
@@ -265,7 +312,12 @@ class LineReservationConversationTest {
         UserData customer = UserData.builder().id(30L).build();
         when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user")).thenReturn(Optional.of(existing));
         when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
-        when(lineCustomerService.getOrCreateUser(any(), any(), any(), any())).thenReturn(customer);
+        when(lineCustomerService.resolveCustomer(any(), any(), any(), any()))
+                .thenReturn(new LineCustomerResolution(
+                        LineCustomer.builder().user(customer).build(),
+                        customer,
+                        false
+                ));
         when(reservationCommandService.createReservation(
                 any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
         )).thenThrow(new IllegalStateException("該時段已被預約"));
