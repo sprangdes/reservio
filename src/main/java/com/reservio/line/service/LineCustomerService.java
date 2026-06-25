@@ -48,7 +48,9 @@ public class LineCustomerService {
         customer.setPhone(phone);
         customer.setUpdatedAt(LocalDateTime.now());
         lineCustomerRepo.save(customer);
-        return customer.getUser();
+        return customer.getLinkedUser() != null
+                ? customer.getLinkedUser()
+                : customer.getUser();
     }
 
     private UserData createCustomer(

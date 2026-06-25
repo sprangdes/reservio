@@ -33,6 +33,13 @@ public class LineCustomer {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private UserData user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "linked_user_id")
+    private UserData linkedUser;
+
+    @Column(name = "linked_at")
+    private LocalDateTime linkedAt;
+
     @Column(name = "line_user_id", nullable = false, length = 100)
     private String lineUserId;
 
