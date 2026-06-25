@@ -82,6 +82,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/session").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/csrf").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/businesses/category").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/line/account-links/*").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/integrations/line/webhook/**").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .anyRequest().authenticated()

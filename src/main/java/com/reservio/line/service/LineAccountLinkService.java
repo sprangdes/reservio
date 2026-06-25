@@ -6,6 +6,8 @@ import com.reservio.line.entity.BusinessLineChannel;
 import com.reservio.line.entity.LineAccountLink;
 import com.reservio.line.entity.LineAccountLinkStatus;
 import com.reservio.line.entity.LineCustomer;
+import com.reservio.line.controller.response.LineAccountLinkStatusResponse;
+import com.reservio.line.controller.response.LinkedLineBusinessResponse;
 import com.reservio.line.repo.LineAccountLinkRepo;
 import com.reservio.line.repo.LineCustomerRepo;
 import com.reservio.line.security.LineAccountLinkTokenService;
@@ -20,6 +22,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 
 @Service
 public class LineAccountLinkService {
@@ -110,6 +113,34 @@ public class LineAccountLinkService {
                 .queryParam("nonce", nonce)
                 .build()
                 .toUriString();
+    }
+
+    @Transactional
+    public LineAccountLinkStatusResponse status(String requestToken) {
+        LineAccountLink link = linkRepo.findByRequestTokenHash(tokenService.hash(requestToken))
+                .orElseThrow(() -> new IllegalArgumentException("找不到 LINE 帳號綁定請求"));
+        if (link.getStatus() == LineAccountLinkStatus.CREATED
+                && link.getExpiresAt().isBefore(now())) {
+            link.setStatus(LineAccountLinkStatus.EXPIRED);
+            linkRepo.save(link);
+        }
+        return new LineAccountLinkStatusResponse(
+                link.getBusiness().getName(),
+                link.getStatus().name(),
+                link.getExpiresAt()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<LinkedLineBusinessResponse> linkedBusinesses(UserData currentUser) {
+        return customerRepo.findAllByLinkedUser(currentUser).stream()
+                .map(customer -> new LinkedLineBusinessResponse(
+                        customer.getId(),
+                        customer.getBusiness().getId(),
+                        customer.getBusiness().getName(),
+                        customer.getLinkedAt()
+                ))
+                .toList();
     }
 
     @Transactional
