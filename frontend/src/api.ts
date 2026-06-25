@@ -134,6 +134,15 @@ export const api = {
   lineIntegrationStatus: () => request('/api/integrations/line/status'),
   testLineIntegrationConnection: () => request('/api/integrations/line/test-connection', { method: 'POST' }),
   provisionLineRichMenu: () => request('/api/integrations/line/rich-menu', { method: 'POST' }),
+  lineAccountLinkStatus: (requestToken: string) =>
+    request(`/api/line/account-links/${encodeURIComponent(requestToken)}`),
+  confirmLineAccountLink: (requestToken: string) =>
+    request(`/api/line/account-links/${encodeURIComponent(requestToken)}/confirm`, {
+      method: 'POST'
+    }),
+  linkedLineBusinesses: () => request('/api/line/account-links'),
+  unlinkLineBusiness: (lineCustomerId: string | number) =>
+    request(`/api/line/account-links/${lineCustomerId}`, { method: 'DELETE' }),
   updateNotificationPreferences: (payload: unknown) => request('/api/notifications/preferences', {
     method: 'PUT',
     body: JSON.stringify(payload)

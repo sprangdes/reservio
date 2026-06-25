@@ -16,6 +16,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
+    const requestedReturnTo = params.get('returnTo');
+    if (requestedReturnTo?.startsWith('/') && !requestedReturnTo.startsWith('//')) {
+      sessionStorage.setItem('reservio.returnTo', requestedReturnTo);
+    }
     if (params.get('registered')) {
       setLocalSuccess('註冊成功。請登入您的帳號。');
     }
@@ -36,7 +40,8 @@ export default function LoginPage() {
             return;
           }
 
-          navigate('/', { replace: true, state: { lineRole: role } });
+          const returnTo = safeReturnTo();
+          navigate(returnTo, { replace: true, state: { lineRole: role } });
         } catch (err: any) {
           setLocalError('LINE 登入成功，但讀取使用者資訊失敗，請再試一次。');
           setErrorMessage(err?.message || 'LINE 登入失敗');
@@ -62,12 +67,18 @@ export default function LoginPage() {
         navigate('/force-change-password');
         return;
       }
-      navigate('/');
+      navigate(safeReturnTo());
     } catch (err: any) {
       setPassword('');
       setLocalError('使用者名稱或密碼不正確，請再試一次。');
       setErrorMessage(err.message);
     }
+  };
+
+  const safeReturnTo = () => {
+    const returnTo = sessionStorage.getItem('reservio.returnTo');
+    sessionStorage.removeItem('reservio.returnTo');
+    return returnTo?.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/';
   };
 
   return (

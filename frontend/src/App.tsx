@@ -19,6 +19,8 @@ import BusinessSetupPage from './pages/BusinessSetupPage';
 import NotificationsPage from './pages/NotificationsPage';
 import NotificationSettingsPage from './pages/NotificationSettingsPage';
 import LineIntegrationPage from './pages/LineIntegrationPage';
+import LineAccountLinkPage from './pages/LineAccountLinkPage';
+import LineAccountLinksPage from './pages/LineAccountLinksPage';
 import { useAuth } from './state/AuthContext';
 import {JSX} from "react";
 import SessionTimeoutManager from './components/SessionTimeoutManager';
@@ -225,6 +227,20 @@ export default function App() {
           <Layout>
             <RequireAuth>
               <BusinessInfoPage />
+            </RequireAuth>
+          </Layout>
+        }
+      />
+      <Route
+        path="/line/account-link"
+        element={<Layout><LineAccountLinkPage /></Layout>}
+      />
+      <Route
+        path="/settings/line-accounts"
+        element={
+          <Layout>
+            <RequireAuth>
+              <LineAccountLinksPage />
             </RequireAuth>
           </Layout>
         }

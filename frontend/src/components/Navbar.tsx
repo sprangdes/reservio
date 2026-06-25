@@ -188,11 +188,16 @@ export default function Navbar() {
                       </li>
                     </>
                   ) : (
-                    <li className="nav-item mobile-menu__item">
-                      <button type="button" className="nav-link mobile-menu__button" onClick={() => openSettingsPanel('preferred-businesses')}>
-                        想預約店家
-                      </button>
-                    </li>
+                    <>
+                      <li className="nav-item mobile-menu__item">
+                        <button type="button" className="nav-link mobile-menu__button" onClick={() => openSettingsPanel('preferred-businesses')}>
+                          想預約店家
+                        </button>
+                      </li>
+                      <li className="nav-item mobile-menu__item">
+                        <Link className="nav-link" to="/settings/line-accounts">LINE 帳號綁定</Link>
+                      </li>
+                    </>
                   )}
                   <li className="nav-item mobile-menu__item">
                     <button type="button" className="nav-link mobile-menu__button" onClick={() => openSettingsPanel('notifications')}>
@@ -290,15 +295,22 @@ export default function Navbar() {
                           </li>
                         </>
                       ) : (
-                        <li>
-                          <button
-                            type="button"
-                            className="dropdown-item user-menu__item"
-                            onClick={() => openSettingsPanel('preferred-businesses')}
-                          >
-                            想預約店家
-                          </button>
-                        </li>
+                        <>
+                          <li>
+                            <button
+                              type="button"
+                              className="dropdown-item user-menu__item"
+                              onClick={() => openSettingsPanel('preferred-businesses')}
+                            >
+                              想預約店家
+                            </button>
+                          </li>
+                          <li>
+                            <Link className="dropdown-item user-menu__item" to="/settings/line-accounts">
+                              LINE 帳號綁定
+                            </Link>
+                          </li>
+                        </>
                       )}
                       <li>
                         <button
