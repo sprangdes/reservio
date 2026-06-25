@@ -187,3 +187,33 @@ Reservio production 必須設定：
 - 確認相同 webhook event ID 只有一筆資料。
 - 檢查是否有多個不同 LINE event 對同一時段送出確認。
 - 保留 event ID、business ID 與 reservation ID 供調查，不要保存聊天內容。
+## 10. Reservio 帳號綁定測試
+
+LINE 預約完成後，尚未綁定的客戶會收到「綁定 Reservio 帳號」按鈕。此功能使用 LINE Messaging API Account Link，不需要新增環境變數，但必須符合以下條件：
+
+- `LINE_WEBHOOK_BASE_URL` 必須是客戶可公開存取的 HTTPS 網址。
+- Cloudflare 規則必須允許 LINE Platform 對既有 webhook path 發送 `accountLink` event。
+- `/line/account-link` 必須由 frontend SPA 正常接管。
+- `/api/line/account-links/{requestToken}` 的 GET request 必須可在未登入狀態存取。
+- 確認、列表及解除綁定 API 必須保持 session 與 CSRF 保護。
+
+手動測試：
+
+1. 使用尚未綁定的 LINE 帳號，在商家聊天頁完成一筆預約。
+2. 確認商家預約列表顯示客戶在聊天流程輸入的姓名，而不是系統產生的 `line_customer_*` 名稱。
+3. 點擊「綁定 Reservio 帳號」。
+4. 使用既有 Reservio 客戶帳號登入；登入後應返回原本的綁定確認頁。
+5. 點擊「確認綁定」，並在 LINE 頁面允許帳號綁定。
+6. LINE 聊天室應收到「Reservio 帳號綁定成功，既有 LINE 預約已同步」。
+7. 登入 Reservio 客戶帳號，確認綁定前建立的 LINE 預約已出現在「我的預約」。
+8. 再建立一筆 LINE 預約，確認不再顯示綁定按鈕，且新預約直接出現在同一 Reservio 帳號。
+9. 至「LINE 帳號綁定」頁解除該商家，確認歷史預約仍保留。
+
+故障排查可使用：
+
+```powershell
+docker compose logs --since 15m backend |
+  Select-String "line_account_link|line_event_failed"
+```
+
+系統不會在 log 中輸出 link token、nonce、完整 LINE user ID 或電話。
