@@ -9,4 +9,6 @@ public interface BusinessLineChannelRepo extends JpaRepository<BusinessLineChann
     Optional<BusinessLineChannel> findByBusinessId(Long businessId);
 
     Optional<BusinessLineChannel> findByWebhookKey(String webhookKey);
+
+    Optional<BusinessLineChannel> findByWebhookKeyAndEnabledTrue(String webhookKey);
 }
