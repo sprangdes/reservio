@@ -131,6 +131,9 @@ export const api = {
   }),
   disableLineIntegration: () => request('/api/integrations/line/settings/disable', { method: 'POST' }),
   rotateLineWebhookKey: () => request('/api/integrations/line/settings/rotate-webhook-key', { method: 'POST' }),
+  lineIntegrationStatus: () => request('/api/integrations/line/status'),
+  testLineIntegrationConnection: () => request('/api/integrations/line/test-connection', { method: 'POST' }),
+  provisionLineRichMenu: () => request('/api/integrations/line/rich-menu', { method: 'POST' }),
   updateNotificationPreferences: (payload: unknown) => request('/api/notifications/preferences', {
     method: 'PUT',
     body: JSON.stringify(payload)

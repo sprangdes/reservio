@@ -3,7 +3,9 @@ package com.reservio.line.controller;
 import com.reservio.controller.response.ApiResponse;
 import com.reservio.line.controller.request.LineChannelSettingsRequest;
 import com.reservio.line.controller.response.LineChannelSettingsResponse;
+import com.reservio.line.controller.response.LineIntegrationStatusResponse;
 import com.reservio.line.service.LineChannelSettingsService;
+import com.reservio.line.service.LineRichMenuService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,9 +14,13 @@ import org.springframework.web.bind.annotation.*;
 public class LineIntegrationController {
 
     private final LineChannelSettingsService settingsService;
+    private final LineRichMenuService richMenuService;
 
-    public LineIntegrationController(LineChannelSettingsService settingsService) {
+    public LineIntegrationController(
+            LineChannelSettingsService settingsService,
+            LineRichMenuService richMenuService) {
         this.settingsService = settingsService;
+        this.richMenuService = richMenuService;
     }
 
     @GetMapping("/settings")
@@ -38,10 +44,25 @@ public class LineIntegrationController {
         return ok("Webhook URL 已更新", settingsService.rotateWebhookKey());
     }
 
-    private ResponseEntity<ApiResponse<LineChannelSettingsResponse>> ok(
+    @GetMapping("/status")
+    public ResponseEntity<ApiResponse<LineIntegrationStatusResponse>> getStatus() {
+        return ok("OK", richMenuService.getStatus());
+    }
+
+    @PostMapping("/test-connection")
+    public ResponseEntity<ApiResponse<LineIntegrationStatusResponse>> testConnection() {
+        return ok("LINE 連線與 Webhook 檢查完成", richMenuService.testConnection());
+    }
+
+    @PostMapping("/rich-menu")
+    public ResponseEntity<ApiResponse<LineIntegrationStatusResponse>> provisionRichMenu() {
+        return ok("LINE Rich Menu 已建立或更新", richMenuService.provisionRichMenu());
+    }
+
+    private <T> ResponseEntity<ApiResponse<T>> ok(
             String message,
-            LineChannelSettingsResponse data) {
-        return ResponseEntity.ok(ApiResponse.<LineChannelSettingsResponse>builder()
+            T data) {
+        return ResponseEntity.ok(ApiResponse.<T>builder()
                 .success(true)
                 .message(message)
                 .data(data)

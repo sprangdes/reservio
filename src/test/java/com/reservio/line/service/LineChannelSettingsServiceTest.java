@@ -100,6 +100,29 @@ class LineChannelSettingsServiceTest {
     }
 
     @Test
+    void credentialChangesInvalidateChecksAndChannelChangeClearsRichMenu() {
+        BusinessLineChannel existing = existingChannel();
+        existing.setTokenValidatedAt(LocalDateTime.now().minusHours(1));
+        existing.setWebhookVerifiedAt(LocalDateTime.now().minusHours(1));
+        existing.setRichMenuId("richmenu-old");
+        existing.setRichMenuUpdatedAt(LocalDateTime.now().minusHours(1));
+        when(channelRepo.findByBusinessId(8L)).thenReturn(Optional.of(existing));
+        when(channelRepo.save(existing)).thenReturn(existing);
+
+        service.save(new LineChannelSettingsRequest(
+                "different-channel-id",
+                "new-secret",
+                "new-token",
+                true
+        ));
+
+        assertThat(existing.getTokenValidatedAt()).isNull();
+        assertThat(existing.getWebhookVerifiedAt()).isNull();
+        assertThat(existing.getRichMenuId()).isNull();
+        assertThat(existing.getRichMenuUpdatedAt()).isNull();
+    }
+
+    @Test
     void rejectsCustomerAccount() {
         UserData customer = UserData.builder().id(99L).role("ROLE_USER").build();
         when(userDataService.getCurrentUser()).thenReturn(customer);
@@ -127,6 +150,7 @@ class LineChannelSettingsServiceTest {
     @Test
     void rotateWebhookKeyChangesUrlWithoutChangingCredentials() {
         BusinessLineChannel existing = existingChannel();
+        existing.setWebhookVerifiedAt(LocalDateTime.now().minusHours(1));
         String originalKey = existing.getWebhookKey();
         String originalSecret = existing.getChannelSecretCiphertext();
         String originalToken = existing.getAccessTokenCiphertext();
@@ -139,6 +163,7 @@ class LineChannelSettingsServiceTest {
         assertThat(existing.getChannelSecretCiphertext()).isEqualTo(originalSecret);
         assertThat(existing.getAccessTokenCiphertext()).isEqualTo(originalToken);
         assertThat(response.webhookUrl()).endsWith(existing.getWebhookKey());
+        assertThat(existing.getWebhookVerifiedAt()).isNull();
     }
 
     private BusinessLineChannel existingChannel() {

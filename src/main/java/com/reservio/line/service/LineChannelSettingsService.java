@@ -56,7 +56,14 @@ public class LineChannelSettingsService {
         BusinessLineChannel channel = channelRepo.findByBusinessId(business.getId())
                 .orElseGet(() -> newChannel(business));
 
-        channel.setChannelId(required(request.channelId(), "Channel ID"));
+        String channelId = required(request.channelId(), "Channel ID");
+        boolean channelChanged = channel.getChannelId() != null
+                && !channel.getChannelId().equals(channelId);
+        boolean credentialsChanged = channelChanged
+                || hasValue(request.channelSecret())
+                || hasValue(request.accessToken());
+
+        channel.setChannelId(channelId);
         channel.setChannelSecretCiphertext(updatedCredential(
                 request.channelSecret(),
                 channel.getChannelSecretCiphertext(),
@@ -69,6 +76,14 @@ public class LineChannelSettingsService {
         ));
         channel.setEnabled(request.enabled());
         channel.setUpdatedAt(LocalDateTime.now());
+        if (credentialsChanged) {
+            channel.setTokenValidatedAt(null);
+            channel.setWebhookVerifiedAt(null);
+        }
+        if (channelChanged) {
+            channel.setRichMenuId(null);
+            channel.setRichMenuUpdatedAt(null);
+        }
 
         return toResponse(channelRepo.save(channel));
     }
@@ -85,6 +100,7 @@ public class LineChannelSettingsService {
     public LineChannelSettingsResponse rotateWebhookKey() {
         BusinessLineChannel channel = currentChannel();
         channel.setWebhookKey(newWebhookKey());
+        channel.setWebhookVerifiedAt(null);
         channel.setUpdatedAt(LocalDateTime.now());
         return toResponse(channelRepo.save(channel));
     }
@@ -127,6 +143,10 @@ public class LineChannelSettingsService {
             throw new IllegalArgumentException(fieldName + "為必填");
         }
         return value.trim();
+    }
+
+    private boolean hasValue(String value) {
+        return value != null && !value.isBlank();
     }
 
     private String newWebhookKey() {

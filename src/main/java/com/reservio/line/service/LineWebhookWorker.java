@@ -56,6 +56,8 @@ public class LineWebhookWorker {
                             event.getChannel(), lineUserId, text);
                     messagingClient.reply(event.getChannel(), event.getReplyToken(), reply);
                 }
+            } else if (isPostback(payload)) {
+                processPostback(event, payload);
             }
             event.setStatus(LineWebhookEventStatus.PROCESSED);
             event.setProcessedAt(now);
@@ -75,6 +77,26 @@ public class LineWebhookWorker {
     private boolean isTextMessage(JsonNode payload) {
         return "message".equals(payload.path("type").asText())
                 && "text".equals(payload.path("message").path("type").asText());
+    }
+
+    private boolean isPostback(JsonNode payload) {
+        return "postback".equals(payload.path("type").asText());
+    }
+
+    private void processPostback(LineWebhookEvent event, JsonNode payload) {
+        String lineUserId = payload.path("source").path("userId").asText(null);
+        String data = payload.path("postback").path("data").asText();
+        if (lineUserId == null || event.getReplyToken() == null) {
+            return;
+        }
+        if (LineRichMenuService.BOOK_ACTION.equals(data)) {
+            LineReplyMessage reply = reservationConversation.handle(
+                    event.getChannel(), lineUserId, "立即預約");
+            messagingClient.reply(event.getChannel(), event.getReplyToken(), reply);
+        } else if (LineRichMenuService.MY_RESERVATIONS_ACTION.equals(data)
+                || LineRichMenuService.AVAILABILITY_ACTION.equals(data)) {
+            messagingClient.replyText(event.getChannel(), event.getReplyToken(), "功能準備中");
+        }
     }
 
     private String failureMessage(Exception exception) {

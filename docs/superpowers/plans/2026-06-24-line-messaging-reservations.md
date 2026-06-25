@@ -210,14 +210,14 @@ IDLE
 
 工作內容：
 
-- [ ] 增加「測試連線」動作，呼叫 LINE API 確認 token 可用。
-- [ ] 增加「建立／更新 Rich Menu」動作。
-- [ ] 第一版 Rich Menu 顯示三個入口，但只有「立即預約」啟用。
-- [ ] 「我的預約」與「查詢可預約時段」回覆「功能準備中」，避免使用者無反應。
-- [ ] Rich Menu action 使用固定 postback data，而不是依賴顯示文字比對。
-- [ ] 後台顯示 webhook、token validation 與 Rich Menu 三項檢查結果。
-- [ ] 增加 LINE API 成功、授權失敗、rate limit 與 timeout 測試。
-- [ ] Commit：`feat: add LINE rich menu provisioning`
+- [x] 增加「測試連線」動作，呼叫 LINE API 確認 token 可用。
+- [x] 增加「建立／更新 Rich Menu」動作。
+- [x] 第一版 Rich Menu 顯示三個入口，但只有「立即預約」啟用。
+- [x] 「我的預約」與「查詢可預約時段」回覆「功能準備中」，避免使用者無反應。
+- [x] Rich Menu action 使用固定 postback data，而不是依賴顯示文字比對。
+- [x] 後台顯示 webhook、token validation 與 Rich Menu 三項檢查結果。
+- [x] 增加 LINE API 成功、授權失敗、rate limit 與 timeout 測試。
+- [x] Commit：`feat: add LINE rich menu provisioning`
 
 完成標準：
 
