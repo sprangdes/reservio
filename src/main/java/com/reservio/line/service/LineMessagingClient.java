@@ -50,22 +50,39 @@ public class LineMessagingClient {
 
     public void reply(BusinessLineChannel channel, String replyToken, LineReplyMessage replyMessage) {
         String accessToken = cipher.decrypt(channel.getAccessTokenCiphertext());
-        Map<String, Object> message = new LinkedHashMap<>();
-        message.put("type", "text");
-        message.put("text", replyMessage.text());
-        if (replyMessage.options() != null && !replyMessage.options().isEmpty()) {
-            List<Map<String, Object>> items = new ArrayList<>();
-            for (String option : replyMessage.options()) {
-                items.add(Map.of(
-                        "type", "action",
-                        "action", Map.of(
-                                "type", "message",
-                                "label", option,
-                                "text", option
-                        )
-                ));
+        Map<String, Object> message;
+        if (replyMessage.actionUri() != null && !replyMessage.actionUri().isBlank()) {
+            message = Map.of(
+                    "type", "template",
+                    "altText", replyMessage.text(),
+                    "template", Map.of(
+                            "type", "buttons",
+                            "text", replyMessage.text(),
+                            "actions", List.of(Map.of(
+                                    "type", "uri",
+                                    "label", replyMessage.actionLabel(),
+                                    "uri", replyMessage.actionUri()
+                            ))
+                    )
+            );
+        } else {
+            message = new LinkedHashMap<>();
+            message.put("type", "text");
+            message.put("text", replyMessage.text());
+            if (replyMessage.options() != null && !replyMessage.options().isEmpty()) {
+                List<Map<String, Object>> items = new ArrayList<>();
+                for (String option : replyMessage.options()) {
+                    items.add(Map.of(
+                            "type", "action",
+                            "action", Map.of(
+                                    "type", "message",
+                                    "label", option,
+                                    "text", option
+                            )
+                    ));
+                }
+                message.put("quickReply", Map.of("items", items));
             }
-            message.put("quickReply", Map.of("items", items));
         }
         String requestBody = serialize(Map.of(
                 "replyToken", replyToken,
@@ -86,6 +103,19 @@ public class LineMessagingClient {
     public String getBotDisplayName(BusinessLineChannel channel) {
         String body = authorizedGet(channel, BOT_INFO_URL);
         return parse(body).path("displayName").asText();
+    }
+
+    public String issueLinkToken(BusinessLineChannel channel, String lineUserId) {
+        String response = execute(channel, "issue_link_token", () -> restClient.post()
+                .uri("https://api.line.me/v2/bot/user/{userId}/linkToken", lineUserId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken(channel))
+                .retrieve()
+                .body(String.class));
+        String linkToken = parse(response).path("linkToken").asText();
+        if (linkToken.isBlank()) {
+            throw new IllegalStateException("LINE API 未回傳 Account Link Token");
+        }
+        return linkToken;
     }
 
     public LineWebhookEndpoint getWebhookEndpoint(BusinessLineChannel channel) {
