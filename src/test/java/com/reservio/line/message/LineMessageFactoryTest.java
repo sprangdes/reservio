@@ -27,4 +27,18 @@ class LineMessageFactoryTest {
 
         assertThat(message.options()).hasSize(13);
     }
+
+    @Test
+    void createsUriButtonMessage() {
+        LineReplyMessage message = factory.uriButton(
+                "預約已送出",
+                "綁定 Reservio 帳號",
+                "https://www.reserv-io.com/line/account-link?request=token"
+        );
+
+        assertThat(message.text()).isEqualTo("預約已送出");
+        assertThat(message.actionLabel()).isEqualTo("綁定 Reservio 帳號");
+        assertThat(message.actionUri())
+                .isEqualTo("https://www.reserv-io.com/line/account-link?request=token");
+    }
 }

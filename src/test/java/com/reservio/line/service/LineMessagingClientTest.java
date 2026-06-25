@@ -90,6 +90,41 @@ class LineMessagingClientTest {
     }
 
     @Test
+    void sendsUriButtonAsLineButtonsTemplate() {
+        ClientFixture fixture = fixture();
+        fixture.server.expect(once(), requestTo("https://api.line.me/v2/bot/message/reply"))
+                .andExpect(content().json("""
+                        {
+                          "replyToken": "reply-token",
+                          "messages": [{
+                            "type": "template",
+                            "altText": "預約已送出",
+                            "template": {
+                              "type": "buttons",
+                              "text": "預約已送出",
+                              "actions": [{
+                                "type": "uri",
+                                "label": "綁定 Reservio 帳號",
+                                "uri": "https://www.reserv-io.com/line/account-link?request=token"
+                              }]
+                            }
+                          }]
+                        }
+                        """))
+                .andRespond(withSuccess());
+
+        fixture.client.reply(fixture.channel, "reply-token",
+                new LineReplyMessage(
+                        "預約已送出",
+                        List.of(),
+                        "綁定 Reservio 帳號",
+                        "https://www.reserv-io.com/line/account-link?request=token"
+                ));
+
+        fixture.server.verify();
+    }
+
+    @Test
     void getsBotInfoToValidateAccessToken() {
         ClientFixture fixture = fixture();
         fixture.server.expect(once(), requestTo("https://api.line.me/v2/bot/info"))
@@ -132,6 +167,22 @@ class LineMessagingClientTest {
         fixture.client.setDefaultRichMenu(fixture.channel, richMenuId);
 
         assertThat(richMenuId).isEqualTo("richmenu-1");
+        fixture.server.verify();
+    }
+
+    @Test
+    void issuesAccountLinkTokenForLineUser() {
+        ClientFixture fixture = fixture();
+        fixture.server.expect(once(), requestTo(
+                        "https://api.line.me/v2/bot/user/U123/linkToken"))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+                .andRespond(withSuccess("""
+                        {"linkToken":"line-link-token"}
+                        """, MediaType.APPLICATION_JSON));
+
+        String linkToken = fixture.client.issueLinkToken(fixture.channel, "U123");
+
+        assertThat(linkToken).isEqualTo("line-link-token");
         fixture.server.verify();
     }
 

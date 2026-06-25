@@ -21,4 +21,8 @@ public class LineMessageFactory {
                         .toList();
         return new LineReplyMessage(text, safeOptions);
     }
+
+    public LineReplyMessage uriButton(String text, String actionLabel, String actionUri) {
+        return new LineReplyMessage(text, List.of(), actionLabel, actionUri);
+    }
 }
