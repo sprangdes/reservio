@@ -13,6 +13,9 @@ import com.reservio.line.message.LineMessageFactory;
 import com.reservio.line.message.LineReplyMessage;
 import com.reservio.line.repo.LineConversationRepo;
 import com.reservio.line.service.LineCustomerService;
+import com.reservio.line.service.LineCustomerResolution;
+import com.reservio.line.service.LineAccountLinkService;
+import com.reservio.line.config.LineMessagingProperties;
 import com.reservio.repo.ServiceItemRepo;
 import com.reservio.service.ReservationCommandService;
 import com.reservio.service.ReservationTimeService;
@@ -45,6 +48,8 @@ public class LineReservationConversation {
     private final ReservationTimeService reservationTimeService;
     private final ReservationCommandService reservationCommandService;
     private final LineCustomerService lineCustomerService;
+    private final LineAccountLinkService accountLinkService;
+    private final LineMessagingProperties properties;
     private final LineDateParser dateParser;
     private final LineMessageFactory messageFactory;
     private final Clock clock;
@@ -56,10 +61,13 @@ public class LineReservationConversation {
             ReservationTimeService reservationTimeService,
             ReservationCommandService reservationCommandService,
             LineCustomerService lineCustomerService,
+            LineAccountLinkService accountLinkService,
+            LineMessagingProperties properties,
             LineDateParser dateParser,
             LineMessageFactory messageFactory) {
         this(conversationRepo, serviceItemRepo, reservationTimeService, reservationCommandService,
-                lineCustomerService, dateParser, messageFactory, Clock.systemDefaultZone());
+                lineCustomerService, accountLinkService, properties, dateParser, messageFactory,
+                Clock.systemDefaultZone());
     }
 
     LineReservationConversation(
@@ -68,6 +76,8 @@ public class LineReservationConversation {
             ReservationTimeService reservationTimeService,
             ReservationCommandService reservationCommandService,
             LineCustomerService lineCustomerService,
+            LineAccountLinkService accountLinkService,
+            LineMessagingProperties properties,
             LineDateParser dateParser,
             LineMessageFactory messageFactory,
             Clock clock) {
@@ -76,6 +86,8 @@ public class LineReservationConversation {
         this.reservationTimeService = reservationTimeService;
         this.reservationCommandService = reservationCommandService;
         this.lineCustomerService = lineCustomerService;
+        this.accountLinkService = accountLinkService;
+        this.properties = properties;
         this.dateParser = dateParser;
         this.messageFactory = messageFactory;
         this.clock = clock;
@@ -109,7 +121,7 @@ public class LineReservationConversation {
             case SELECTING_TIME -> selectTime(conversation, normalized);
             case ENTERING_NAME -> enterName(conversation, normalized);
             case ENTERING_PHONE -> enterPhone(conversation, normalized);
-            case CONFIRMING -> confirm(conversation, normalized);
+            case CONFIRMING -> confirm(channel, conversation, normalized);
             case IDLE, COMPLETED -> messageFactory.text("請點選「立即預約」開始預約。");
         };
         save(conversation);
@@ -220,17 +232,21 @@ public class LineReservationConversation {
         return messageFactory.quickReply(summary, List.of(CONFIRM, RESTART, CANCEL));
     }
 
-    private LineReplyMessage confirm(LineConversation conversation, String input) {
+    private LineReplyMessage confirm(
+            BusinessLineChannel channel,
+            LineConversation conversation,
+            String input) {
         if (!CONFIRM.equals(input)) {
             return messageFactory.quickReply("請選擇確認、重新開始或取消。", List.of(CONFIRM, RESTART, CANCEL));
         }
         ServiceItem service = requiredService(conversation);
-        UserData customer = lineCustomerService.getOrCreateUser(
+        LineCustomerResolution customerResolution = lineCustomerService.resolveCustomer(
                 conversation.getBusiness(),
                 conversation.getLineUserId(),
                 conversation.getCustomerName(),
                 conversation.getPhone()
         );
+        UserData customer = customerResolution.reservationUser();
         try {
             Reservation reservation = reservationCommandService.createReservation(
                     customer,
@@ -251,7 +267,30 @@ public class LineReservationConversation {
                     eventId(),
                     conversation.getState()
             );
-            return messageFactory.text("預約已送出，預約編號：" + reservation.getId() + "。");
+            String successMessage = "預約已送出，預約編號：" + reservation.getId() + "。";
+            if (customerResolution.linked()) {
+                return messageFactory.text(successMessage);
+            }
+            try {
+                String requestToken = accountLinkService.create(
+                        channel,
+                        customerResolution.customer()
+                );
+                String baseUrl = properties.webhookBaseUrl().replaceAll("/+$", "");
+                return messageFactory.uriButton(
+                        successMessage,
+                        "綁定 Reservio 帳號",
+                        baseUrl + "/line/account-link?request=" + requestToken
+                );
+            } catch (RuntimeException exception) {
+                log.warn(
+                        "line_account_link_prompt_failed business_id={} event_id={} error_type={}",
+                        conversation.getBusiness().getId(),
+                        eventId(),
+                        exception.getClass().getSimpleName()
+                );
+                return messageFactory.text(successMessage);
+            }
         } catch (IllegalStateException exception) {
             conversation.setState(LineConversationState.ENTERING_DATE);
             conversation.setReservationDate(null);

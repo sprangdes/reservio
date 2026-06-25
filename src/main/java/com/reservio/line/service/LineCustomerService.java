@@ -38,22 +38,41 @@ public class LineCustomerService {
             String lineUserId,
             String displayName,
             String phone) {
-        return lineCustomerRepo.findByBusinessIdAndLineUserId(business.getId(), lineUserId)
-                .map(customer -> updateExisting(customer, displayName, phone))
-                .orElseGet(() -> createCustomer(business, lineUserId, displayName, phone));
+        return resolveCustomer(business, lineUserId, displayName, phone).reservationUser();
     }
 
-    private UserData updateExisting(LineCustomer customer, String displayName, String phone) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public LineCustomerResolution resolveCustomer(
+            BusinessData business,
+            String lineUserId,
+            String displayName,
+            String phone) {
+        LineCustomer customer = lineCustomerRepo
+                .findByBusinessIdAndLineUserId(business.getId(), lineUserId)
+                .map(existing -> updateExisting(existing, displayName, phone))
+                .orElseGet(() -> createCustomer(business, lineUserId, displayName, phone));
+        UserData reservationUser = customer.getLinkedUser() != null
+                ? customer.getLinkedUser()
+                : customer.getUser();
+        return new LineCustomerResolution(
+                customer,
+                reservationUser,
+                customer.getLinkedUser() != null
+        );
+    }
+
+    private LineCustomer updateExisting(
+            LineCustomer customer,
+            String displayName,
+            String phone) {
         customer.setDisplayName(displayName);
         customer.setPhone(phone);
         customer.setUpdatedAt(LocalDateTime.now());
         lineCustomerRepo.save(customer);
-        return customer.getLinkedUser() != null
-                ? customer.getLinkedUser()
-                : customer.getUser();
+        return customer;
     }
 
-    private UserData createCustomer(
+    private LineCustomer createCustomer(
             BusinessData business,
             String lineUserId,
             String displayName,
@@ -74,7 +93,6 @@ public class LineCustomerService {
                 .phone(phone)
                 .createdAt(LocalDateTime.now())
                 .build();
-        lineCustomerRepo.save(customer);
-        return user;
+        return lineCustomerRepo.save(customer);
     }
 }
