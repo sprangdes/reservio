@@ -125,16 +125,16 @@
 
 工作內容：
 
-- [ ] 新增公開且略過 CSRF 的 webhook endpoint：`POST /api/integrations/line/webhook/{webhookKey}`。
-- [ ] 使用原始 request body 和該商家的 Channel Secret 驗證 `X-Line-Signature`。
-- [ ] signature 無效回傳 `401`，不存在或停用的 webhook key 回傳 `404`。
-- [ ] 以 LINE webhook event ID 建立唯一索引，重送事件只回傳成功、不重複入列。
-- [ ] controller 只負責驗證及保存事件，快速回傳 `200`。
-- [ ] worker 使用狀態、attempt count、next attempt time 處理重試。
-- [ ] 實作 reply message client，將 token 解密限制在送出請求前。
-- [ ] 第一個 vertical slice：收到「立即預約」時回覆固定文字。
-- [ ] 測試有效 signature、無效 signature、未知商家、事件重送與 worker retry。
-- [ ] Commit：`feat: add reliable LINE webhook ingestion`
+- [x] 新增公開且略過 CSRF 的 webhook endpoint：`POST /api/integrations/line/webhook/{webhookKey}`。
+- [x] 使用原始 request body 和該商家的 Channel Secret 驗證 `X-Line-Signature`。
+- [x] signature 無效回傳 `401`，不存在或停用的 webhook key 回傳 `404`。
+- [x] 以 LINE webhook event ID 建立唯一索引，重送事件只回傳成功、不重複入列。
+- [x] controller 只負責驗證及保存事件，快速回傳 `200`。
+- [x] worker 使用狀態、attempt count、next attempt time 處理重試。
+- [x] 實作 reply message client，將 token 解密限制在送出請求前。
+- [x] 第一個 vertical slice：收到「立即預約」時回覆固定文字。
+- [x] 測試有效 signature、無效 signature、未知商家、事件重送與 worker retry。
+- [x] Commit：`feat: add reliable LINE webhook ingestion`
 
 完成標準：
 
