@@ -3,7 +3,9 @@ package com.reservio.line.controller;
 import com.reservio.controller.response.ApiResponse;
 import com.reservio.line.controller.request.LineChannelSettingsRequest;
 import com.reservio.line.controller.response.LineChannelSettingsResponse;
+import com.reservio.line.controller.response.LineIntegrationStatusResponse;
 import com.reservio.line.service.LineChannelSettingsService;
+import com.reservio.line.service.LineRichMenuService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -18,12 +20,13 @@ import static org.mockito.Mockito.when;
 class LineIntegrationControllerTest {
 
     @Mock private LineChannelSettingsService settingsService;
+    @Mock private LineRichMenuService richMenuService;
 
     @Test
     void getsCurrentBusinessSettings() {
         LineChannelSettingsResponse settings = settings();
         when(settingsService.getSettings()).thenReturn(settings);
-        LineIntegrationController controller = new LineIntegrationController(settingsService);
+        LineIntegrationController controller = controller();
 
         ResponseEntity<ApiResponse<LineChannelSettingsResponse>> response = controller.getSettings();
 
@@ -43,7 +46,7 @@ class LineIntegrationControllerTest {
         );
         LineChannelSettingsResponse settings = settings();
         when(settingsService.save(request)).thenReturn(settings);
-        LineIntegrationController controller = new LineIntegrationController(settingsService);
+        LineIntegrationController controller = controller();
 
         ApiResponse<LineChannelSettingsResponse> body = controller.saveSettings(request).getBody();
 
@@ -59,12 +62,47 @@ class LineIntegrationControllerTest {
         LineChannelSettingsResponse settings = settings();
         when(settingsService.disable()).thenReturn(settings);
         when(settingsService.rotateWebhookKey()).thenReturn(settings);
-        LineIntegrationController controller = new LineIntegrationController(settingsService);
+        LineIntegrationController controller = controller();
 
         assertThat(controller.disable().getBody().getData()).isSameAs(settings);
         assertThat(controller.rotateWebhookKey().getBody().getData()).isSameAs(settings);
         verify(settingsService).disable();
         verify(settingsService).rotateWebhookKey();
+    }
+
+    @Test
+    void getsStatusTestsConnectionAndProvisionsRichMenu() {
+        LineIntegrationStatusResponse status = status();
+        when(richMenuService.getStatus()).thenReturn(status);
+        when(richMenuService.testConnection()).thenReturn(status);
+        when(richMenuService.provisionRichMenu()).thenReturn(status);
+        LineIntegrationController controller = controller();
+
+        assertThat(controller.getStatus().getBody().getData()).isSameAs(status);
+        assertThat(controller.testConnection().getBody().getData()).isSameAs(status);
+        assertThat(controller.provisionRichMenu().getBody().getData()).isSameAs(status);
+        verify(richMenuService).getStatus();
+        verify(richMenuService).testConnection();
+        verify(richMenuService).provisionRichMenu();
+    }
+
+    private LineIntegrationController controller() {
+        return new LineIntegrationController(settingsService, richMenuService);
+    }
+
+    private LineIntegrationStatusResponse status() {
+        return new LineIntegrationStatusResponse(
+                true,
+                true,
+                true,
+                "Webhook URL 已驗證",
+                true,
+                "Token 有效",
+                true,
+                "Rich Menu 已建立",
+                "richmenu-1",
+                java.time.LocalDateTime.of(2026, 6, 25, 9, 0)
+        );
     }
 
     private LineChannelSettingsResponse settings() {

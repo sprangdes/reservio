@@ -77,6 +77,52 @@ class LineWebhookWorkerTest {
     }
 
     @Test
+    void startsReservationFromFixedPostbackData() {
+        LineWebhookEvent event = pendingEvent(0, """
+                {
+                  "type":"postback",
+                  "webhookEventId":"event-1",
+                  "replyToken":"reply-token",
+                  "source":{"type":"user","userId":"line-user"},
+                  "postback":{"data":"reservio.action=book"}
+                }
+                """);
+        when(eventRepo.findTop50ByStatusAndNextAttemptAtBeforeOrderById(
+                any(LineWebhookEventStatus.class), any(LocalDateTime.class)
+        )).thenReturn(List.of(event));
+        LineReplyMessage reply = new LineReplyMessage("想預約什麼項目？", List.of("剪髮"));
+        when(reservationConversation.handle(channel, "line-user", "立即預約")).thenReturn(reply);
+
+        worker.processPendingEvents();
+
+        verify(reservationConversation).handle(channel, "line-user", "立即預約");
+        verify(messagingClient).reply(channel, "reply-token", reply);
+        assertThat(event.getStatus()).isEqualTo(LineWebhookEventStatus.PROCESSED);
+    }
+
+    @Test
+    void repliesFeaturePreparingForInactiveRichMenuPostbacks() {
+        LineWebhookEvent event = pendingEvent(0, """
+                {
+                  "type":"postback",
+                  "webhookEventId":"event-1",
+                  "replyToken":"reply-token",
+                  "source":{"type":"user","userId":"line-user"},
+                  "postback":{"data":"reservio.action=my_reservations"}
+                }
+                """);
+        when(eventRepo.findTop50ByStatusAndNextAttemptAtBeforeOrderById(
+                any(LineWebhookEventStatus.class), any(LocalDateTime.class)
+        )).thenReturn(List.of(event));
+
+        worker.processPendingEvents();
+
+        verify(messagingClient).replyText(channel, "reply-token", "功能準備中");
+        verify(reservationConversation, never()).handle(any(), any(), any());
+        assertThat(event.getStatus()).isEqualTo(LineWebhookEventStatus.PROCESSED);
+    }
+
+    @Test
     void schedulesRetryWhenLineApiTemporarilyFails() {
         LineWebhookEvent event = pendingEvent(0, immediateReservationPayload());
         LocalDateTime originalAttempt = event.getNextAttemptAt();

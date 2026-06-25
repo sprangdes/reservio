@@ -46,4 +46,16 @@ public class BusinessLineChannel {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "token_validated_at")
+    private LocalDateTime tokenValidatedAt;
+
+    @Column(name = "webhook_verified_at")
+    private LocalDateTime webhookVerifiedAt;
+
+    @Column(name = "rich_menu_id", length = 100)
+    private String richMenuId;
+
+    @Column(name = "rich_menu_updated_at")
+    private LocalDateTime richMenuUpdatedAt;
 }
