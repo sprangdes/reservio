@@ -11,6 +11,7 @@ import com.reservio.repo.ReservationRepo;
 import com.reservio.repo.ServiceItemRepo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,7 +41,7 @@ public class ReservationCommandService {
         this.reservationTimeService = reservationTimeService;
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Reservation createReservation(
             UserData customer,
             BusinessData requestedBusiness,

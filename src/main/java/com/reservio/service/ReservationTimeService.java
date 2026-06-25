@@ -60,9 +60,10 @@ public class ReservationTimeService {
             if (dateHours.isClosed()) return Collections.emptyList();
             allSlots = generateSlots(dateHours.getStartTime(), dateHours.getEndTime(), interval);
         } else {
-            DefaultAvailableHour defaultHours = defaultAvailableHoursRepo
-                    .findByBusinessIdAndDayOfWeek(resolvedBusinessId, date.getDayOfWeek()).get(0);
-            if (defaultHours == null || !defaultHours.isOpen()) return Collections.emptyList();
+            List<DefaultAvailableHour> defaultHoursList = defaultAvailableHoursRepo
+                    .findByBusinessIdAndDayOfWeek(resolvedBusinessId, date.getDayOfWeek());
+            if (defaultHoursList.isEmpty() || !defaultHoursList.get(0).isOpen()) return Collections.emptyList();
+            DefaultAvailableHour defaultHours = defaultHoursList.get(0);
             allSlots = generateSlots(defaultHours.getStartTime(), defaultHours.getEndTime(), interval);
         }
 
@@ -88,6 +89,21 @@ public class ReservationTimeService {
                     return new TimeSlotResponse(slotTime, !isPast && !isConflict);
                 })
                 .toList();
+    }
+
+    public boolean isBusinessOpen(LocalDate date, Long businessId) {
+        Long resolvedBusinessId = businessId != null ? businessId : 1L;
+        Optional<DateAvailableHours> dateHours = dateAvailableHoursRepo
+                .findByBusinessIdAndDate(resolvedBusinessId, date);
+        if (dateHours.isPresent()) {
+            return !dateHours.get().isClosed();
+        }
+        return defaultAvailableHoursRepo
+                .findByBusinessIdAndDayOfWeek(resolvedBusinessId, date.getDayOfWeek())
+                .stream()
+                .findFirst()
+                .map(DefaultAvailableHour::isOpen)
+                .orElse(false);
     }
 
     public List<String> getDisabledDates(Long businessId) {
