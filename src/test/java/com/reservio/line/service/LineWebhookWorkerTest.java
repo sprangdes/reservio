@@ -22,6 +22,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class LineWebhookWorkerTest {
@@ -29,6 +30,7 @@ class LineWebhookWorkerTest {
     @Mock private LineWebhookEventRepo eventRepo;
     @Mock private LineMessagingClient messagingClient;
     @Mock private LineReservationConversation reservationConversation;
+    @Mock private LineMessageRateLimiter rateLimiter;
 
     private LineWebhookWorker worker;
     private BusinessLineChannel channel;
@@ -36,9 +38,11 @@ class LineWebhookWorkerTest {
     @BeforeEach
     void setUp() {
         worker = new LineWebhookWorker(
-                eventRepo, messagingClient, reservationConversation, new ObjectMapper()
+                eventRepo, messagingClient, reservationConversation, rateLimiter, new ObjectMapper()
         );
         channel = BusinessLineChannel.builder().id(4L).build();
+        channel.setBusiness(com.reservio.entity.BusinessData.builder().id(8L).build());
+        lenient().when(rateLimiter.tryAcquire(8L, "line-user")).thenReturn(true);
     }
 
     @Test
@@ -118,6 +122,25 @@ class LineWebhookWorkerTest {
         worker.processPendingEvents();
 
         verify(messagingClient).replyText(channel, "reply-token", "功能準備中");
+        verify(reservationConversation, never()).handle(any(), any(), any());
+        assertThat(event.getStatus()).isEqualTo(LineWebhookEventStatus.PROCESSED);
+    }
+
+    @Test
+    void rateLimitedUserGetsSafeReplyWithoutAdvancingConversation() {
+        LineWebhookEvent event = pendingEvent(0, immediateReservationPayload());
+        when(eventRepo.findTop50ByStatusAndNextAttemptAtBeforeOrderById(
+                any(LineWebhookEventStatus.class), any(LocalDateTime.class)
+        )).thenReturn(List.of(event));
+        when(rateLimiter.tryAcquire(8L, "line-user")).thenReturn(false);
+
+        worker.processPendingEvents();
+
+        verify(messagingClient).replyText(
+                channel,
+                "reply-token",
+                "操作太頻繁，請稍後再試。"
+        );
         verify(reservationConversation, never()).handle(any(), any(), any());
         assertThat(event.getStatus()).isEqualTo(LineWebhookEventStatus.PROCESSED);
     }

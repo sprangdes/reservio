@@ -238,15 +238,15 @@ IDLE
 
 工作內容：
 
-- [ ] 為 webhook ingestion、處理成功、處理失敗、LINE API latency 與預約完成記錄結構化 log。
-- [ ] log 只記錄 business ID、event ID、conversation state 和錯誤類型，不記錄 token、電話與完整訊息。
-- [ ] 設定事件與 conversation 保存期限及每日清理工作。
-- [ ] 限制單一 LINE user／商家的訊息處理頻率。
-- [ ] 建立從 webhook 到 reservation 的整合測試。
-- [ ] 使用 LINE 測試帳號執行有效日期、不營業、無時段、時段競爭、重新開始與 webhook 重送測試。
-- [ ] 撰寫商家設定步驟、憑證輪替、停用串接與故障排查文件。
-- [ ] 先啟用第一家內部試點，觀察後再開第二家。
-- [ ] Commit：`docs: add LINE Messaging rollout guide`
+- [x] 為 webhook ingestion、處理成功、處理失敗、LINE API latency 與預約完成記錄結構化 log。
+- [x] log 只記錄 business ID、event ID、conversation state 和錯誤類型，不記錄 token、電話與完整訊息。
+- [x] 設定事件與 conversation 保存期限及每日清理工作。
+- [x] 限制單一 LINE user／商家的訊息處理頻率。
+- [x] 建立從 webhook 到 reservation 的整合測試。
+- [ ] 使用 LINE 測試帳號執行有效日期、不營業、無時段、時段競爭、重新開始與 webhook 重送測試。（自動整合測試已涵蓋；真實 LINE 帳號待試點執行）
+- [x] 撰寫商家設定步驟、憑證輪替、停用串接與故障排查文件。
+- [ ] 先啟用第一家內部試點，觀察後再開第二家。（需要商家 Channel 憑證與 rollout 時程）
+- [x] Commit：`docs: add LINE Messaging rollout guide`
 
 完成標準：
 

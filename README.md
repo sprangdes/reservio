@@ -48,6 +48,7 @@ POSTGRES_PASSWORD='<strong_db_password>' \
 LINE_LOGIN_CHANNEL_ID='<line_channel_id>' \
 LINE_LOGIN_CHANNEL_SECRET='<line_channel_secret>' \
 LINE_CREDENTIAL_ENCRYPTION_KEY='<base64_encoded_32_byte_key>' \
+LINE_WEBHOOK_BASE_URL='https://www.reserv-io.com' \
 MAIL_HOST='smtp-relay.brevo.com' \
 MAIL_PORT='587' \
 MAIL_USERNAME='<smtp_username>' \
@@ -68,6 +69,14 @@ POSTGRES_PASSWORD=<strong_db_password>
 LINE_LOGIN_CHANNEL_ID=<line_channel_id>
 LINE_LOGIN_CHANNEL_SECRET=<line_channel_secret>
 LINE_CREDENTIAL_ENCRYPTION_KEY=<base64_encoded_32_byte_key>
+LINE_WEBHOOK_BASE_URL=https://www.reserv-io.com
+
+# Optional LINE operational tuning
+LINE_RATE_LIMIT_PER_MINUTE=20
+LINE_RATE_LIMIT_WINDOW_SECONDS=60
+LINE_EVENT_RETENTION_DAYS=30
+LINE_CONVERSATION_RETENTION_DAYS=14
+LINE_CLEANUP_CRON=0 30 3 * * *
 
 MAIL_HOST=smtp-relay.brevo.com
 MAIL_PORT=587
@@ -103,3 +112,12 @@ docker compose down -v
 - In prod, frontend Nginx proxies `/api`, `/oauth2`, `/login/oauth2` to backend container.
 - Non-secret values are maintained in Spring YAML profile files.
 - PostgreSQL data is stored in the Docker volume `postgres-data`.
+
+## LINE Messaging rollout
+
+商家設定、憑證輪替、停用、故障排查與兩階段試點流程請參考：
+
+- [docs/line-messaging-setup.md](docs/line-messaging-setup.md)
+
+LINE 營運紀錄只包含 `business_id`、`event_id`、conversation state、LINE API latency
+及錯誤類型，不應記錄 Channel token、電話、LINE user ID 或完整聊天訊息。
