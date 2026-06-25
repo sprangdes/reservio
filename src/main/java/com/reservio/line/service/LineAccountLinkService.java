@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Clock;
@@ -66,7 +67,7 @@ public class LineAccountLinkService {
         this.clock = clock;
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public String create(BusinessLineChannel channel, LineCustomer customer) {
         if (customer.getLinkedUser() != null) {
             throw new IllegalStateException("LINE 客戶已綁定 Reservio 帳號");
@@ -143,7 +144,7 @@ public class LineAccountLinkService {
                 .toList();
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int complete(
             BusinessLineChannel channel,
             String lineUserId,
@@ -154,6 +155,9 @@ public class LineAccountLinkService {
         if (link.getStatus() == LineAccountLinkStatus.COMPLETED) {
             return 0;
         }
+        if (link.getExpiresAt().isBefore(now())) {
+            throw new IllegalStateException("LINE 帳號綁定連結已過期");
+        }
         if (!"ok".equals(result)) {
             link.setStatus(LineAccountLinkStatus.FAILED);
             linkRepo.save(link);
@@ -162,6 +166,10 @@ public class LineAccountLinkService {
         validateCallback(link, channel, lineUserId);
         LineCustomer customer = link.getLineCustomer();
         UserData targetUser = link.getTargetUser();
+        if (customer.getLinkedUser() != null
+                && !customer.getLinkedUser().getId().equals(targetUser.getId())) {
+            throw new IllegalStateException("此 LINE 客戶已綁定其他 Reservio 帳號");
+        }
         customer.setLinkedUser(targetUser);
         customer.setLinkedAt(now());
         customer.setUpdatedAt(now());

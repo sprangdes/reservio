@@ -18,6 +18,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -184,6 +186,55 @@ class LineAccountLinkServiceTest {
                 org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any()
         );
+    }
+
+    @Test
+    void createAndCompleteUseIndependentTransactions() throws Exception {
+        Transactional create = LineAccountLinkService.class
+                .getMethod("create", BusinessLineChannel.class, LineCustomer.class)
+                .getAnnotation(Transactional.class);
+        Transactional complete = LineAccountLinkService.class
+                .getMethod(
+                        "complete",
+                        BusinessLineChannel.class,
+                        String.class,
+                        String.class,
+                        String.class)
+                .getAnnotation(Transactional.class);
+
+        assertThat(create.propagation()).isEqualTo(Propagation.REQUIRES_NEW);
+        assertThat(complete.propagation()).isEqualTo(Propagation.REQUIRES_NEW);
+    }
+
+    @Test
+    void rejectsExpiredCallback() {
+        String nonce = tokenService.generateToken();
+        LineAccountLink link = pendingLink("request-token");
+        link.setNonceHash(tokenService.hash(nonce));
+        link.setTargetUser(UserData.builder().id(40L).role("ROLE_USER").build());
+        link.setStatus(LineAccountLinkStatus.AWAITING_LINE);
+        link.setExpiresAt(LocalDateTime.ofInstant(clock.instant().minusSeconds(1), ZoneOffset.UTC));
+        when(linkRepo.findByNonceHash(tokenService.hash(nonce))).thenReturn(Optional.of(link));
+
+        assertThatThrownBy(() -> service.complete(channel, "U123", "ok", nonce))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("過期");
+    }
+
+    @Test
+    void doesNotOverwriteAnotherLinkedReservioUser() {
+        String nonce = tokenService.generateToken();
+        UserData target = UserData.builder().id(40L).role("ROLE_USER").build();
+        customer.setLinkedUser(UserData.builder().id(41L).role("ROLE_USER").build());
+        LineAccountLink link = pendingLink("request-token");
+        link.setNonceHash(tokenService.hash(nonce));
+        link.setTargetUser(target);
+        link.setStatus(LineAccountLinkStatus.AWAITING_LINE);
+        when(linkRepo.findByNonceHash(tokenService.hash(nonce))).thenReturn(Optional.of(link));
+
+        assertThatThrownBy(() -> service.complete(channel, "U123", "ok", nonce))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("其他 Reservio 帳號");
     }
 
     private LineAccountLink pendingLink(String requestToken) {
