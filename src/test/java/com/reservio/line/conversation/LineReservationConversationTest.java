@@ -256,7 +256,8 @@ class LineReservationConversationTest {
         LineReplyMessage reply = conversationService.handle(channel, "line-user", "確認");
 
         assertThat(existing.getState()).isEqualTo(LineConversationState.COMPLETED);
-        assertThat(reply.text()).contains("預約已送出", "99");
+        assertThat(reply.text()).isEqualTo("預約已送出。");
+        assertThat(reply.text()).doesNotContain("預約編號", "99");
         assertThat(reply.actionLabel()).isEqualTo("綁定 Reservio 帳號");
         assertThat(reply.actionUri()).isEqualTo(
                 "https://www.reserv-io.com/line/account-link?request=request-token");
@@ -286,7 +287,8 @@ class LineReservationConversationTest {
 
         LineReplyMessage reply = conversationService.handle(channel, "line-user", "確認");
 
-        assertThat(reply.text()).contains("100");
+        assertThat(reply.text()).isEqualTo("預約已送出。");
+        assertThat(reply.text()).doesNotContain("預約編號", "100");
         assertThat(reply.actionUri()).isNull();
         verify(accountLinkService, never()).create(any(), any());
     }

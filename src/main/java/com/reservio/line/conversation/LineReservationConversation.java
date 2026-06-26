@@ -267,7 +267,7 @@ public class LineReservationConversation {
                     eventId(),
                     conversation.getState()
             );
-            String successMessage = "預約已送出，預約編號：" + reservation.getId() + "。";
+            String successMessage = "預約已送出。";
             if (customerResolution.linked()) {
                 return messageFactory.text(successMessage);
             }
