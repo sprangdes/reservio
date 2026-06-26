@@ -104,4 +104,24 @@ class LineCustomerServiceTest {
         assertThat(result).isSameAs(linkedUser);
         verify(lineCustomerRepo).save(existing);
     }
+
+    @Test
+    void returnsPrefillOnlyForLinkedCustomer() {
+        LineCustomer linked = LineCustomer.builder()
+                .linkedUser(UserData.builder().id(40L).build())
+                .displayName(" 王小明 ")
+                .phone(" 0912345678 ")
+                .build();
+        when(lineCustomerRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
+                .thenReturn(Optional.of(linked));
+        LineCustomerService service = new LineCustomerService(
+                lineCustomerRepo, userDataRepo, passwordEncoder
+        );
+
+        assertThat(service.findLinkedPrefill(8L, "line-user"))
+                .contains(new LineCustomerPrefill("王小明", "0912345678"));
+
+        linked.setLinkedUser(null);
+        assertThat(service.findLinkedPrefill(8L, "line-user")).isEmpty();
+    }
 }
