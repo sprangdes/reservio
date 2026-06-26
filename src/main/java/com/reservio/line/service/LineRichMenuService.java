@@ -35,11 +35,17 @@ public class LineRichMenuService {
 
     private static final int WIDTH = 2500;
     private static final int HEIGHT = 843;
-    private static final int FONT_SIZE = 72;
+    private static final int FONT_SIZE = 100;
+    private static final int ICON_SIZE = 170;
     private static final List<String> LABELS = List.of(
             "立即預約",
             "我的預約",
             "查詢可預約時段"
+    );
+    private static final List<String> DISPLAY_LABELS = List.of(
+            "立即預約",
+            "我的預約",
+            "查詢時段"
     );
     private static final List<String> PREFERRED_FONT_FAMILIES = List.of(
             "Noto Sans CJK TC",
@@ -182,6 +188,11 @@ public class LineRichMenuService {
                     new Color(230, 236, 240),
                     new Color(230, 236, 240)
             };
+            Color[] foregrounds = {
+                    Color.WHITE,
+                    new Color(80, 92, 101),
+                    new Color(80, 92, 101)
+            };
             int third = WIDTH / 3;
             Set<String> availableFamilies = Arrays.stream(
                             GraphicsEnvironment.getLocalGraphicsEnvironment()
@@ -192,24 +203,29 @@ public class LineRichMenuService {
                     Font.BOLD,
                     FONT_SIZE
             );
-            LABELS.forEach(label -> {
+            DISPLAY_LABELS.forEach(label -> {
                 if (font.canDisplayUpTo(label) != -1) {
                     throw new IllegalStateException(
                             "Rich Menu 圖片產生失敗：中文字型無法顯示選單文字");
                 }
             });
             graphics.setFont(font);
-            FontMetrics metrics = graphics.getFontMetrics();
             for (int index = 0; index < 3; index++) {
                 int x = index * third;
                 int width = index == 2 ? WIDTH - x : third;
-                graphics.setColor(colors[index]);
-                graphics.fillRect(x, 0, width, HEIGHT);
-                graphics.setColor(index == 0 ? Color.WHITE : new Color(80, 92, 101));
-                String label = LABELS.get(index);
-                int textX = x + (width - metrics.stringWidth(label)) / 2;
-                int textY = (HEIGHT - metrics.getHeight()) / 2 + metrics.getAscent();
-                graphics.drawString(label, textX, textY);
+                drawMenuItem(
+                        graphics,
+                        x,
+                        width,
+                        colors[index],
+                        foregrounds[index],
+                        DISPLAY_LABELS.get(index),
+                        index
+                );
+                if (index > 0) {
+                    graphics.setColor(new Color(210, 219, 226));
+                    graphics.fillRect(x, 0, 4, HEIGHT);
+                }
             }
         } finally {
             graphics.dispose();
@@ -220,6 +236,70 @@ public class LineRichMenuService {
         } catch (IOException exception) {
             throw new IllegalStateException("Rich Menu 圖片產生失敗", exception);
         }
+    }
+
+    private void drawMenuItem(
+            Graphics2D graphics,
+            int x,
+            int width,
+            Color background,
+            Color foreground,
+            String label,
+            int iconIndex) {
+        graphics.setColor(background);
+        graphics.fillRect(x, 0, width, HEIGHT);
+        graphics.setColor(foreground);
+        graphics.setStroke(new BasicStroke(18, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        int centerX = x + width / 2;
+        int iconTop = 185;
+        switch (iconIndex) {
+            case 0 -> drawCalendarPlusIcon(graphics, centerX, iconTop);
+            case 1 -> drawListClockIcon(graphics, centerX, iconTop);
+            case 2 -> drawSearchClockIcon(graphics, centerX, iconTop);
+            default -> throw new IllegalArgumentException("Unknown rich menu icon index: " + iconIndex);
+        }
+        graphics.setFont(graphics.getFont().deriveFont(Font.BOLD, (float) FONT_SIZE));
+        FontMetrics metrics = graphics.getFontMetrics();
+        int textX = x + (width - metrics.stringWidth(label)) / 2;
+        int textY = 570 + metrics.getAscent() / 2;
+        graphics.drawString(label, textX, textY);
+    }
+
+    private void drawCalendarPlusIcon(Graphics2D graphics, int centerX, int top) {
+        int left = centerX - ICON_SIZE / 2;
+        int width = ICON_SIZE;
+        int height = 150;
+        graphics.drawRoundRect(left, top + 22, width, height, 24, 24);
+        graphics.drawLine(left, top + 70, left + width, top + 70);
+        graphics.drawLine(left + 45, top, left + 45, top + 42);
+        graphics.drawLine(left + width - 45, top, left + width - 45, top + 42);
+        graphics.drawLine(centerX - 35, top + 118, centerX + 35, top + 118);
+        graphics.drawLine(centerX, top + 83, centerX, top + 153);
+    }
+
+    private void drawListClockIcon(Graphics2D graphics, int centerX, int top) {
+        int left = centerX - ICON_SIZE / 2;
+        graphics.drawRoundRect(left, top + 5, ICON_SIZE, 155, 24, 24);
+        graphics.drawLine(left + 42, top + 48, left + 92, top + 48);
+        graphics.drawLine(left + 42, top + 86, left + 92, top + 86);
+        graphics.drawLine(left + 42, top + 124, left + 82, top + 124);
+        int clockCenterX = centerX + 42;
+        int clockCenterY = top + 105;
+        graphics.drawOval(clockCenterX - 42, clockCenterY - 42, 84, 84);
+        graphics.drawLine(clockCenterX, clockCenterY, clockCenterX, clockCenterY - 25);
+        graphics.drawLine(clockCenterX, clockCenterY, clockCenterX + 23, clockCenterY + 12);
+    }
+
+    private void drawSearchClockIcon(Graphics2D graphics, int centerX, int top) {
+        int glassCenterX = centerX - 22;
+        int glassCenterY = top + 74;
+        graphics.drawOval(glassCenterX - 54, glassCenterY - 54, 108, 108);
+        graphics.drawLine(glassCenterX + 42, glassCenterY + 42, centerX + 82, top + 178);
+        int clockCenterX = centerX + 35;
+        int clockCenterY = top + 82;
+        graphics.drawOval(clockCenterX - 42, clockCenterY - 42, 84, 84);
+        graphics.drawLine(clockCenterX, clockCenterY, clockCenterX, clockCenterY - 24);
+        graphics.drawLine(clockCenterX, clockCenterY, clockCenterX + 20, clockCenterY + 10);
     }
 
     private LineIntegrationStatusResponse toStatus(
