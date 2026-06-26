@@ -132,7 +132,11 @@ class LineReservationConversationTest {
 
         assertThat(existing.getState()).isEqualTo(LineConversationState.ENTERING_DATE);
         assertThat(existing.getServiceItemId()).isEqualTo(20L);
-        assertThat(reply.text()).contains("想預約哪一天");
+        assertThat(reply.text()).isEqualTo("想預約哪一天？請點選下方按鈕選擇日期。");
+        assertThat(reply.datePickerLabel()).isEqualTo("選擇日期");
+        assertThat(reply.datePickerData()).isEqualTo("reservio.action=select_date");
+        assertThat(reply.datePickerMin()).isEqualTo(LocalDate.of(2026, 6, 25));
+        assertThat(reply.datePickerMax()).isEqualTo(LocalDate.of(2026, 9, 25));
     }
 
     @Test

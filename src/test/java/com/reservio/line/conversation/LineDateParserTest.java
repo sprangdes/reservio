@@ -39,6 +39,11 @@ class LineDateParserTest {
     }
 
     @Test
+    void parsesIsoDateFromLineDatePicker() {
+        assertThat(parser.parse("2026-06-29")).isEqualTo(LocalDate.of(2026, 6, 29));
+    }
+
+    @Test
     void rejectsInvalidDateFormat() {
         assertThatThrownBy(() -> parser.parse("六月二十九日"))
                 .isInstanceOf(IllegalArgumentException.class)
