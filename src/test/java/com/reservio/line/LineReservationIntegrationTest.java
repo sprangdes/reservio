@@ -6,7 +6,6 @@ import com.reservio.entity.BusinessData;
 import com.reservio.entity.ServiceItem;
 import com.reservio.entity.UserData;
 import com.reservio.enums.ReservationSource;
-import com.reservio.line.conversation.LineDateParser;
 import com.reservio.line.conversation.LineReservationConversation;
 import com.reservio.line.entity.BusinessLineChannel;
 import com.reservio.line.message.LineMessageFactory;
@@ -21,7 +20,6 @@ import com.reservio.line.service.LineAccountLinkService;
 import com.reservio.line.service.LineCustomerService;
 import com.reservio.line.service.LineMessageRateLimiter;
 import com.reservio.line.service.LineMessagingClient;
-import com.reservio.line.service.LineReservationDateTokenService;
 import com.reservio.line.service.LineSignatureVerifier;
 import com.reservio.line.service.LineWebhookIngestionService;
 import com.reservio.line.service.LineWebhookWorker;
@@ -131,13 +129,12 @@ class LineReservationIntegrationTest {
         LineReservationConversation conversation = new LineReservationConversation(
                 conversationRepo,
                 serviceRepo,
+                reservationRepo,
                 reservationTimeService,
                 reservationCommandService,
                 customerService,
                 mock(LineAccountLinkService.class),
-                mock(LineReservationDateTokenService.class),
                 new LineMessagingProperties(encryptionKey, "https://www.reserv-io.com"),
-                new LineDateParser(),
                 new LineMessageFactory()
         );
         ingestionService = new LineWebhookIngestionService(
@@ -169,12 +166,12 @@ class LineReservationIntegrationTest {
         )).thenReturn(List.of(new TimeSlotResponse("10:00", true)));
 
         send("立即預約");
-        send("剪髮");
-        send(date.getYear() + "/" + date.getMonthValue() + "/" + date.getDayOfMonth());
-        send("10:00");
+        selectService();
+        selectDate(date);
+        selectTime("10:00");
         send("王小明");
         send("0912345678");
-        String confirmationEvent = eventBody("event-confirm", "確認");
+        String confirmationEvent = postbackBody("event-confirm", "reservio.action=confirm_reservation");
         ingestAndProcess(confirmationEvent);
         long eventCount = eventRepo.count();
 
@@ -217,11 +214,11 @@ class LineReservationIntegrationTest {
         )).thenReturn(List.of());
 
         send("立即預約");
-        send("剪髮");
-        send(format(closedDate));
+        selectService();
+        selectDate(closedDate);
         assertThat(currentState()).isEqualTo(LineConversationState.ENTERING_DATE);
 
-        send(format(fullDate));
+        selectDate(fullDate);
         assertThat(currentState()).isEqualTo(LineConversationState.ENTERING_DATE);
 
         send("重新開始");
@@ -245,9 +242,9 @@ class LineReservationIntegrationTest {
         )).thenReturn(List.of(new TimeSlotResponse("10:00", true)));
 
         send("立即預約");
-        send("剪髮");
-        send(format(date));
-        send("10:00");
+        selectService();
+        selectDate(date);
+        selectTime("10:00");
         send("王小明");
         send("0912345678");
 
@@ -256,7 +253,7 @@ class LineReservationIntegrationTest {
                 60,
                 channel.getBusiness().getId()
         )).thenReturn(List.of(new TimeSlotResponse("10:00", false)));
-        send("確認");
+        postback("reservio.action=confirm_reservation");
 
         assertThat(currentState()).isEqualTo(LineConversationState.ENTERING_DATE);
         assertThat(reservationRepo.count()).isZero();
@@ -266,15 +263,31 @@ class LineReservationIntegrationTest {
         ingestAndProcess(eventBody("event-" + (++eventSequence), text));
     }
 
+    private void postback(String data) throws Exception {
+        ingestAndProcess(postbackBody("event-" + (++eventSequence), data));
+    }
+
+    private void selectService() throws Exception {
+        Long serviceId = serviceRepo
+                .findByBusinessIdAndNameAndActiveTrue(channel.getBusiness().getId(), "剪髮")
+                .orElseThrow()
+                .getId();
+        postback("reservio.action=select_service&serviceItemId=" + serviceId);
+    }
+
+    private void selectDate(LocalDate date) throws Exception {
+        postback("reservio.action=select_date&date=" + date);
+    }
+
+    private void selectTime(String time) throws Exception {
+        postback("reservio.action=select_time&time=" + time);
+    }
+
     private LineConversationState currentState() {
         return conversationRepo.findByBusinessIdAndLineUserId(
                 channel.getBusiness().getId(),
                 "integration-line-user"
         ).orElseThrow().getState();
-    }
-
-    private String format(LocalDate date) {
-        return date.getYear() + "/" + date.getMonthValue() + "/" + date.getDayOfMonth();
     }
 
     private void ingestAndProcess(String body) throws Exception {
@@ -294,6 +307,20 @@ class LineReservationIntegrationTest {
                   }]
                 }
                 """.formatted(eventId, eventId, text);
+    }
+
+    private String postbackBody(String eventId, String data) {
+        return """
+                {
+                  "events":[{
+                    "type":"postback",
+                    "webhookEventId":"%s",
+                    "replyToken":"reply-%s",
+                    "source":{"type":"user","userId":"integration-line-user"},
+                    "postback":{"data":"%s"}
+                  }]
+                }
+                """.formatted(eventId, eventId, data);
     }
 
     private String signature(String body) throws Exception {

@@ -74,6 +74,19 @@ public class LineCustomerService {
                 ));
     }
 
+    @Transactional(readOnly = true)
+    public Optional<LineCustomerResolution> findExistingCustomer(
+            BusinessData business,
+            String lineUserId) {
+        return lineCustomerRepo
+                .findByBusinessIdAndLineUserId(business.getId(), lineUserId)
+                .map(customer -> new LineCustomerResolution(
+                        customer,
+                        customer.getLinkedUser() != null ? customer.getLinkedUser() : customer.getUser(),
+                        customer.getLinkedUser() != null
+                ));
+    }
+
     private LineCustomer updateExisting(
             LineCustomer customer,
             String displayName,

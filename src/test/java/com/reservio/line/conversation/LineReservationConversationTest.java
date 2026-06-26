@@ -6,6 +6,7 @@ import com.reservio.entity.Reservation;
 import com.reservio.entity.ServiceItem;
 import com.reservio.entity.UserData;
 import com.reservio.enums.ReservationSource;
+import com.reservio.enums.ReservationStatus;
 import com.reservio.line.entity.BusinessLineChannel;
 import com.reservio.line.entity.LineConversation;
 import com.reservio.line.enums.LineConversationState;
@@ -16,9 +17,9 @@ import com.reservio.line.service.LineCustomerService;
 import com.reservio.line.service.LineCustomerResolution;
 import com.reservio.line.service.LineCustomerPrefill;
 import com.reservio.line.service.LineAccountLinkService;
-import com.reservio.line.service.LineReservationDateTokenService;
 import com.reservio.line.config.LineMessagingProperties;
 import com.reservio.line.entity.LineCustomer;
+import com.reservio.repo.ReservationRepo;
 import com.reservio.repo.ServiceItemRepo;
 import com.reservio.service.ReservationCommandService;
 import com.reservio.service.ReservationTimeService;
@@ -40,6 +41,7 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -49,11 +51,11 @@ class LineReservationConversationTest {
 
     @Mock private LineConversationRepo conversationRepo;
     @Mock private ServiceItemRepo serviceItemRepo;
+    @Mock private ReservationRepo reservationRepo;
     @Mock private ReservationTimeService reservationTimeService;
     @Mock private ReservationCommandService reservationCommandService;
     @Mock private LineCustomerService lineCustomerService;
     @Mock private LineAccountLinkService accountLinkService;
-    @Mock private LineReservationDateTokenService dateTokenService;
 
     private final Clock clock = Clock.fixed(
             Instant.parse("2026-06-25T01:00:00Z"),
@@ -69,13 +71,12 @@ class LineReservationConversationTest {
         conversationService = new LineReservationConversation(
                 conversationRepo,
                 serviceItemRepo,
+                reservationRepo,
                 reservationTimeService,
                 reservationCommandService,
                 lineCustomerService,
                 accountLinkService,
-                dateTokenService,
                 new LineMessagingProperties("ignored", "https://www.reserv-io.com"),
-                new LineDateParser(clock),
                 new LineMessageFactory(),
                 clock
         );
@@ -102,11 +103,13 @@ class LineReservationConversationTest {
         assertThat(existing.getState()).isEqualTo(LineConversationState.SELECTING_SERVICE);
         assertThat(existing.getServiceItemId()).isNull();
         assertThat(reply.text()).isEqualTo("想預約什麼項目？");
-        assertThat(reply.options()).containsExactly("剪髮", "取消");
+        assertThat(reply.flexContents()).isNotNull();
+        assertThat(reply.flexContents().toString())
+                .contains("剪髮", "reservio.action=select_service&serviceItemId=20");
     }
 
     @Test
-    void serviceQuickRepliesKeepCancelActionWithinLineLimit() {
+    void serviceFlexMessageContainsAtMostTwelveServiceButtonsPlusCancel() {
         LineConversation existing = conversation(LineConversationState.IDLE);
         List<ServiceItem> services = IntStream.rangeClosed(1, 15)
                 .mapToObj(index -> ServiceItem.builder()
@@ -122,8 +125,8 @@ class LineReservationConversationTest {
 
         LineReplyMessage reply = conversationService.handle(channel, "line-user", "立即預約");
 
-        assertThat(reply.options()).hasSize(13);
-        assertThat(reply.options()).endsWith("取消");
+        assertThat(reply.flexContents().toString()).contains("服務12", "取消");
+        assertThat(reply.flexContents().toString()).doesNotContain("服務13");
     }
 
     @Test
@@ -131,16 +134,39 @@ class LineReservationConversationTest {
         LineConversation existing = conversation(LineConversationState.SELECTING_SERVICE);
         when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user")).thenReturn(Optional.of(existing));
         when(serviceItemRepo.findByBusinessIdAndNameAndActiveTrue(8L, "剪髮")).thenReturn(Optional.of(haircut));
-        when(dateTokenService.create(8L, "line-user", 20L)).thenReturn("date-token");
-
+        when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
         LineReplyMessage reply = conversationService.handle(channel, "line-user", "剪髮");
 
         assertThat(existing.getState()).isEqualTo(LineConversationState.ENTERING_DATE);
         assertThat(existing.getServiceItemId()).isEqualTo(20L);
-        assertThat(reply.text()).isEqualTo("想預約哪一天？請點選下方按鈕選擇日期。");
-        assertThat(reply.actionLabel()).isEqualTo("選擇預約日期");
-        assertThat(reply.actionUri()).isEqualTo(
-                "https://www.reserv-io.com/line/reservation-date?token=date-token");
+        assertThat(reply.text()).isEqualTo("想預約哪一天？");
+        assertThat(reply.flexContents()).isNotNull();
+    }
+
+    @Test
+    void servicePostbackReturnsThreeMonthDateCalendar() {
+        LineConversation existing = conversation(LineConversationState.SELECTING_SERVICE);
+        LocalDate selectable = LocalDate.of(2026, 6, 26);
+        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user")).thenReturn(Optional.of(existing));
+        when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
+        when(reservationTimeService.isBusinessOpen(any(LocalDate.class), eq(8L))).thenReturn(false);
+        when(reservationTimeService.isBusinessOpen(selectable, 8L)).thenReturn(true);
+        when(reservationTimeService.getTimeSlotsForDate(selectable, 60, 8L))
+                .thenReturn(List.of(new TimeSlotResponse("10:00", true)));
+
+        LineReplyMessage reply = conversationService.handlePostback(
+                channel,
+                "line-user",
+                "reservio.action=select_service&serviceItemId=20"
+        );
+
+        assertThat(existing.getState()).isEqualTo(LineConversationState.ENTERING_DATE);
+        assertThat(existing.getServiceItemId()).isEqualTo(20L);
+        assertThat(reply.text()).isEqualTo("想預約哪一天？");
+        assertThat(reply.flexContents().toString())
+                .contains("2026年6月", "2026年7月", "2026年8月", "2026年9月")
+                .contains("reservio.action=select_date&date=2026-06-26")
+                .doesNotContain("reservio.action=select_date&date=2026-06-25");
     }
 
     @Test
@@ -149,16 +175,30 @@ class LineReservationConversationTest {
         existing.setServiceItemId(20L);
         when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user")).thenReturn(Optional.of(existing));
         when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
-        when(reservationTimeService.isBusinessOpen(LocalDate.of(2026, 6, 29), 8L)).thenReturn(false);
 
         LineReplyMessage reply = conversationService.handle(channel, "line-user", "6/29");
 
         assertThat(existing.getState()).isEqualTo(LineConversationState.ENTERING_DATE);
-        assertThat(reply.text()).isEqualTo("當日不營業，請選擇其他日期。");
+        assertThat(reply.text()).isEqualTo("請從月曆點選日期。");
+        assertThat(reply.flexContents()).isNotNull();
     }
 
     @Test
-    void availableDateShowsAvailableTimes() {
+    void typedDateDoesNotAdvanceToTimeSelection() {
+        LineConversation existing = conversation(LineConversationState.ENTERING_DATE);
+        existing.setServiceItemId(20L);
+        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user")).thenReturn(Optional.of(existing));
+        when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
+
+        LineReplyMessage reply = conversationService.handle(channel, "line-user", "6/29");
+
+        assertThat(existing.getState()).isEqualTo(LineConversationState.ENTERING_DATE);
+        assertThat(existing.getReservationDate()).isNull();
+        assertThat(reply.flexContents()).isNotNull();
+    }
+
+    @Test
+    void datePostbackStoresDateAndReturnsTimeFlex() {
         LineConversation existing = conversation(LineConversationState.ENTERING_DATE);
         existing.setServiceItemId(20L);
         LocalDate date = LocalDate.of(2026, 6, 29);
@@ -171,15 +211,43 @@ class LineReservationConversationTest {
                         new TimeSlotResponse("10:30", false)
                 ));
 
-        LineReplyMessage reply = conversationService.handle(channel, "line-user", "6/29");
+        LineReplyMessage reply = conversationService.handlePostback(
+                channel,
+                "line-user",
+                "reservio.action=select_date&date=2026-06-29"
+        );
 
         assertThat(existing.getState()).isEqualTo(LineConversationState.SELECTING_TIME);
         assertThat(existing.getReservationDate()).isEqualTo(date);
-        assertThat(reply.options()).containsExactly("10:00", "重新開始", "取消");
+        assertThat(reply.text()).isEqualTo("請選擇可預約時段。");
+        assertThat(reply.flexContents().toString())
+                .contains("10:00", "reservio.action=select_time&time=10:00")
+                .doesNotContain("10:30");
     }
 
     @Test
-    void timeQuickRepliesKeepRestartAndCancelActionsWithinLineLimit() {
+    void timePostbackStoresTimeAndAsksForName() {
+        LineConversation existing = conversation(LineConversationState.SELECTING_TIME);
+        existing.setServiceItemId(20L);
+        existing.setReservationDate(LocalDate.of(2026, 6, 29));
+        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user")).thenReturn(Optional.of(existing));
+        when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
+        when(reservationTimeService.getTimeSlotsForDate(existing.getReservationDate(), 60, 8L))
+                .thenReturn(List.of(new TimeSlotResponse("10:00", true)));
+
+        LineReplyMessage reply = conversationService.handlePostback(
+                channel,
+                "line-user",
+                "reservio.action=select_time&time=10:00"
+        );
+
+        assertThat(existing.getState()).isEqualTo(LineConversationState.ENTERING_NAME);
+        assertThat(existing.getStartTime()).isEqualTo(LocalTime.of(10, 0));
+        assertThat(reply.text()).isEqualTo("請輸入預約人姓名。");
+    }
+
+    @Test
+    void timeFlexShowsRestartAndCancelActions() {
         LineConversation existing = conversation(LineConversationState.ENTERING_DATE);
         existing.setServiceItemId(20L);
         LocalDate date = LocalDate.of(2026, 6, 29);
@@ -193,10 +261,13 @@ class LineReservationConversationTest {
         when(reservationTimeService.isBusinessOpen(date, 8L)).thenReturn(true);
         when(reservationTimeService.getTimeSlotsForDate(date, 60, 8L)).thenReturn(slots);
 
-        LineReplyMessage reply = conversationService.handle(channel, "line-user", "6/29");
+        LineReplyMessage reply = conversationService.handlePostback(
+                channel,
+                "line-user",
+                "reservio.action=select_date&date=2026-06-29"
+        );
 
-        assertThat(reply.options()).hasSize(13);
-        assertThat(reply.options()).endsWith("重新開始", "取消");
+        assertThat(reply.flexContents().toString()).contains("重新開始", "取消", "09:00");
     }
 
     @Test
@@ -206,13 +277,12 @@ class LineReservationConversationTest {
         LocalDate date = LocalDate.of(2026, 6, 29);
         when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user")).thenReturn(Optional.of(existing));
         when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
-        when(reservationTimeService.isBusinessOpen(date, 8L)).thenReturn(true);
-        when(reservationTimeService.getTimeSlotsForDate(date, 60, 8L)).thenReturn(List.of());
 
         LineReplyMessage reply = conversationService.handle(channel, "line-user", "6/29");
 
         assertThat(existing.getState()).isEqualTo(LineConversationState.ENTERING_DATE);
-        assertThat(reply.text()).isEqualTo("當日已無可預約時段，請選擇其他日期。");
+        assertThat(reply.text()).isEqualTo("請從月曆點選日期。");
+        assertThat(reply.flexContents()).isNotNull();
     }
 
     @Test
@@ -235,8 +305,10 @@ class LineReservationConversationTest {
 
         LineReplyMessage phoneReply = conversationService.handle(channel, "line-user", "0912-345-678");
         assertThat(existing.getState()).isEqualTo(LineConversationState.CONFIRMING);
-        assertThat(phoneReply.text()).contains("Reservio Salon", "剪髮", "2026-06-29", "10:00", "王小明", "0912-345-678");
-        assertThat(phoneReply.options()).containsExactly("確認", "重新開始", "取消");
+        assertThat(phoneReply.flexContents().toString())
+                .contains("確認預約", "Reservio Salon", "剪髮", "2026-06-29", "10:00",
+                        "王小明", "0912-345-678", "reservio.action=confirm_reservation",
+                        "重新開始", "取消");
     }
 
     @Test
@@ -250,7 +322,8 @@ class LineReservationConversationTest {
         assertThat(existing.getState()).isEqualTo(LineConversationState.CONFIRMING);
         assertThat(existing.getCustomerName()).isEqualTo("王小明");
         assertThat(existing.getPhone()).isEqualTo("0912345678");
-        assertThat(reply.text()).contains("請確認預約資訊", "王小明", "0912345678");
+        assertThat(reply.flexContents().toString())
+                .contains("確認預約", "王小明", "0912345678");
     }
 
     @Test
@@ -278,7 +351,8 @@ class LineReservationConversationTest {
 
         LineReplyMessage nameReply = conversationService.handle(channel, "line-user", "王小明");
         assertThat(existing.getState()).isEqualTo(LineConversationState.CONFIRMING);
-        assertThat(nameReply.text()).contains("請確認預約資訊", "王小明", "0912345678");
+        assertThat(nameReply.flexContents().toString())
+                .contains("確認預約", "王小明", "0912345678");
     }
 
     @Test
@@ -323,6 +397,112 @@ class LineReservationConversationTest {
         assertThat(reply.actionLabel()).isEqualTo("綁定 Reservio 帳號");
         assertThat(reply.actionUri()).isEqualTo(
                 "https://www.reserv-io.com/line/account-link?request=request-token");
+    }
+
+    @Test
+    void confirmPostbackCreatesLineReservation() {
+        LineConversation existing = completedInputConversation();
+        UserData customer = UserData.builder().id(30L).build();
+        LineCustomer lineCustomer = LineCustomer.builder()
+                .id(3L)
+                .business(business)
+                .user(customer)
+                .lineUserId("line-user")
+                .build();
+        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user")).thenReturn(Optional.of(existing));
+        when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
+        when(lineCustomerService.resolveCustomer(
+                business, "line-user", "王小明", "0912-345-678"))
+                .thenReturn(new LineCustomerResolution(lineCustomer, customer, false));
+        when(accountLinkService.create(channel, lineCustomer)).thenReturn("request-token");
+        when(reservationCommandService.createReservation(
+                customer, business, haircut, existing.getReservationDate(), existing.getStartTime(),
+                ReservationSource.LINE, null, "LINE 預約", "王小明", "0912-345-678"
+        )).thenReturn(Reservation.builder().id(99L).build());
+
+        LineReplyMessage reply = conversationService.handlePostback(
+                channel,
+                "line-user",
+                "reservio.action=confirm_reservation"
+        );
+
+        assertThat(existing.getState()).isEqualTo(LineConversationState.COMPLETED);
+        assertThat(reply.text()).isEqualTo("預約已送出。");
+        assertThat(reply.actionLabel()).isEqualTo("綁定 Reservio 帳號");
+    }
+
+    @Test
+    void myReservationsPostbackReturnsReservationCards() {
+        LineConversation existing = conversation(LineConversationState.IDLE);
+        UserData customer = UserData.builder().id(30L).build();
+        LineCustomer lineCustomer = LineCustomer.builder()
+                .id(3L)
+                .business(business)
+                .user(customer)
+                .lineUserId("line-user")
+                .build();
+        Reservation reservation = Reservation.builder()
+                .id(99L)
+                .business(business)
+                .user(customer)
+                .title("剪髮")
+                .reservationDate(LocalDate.of(2026, 6, 29))
+                .startTime(LocalTime.of(10, 0))
+                .status(ReservationStatus.PENDING)
+                .build();
+        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
+                .thenReturn(Optional.of(existing));
+        when(lineCustomerService.findExistingCustomer(business, "line-user"))
+                .thenReturn(Optional.of(new LineCustomerResolution(lineCustomer, customer, false)));
+        when(reservationRepo.findAllByBusinessAndUserAndReservationDateGreaterThanEqualAndStatusInOrderByReservationDateAscStartTimeAsc(
+                eq(business), eq(customer), eq(LocalDate.of(2026, 6, 25)), any()
+        )).thenReturn(List.of(reservation));
+
+        LineReplyMessage reply = conversationService.handlePostback(
+                channel,
+                "line-user",
+                "reservio.action=my_reservations"
+        );
+
+        assertThat(reply.text()).isEqualTo("我的預約");
+        assertThat(reply.flexContents().toString())
+                .contains("剪髮", "2026-06-29", "10:00",
+                        "reservio.action=cancel_reservation&reservationId=99");
+    }
+
+    @Test
+    void cancelReservationPostbackMarksReservationCancelled() {
+        LineConversation existing = conversation(LineConversationState.IDLE);
+        UserData customer = UserData.builder().id(30L).build();
+        Reservation reservation = Reservation.builder()
+                .id(99L)
+                .business(business)
+                .user(customer)
+                .title("剪髮")
+                .reservationDate(LocalDate.of(2026, 6, 29))
+                .startTime(LocalTime.of(10, 0))
+                .status(ReservationStatus.PENDING)
+                .build();
+        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
+                .thenReturn(Optional.of(existing));
+        when(lineCustomerService.findExistingCustomer(business, "line-user"))
+                .thenReturn(Optional.of(new LineCustomerResolution(
+                        LineCustomer.builder().id(3L).business(business).user(customer).build(),
+                        customer,
+                        false
+                )));
+        when(reservationRepo.findByIdAndBusiness(99L, business)).thenReturn(Optional.of(reservation));
+
+        LineReplyMessage reply = conversationService.handlePostback(
+                channel,
+                "line-user",
+                "reservio.action=cancel_reservation&reservationId=99"
+        );
+
+        assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CANCELLED);
+        assertThat(reservation.getCancelReason()).isEqualTo("LINE 使用者取消");
+        assertThat(reply.text()).isEqualTo("預約已取消。");
+        verify(reservationRepo).save(reservation);
     }
 
     @Test
