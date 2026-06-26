@@ -10,6 +10,7 @@ import com.reservio.line.enums.LineConversationState;
 import com.reservio.line.repo.LineConversationRepo;
 import com.reservio.repo.ServiceItemRepo;
 import com.reservio.service.ReservationTimeService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ public class LineReservationDateSelectionService {
     private final ReservationTimeService reservationTimeService;
     private final Clock clock;
 
+    @Autowired
     public LineReservationDateSelectionService(
             LineReservationDateTokenService tokenService,
             LineConversationRepo conversationRepo,
