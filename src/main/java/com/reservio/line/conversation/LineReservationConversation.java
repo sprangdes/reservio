@@ -14,6 +14,7 @@ import com.reservio.line.message.LineReplyMessage;
 import com.reservio.line.repo.LineConversationRepo;
 import com.reservio.line.service.LineCustomerService;
 import com.reservio.line.service.LineCustomerResolution;
+import com.reservio.line.service.LineCustomerPrefill;
 import com.reservio.line.service.LineAccountLinkService;
 import com.reservio.line.config.LineMessagingProperties;
 import com.reservio.repo.ServiceItemRepo;
@@ -193,6 +194,20 @@ public class LineReservationConversation {
             return messageFactory.quickReply("此時段目前不可預約，請重新選擇。", withActions(available));
         }
         conversation.setStartTime(LocalTime.parse(input));
+        LineCustomerPrefill prefill = lineCustomerService.findLinkedPrefill(
+                        conversation.getBusiness().getId(),
+                        conversation.getLineUserId())
+                .orElse(new LineCustomerPrefill(null, null));
+        conversation.setCustomerName(prefill.name());
+        conversation.setPhone(prefill.phone());
+        if (conversation.getCustomerName() != null && conversation.getPhone() != null) {
+            conversation.setState(LineConversationState.CONFIRMING);
+            return confirmationMessage(conversation);
+        }
+        if (conversation.getCustomerName() != null) {
+            conversation.setState(LineConversationState.ENTERING_PHONE);
+            return messageFactory.text("請輸入聯絡電話。");
+        }
         conversation.setState(LineConversationState.ENTERING_NAME);
         return messageFactory.text("請輸入預約人姓名。");
     }
@@ -202,6 +217,10 @@ public class LineReservationConversation {
             return messageFactory.text("姓名不可為空且不可超過 100 個字，請重新輸入。");
         }
         conversation.setCustomerName(input);
+        if (conversation.getPhone() != null && !conversation.getPhone().isBlank()) {
+            conversation.setState(LineConversationState.CONFIRMING);
+            return confirmationMessage(conversation);
+        }
         conversation.setState(LineConversationState.ENTERING_PHONE);
         return messageFactory.text("請輸入聯絡電話。");
     }
@@ -212,6 +231,10 @@ public class LineReservationConversation {
         }
         conversation.setPhone(input);
         conversation.setState(LineConversationState.CONFIRMING);
+        return confirmationMessage(conversation);
+    }
+
+    private LineReplyMessage confirmationMessage(LineConversation conversation) {
         ServiceItem service = requiredService(conversation);
         String summary = """
                 請確認預約資訊：
