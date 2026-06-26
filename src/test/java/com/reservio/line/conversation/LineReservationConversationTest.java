@@ -14,6 +14,7 @@ import com.reservio.line.message.LineReplyMessage;
 import com.reservio.line.repo.LineConversationRepo;
 import com.reservio.line.service.LineCustomerService;
 import com.reservio.line.service.LineCustomerResolution;
+import com.reservio.line.service.LineCustomerPrefill;
 import com.reservio.line.service.LineAccountLinkService;
 import com.reservio.line.config.LineMessagingProperties;
 import com.reservio.line.entity.LineCustomer;
@@ -232,6 +233,60 @@ class LineReservationConversationTest {
     }
 
     @Test
+    void linkedCustomerWithCompletePrefillSkipsNameAndPhone() {
+        LineConversation existing = selectableTimeConversation();
+        when(lineCustomerService.findLinkedPrefill(8L, "line-user"))
+                .thenReturn(Optional.of(new LineCustomerPrefill("王小明", "0912345678")));
+
+        LineReplyMessage reply = conversationService.handle(channel, "line-user", "10:00");
+
+        assertThat(existing.getState()).isEqualTo(LineConversationState.CONFIRMING);
+        assertThat(existing.getCustomerName()).isEqualTo("王小明");
+        assertThat(existing.getPhone()).isEqualTo("0912345678");
+        assertThat(reply.text()).contains("請確認預約資訊", "王小明", "0912345678");
+    }
+
+    @Test
+    void linkedCustomerWithOnlyNameAsksOnlyForPhone() {
+        LineConversation existing = selectableTimeConversation();
+        when(lineCustomerService.findLinkedPrefill(8L, "line-user"))
+                .thenReturn(Optional.of(new LineCustomerPrefill("王小明", null)));
+
+        LineReplyMessage reply = conversationService.handle(channel, "line-user", "10:00");
+
+        assertThat(existing.getState()).isEqualTo(LineConversationState.ENTERING_PHONE);
+        assertThat(existing.getCustomerName()).isEqualTo("王小明");
+        assertThat(reply.text()).isEqualTo("請輸入聯絡電話。");
+    }
+
+    @Test
+    void linkedCustomerWithOnlyPhoneAsksOnlyForNameThenConfirms() {
+        LineConversation existing = selectableTimeConversation();
+        when(lineCustomerService.findLinkedPrefill(8L, "line-user"))
+                .thenReturn(Optional.of(new LineCustomerPrefill(null, "0912345678")));
+
+        LineReplyMessage timeReply = conversationService.handle(channel, "line-user", "10:00");
+        assertThat(existing.getState()).isEqualTo(LineConversationState.ENTERING_NAME);
+        assertThat(timeReply.text()).isEqualTo("請輸入預約人姓名。");
+
+        LineReplyMessage nameReply = conversationService.handle(channel, "line-user", "王小明");
+        assertThat(existing.getState()).isEqualTo(LineConversationState.CONFIRMING);
+        assertThat(nameReply.text()).contains("請確認預約資訊", "王小明", "0912345678");
+    }
+
+    @Test
+    void linkedCustomerWithoutPrefillUsesOriginalNameThenPhoneFlow() {
+        LineConversation existing = selectableTimeConversation();
+        when(lineCustomerService.findLinkedPrefill(8L, "line-user"))
+                .thenReturn(Optional.of(new LineCustomerPrefill(null, null)));
+
+        LineReplyMessage reply = conversationService.handle(channel, "line-user", "10:00");
+
+        assertThat(existing.getState()).isEqualTo(LineConversationState.ENTERING_NAME);
+        assertThat(reply.text()).isEqualTo("請輸入預約人姓名。");
+    }
+
+    @Test
     void confirmCreatesLineReservationWithoutLogin() {
         LineConversation existing = completedInputConversation();
         UserData customer = UserData.builder().id(30L).build();
@@ -365,6 +420,19 @@ class LineReservationConversationTest {
         existing.setStartTime(LocalTime.of(10, 0));
         existing.setCustomerName("王小明");
         existing.setPhone("0912-345-678");
+        return existing;
+    }
+
+    private LineConversation selectableTimeConversation() {
+        LineConversation existing = conversation(LineConversationState.SELECTING_TIME);
+        existing.setServiceItemId(20L);
+        existing.setReservationDate(LocalDate.of(2026, 6, 29));
+        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
+                .thenReturn(Optional.of(existing));
+        when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
+        when(reservationTimeService.getTimeSlotsForDate(
+                existing.getReservationDate(), 60, 8L))
+                .thenReturn(List.of(new TimeSlotResponse("10:00", true)));
         return existing;
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.reservio.enums.Role.ROLE_USER;
@@ -61,6 +62,18 @@ public class LineCustomerService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public Optional<LineCustomerPrefill> findLinkedPrefill(
+            Long businessId,
+            String lineUserId) {
+        return lineCustomerRepo.findByBusinessIdAndLineUserId(businessId, lineUserId)
+                .filter(customer -> customer.getLinkedUser() != null)
+                .map(customer -> new LineCustomerPrefill(
+                        normalize(customer.getDisplayName()),
+                        normalize(customer.getPhone())
+                ));
+    }
+
     private LineCustomer updateExisting(
             LineCustomer customer,
             String displayName,
@@ -94,5 +107,12 @@ public class LineCustomerService {
                 .createdAt(LocalDateTime.now())
                 .build();
         return lineCustomerRepo.save(customer);
+    }
+
+    private String normalize(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 }
