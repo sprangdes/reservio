@@ -13,6 +13,7 @@ import org.springframework.web.client.ResourceAccessException;
 
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -119,6 +120,59 @@ class LineMessagingClientTest {
                         List.of(),
                         "綁定 Reservio 帳號",
                         "https://www.reserv-io.com/line/account-link?request=token"
+                ));
+
+        fixture.server.verify();
+    }
+
+    @Test
+    void sendsFlexMessageWhenContentsArePresent() {
+        ClientFixture fixture = fixture();
+        fixture.server.expect(once(), requestTo("https://api.line.me/v2/bot/message/reply"))
+                .andExpect(content().json("""
+                        {
+                          "replyToken": "reply-token",
+                          "messages": [{
+                            "type": "flex",
+                            "altText": "想預約什麼項目？",
+                            "contents": {
+                              "type": "bubble",
+                              "body": {
+                                "type": "box",
+                                "layout": "vertical",
+                                "contents": [{
+                                  "type": "button",
+                                  "action": {
+                                    "type": "postback",
+                                    "label": "剪髮",
+                                    "data": "reservio.action=select_service&serviceItemId=20"
+                                  }
+                                }]
+                              }
+                            }
+                          }]
+                        }
+                        """))
+                .andRespond(withSuccess());
+
+        fixture.client.reply(fixture.channel, "reply-token",
+                LineReplyMessage.flex(
+                        "想預約什麼項目？",
+                        Map.of(
+                                "type", "bubble",
+                                "body", Map.of(
+                                        "type", "box",
+                                        "layout", "vertical",
+                                        "contents", List.of(Map.of(
+                                                "type", "button",
+                                                "action", Map.of(
+                                                        "type", "postback",
+                                                        "label", "剪髮",
+                                                        "data", "reservio.action=select_service&serviceItemId=20"
+                                                )
+                                        ))
+                                )
+                        )
                 ));
 
         fixture.server.verify();

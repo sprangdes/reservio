@@ -42,6 +42,12 @@ public interface ReservationRepo extends JpaRepository<Reservation, Long>, JpaSp
 
     List<Reservation> findAllByUser(UserData user);
 
+    List<Reservation> findAllByBusinessAndUserAndReservationDateGreaterThanEqualAndStatusInOrderByReservationDateAscStartTimeAsc(
+            BusinessData business,
+            UserData user,
+            LocalDate startDate,
+            List<ReservationStatus> statuses);
+
     List<Reservation> getAllByUserAndReservationDateAndStatusIn(UserData user, LocalDate date, List<ReservationStatus> statuses);
 
     List<Reservation> getAllByBusinessAndReservationDateAndStatusIn(BusinessData businessData, LocalDate today, List<ReservationStatus> statuses);
