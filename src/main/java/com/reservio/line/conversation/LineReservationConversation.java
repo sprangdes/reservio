@@ -41,6 +41,7 @@ public class LineReservationConversation {
     private static final String RESTART = "重新開始";
     private static final String CANCEL = "取消";
     private static final String CONFIRM = "確認";
+    public static final String DATE_PICKER_ACTION = "reservio.action=select_date";
 
     private final LineConversationRepo conversationRepo;
     private final ServiceItemRepo serviceItemRepo;
@@ -159,7 +160,7 @@ public class LineReservationConversation {
         }
         conversation.setServiceItemId(service.getId());
         conversation.setState(LineConversationState.ENTERING_DATE);
-        return messageFactory.text("想預約哪一天？請輸入例如 6/29。");
+        return datePickerMessage("想預約哪一天？請點選下方按鈕選擇日期。");
     }
 
     private LineReplyMessage enterDate(LineConversation conversation, String input) {
@@ -167,21 +168,32 @@ public class LineReservationConversation {
         try {
             date = dateParser.parse(input);
         } catch (IllegalArgumentException exception) {
-            return messageFactory.text(exception.getMessage());
+            return datePickerMessage(exception.getMessage() + "，請點選下方按鈕選擇日期。");
         }
         ServiceItem service = requiredService(conversation);
         Long businessId = conversation.getBusiness().getId();
         if (!reservationTimeService.isBusinessOpen(date, businessId)) {
-            return messageFactory.text("當日不營業，請選擇其他日期。");
+            return datePickerMessage("當日不營業，請選擇其他日期。");
         }
         List<String> available = availableTimes(date, service, businessId);
         if (available.isEmpty()) {
-            return messageFactory.text("當日已無可預約時段，請選擇其他日期。");
+            return datePickerMessage("當日已無可預約時段，請選擇其他日期。");
         }
         conversation.setReservationDate(date);
         conversation.setState(LineConversationState.SELECTING_TIME);
         available = withActions(available);
         return messageFactory.quickReply("請選擇可預約時段。", available);
+    }
+
+    private LineReplyMessage datePickerMessage(String text) {
+        LocalDate today = LocalDate.now(clock);
+        return messageFactory.datePicker(
+                text,
+                "選擇日期",
+                DATE_PICKER_ACTION,
+                today,
+                today.plusMonths(3)
+        );
     }
 
     private LineReplyMessage selectTime(LineConversation conversation, String input) {

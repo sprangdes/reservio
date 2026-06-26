@@ -23,7 +23,17 @@ public class LineDateParser {
         if (input == null || input.isBlank()) {
             throw formatError();
         }
-        String[] parts = input.trim().split("/");
+        String normalized = input.trim();
+        try {
+            LocalDate candidate = LocalDate.parse(normalized);
+            if (candidate.isBefore(LocalDate.now(clock))) {
+                throw new IllegalArgumentException("日期不可早於今天");
+            }
+            return candidate;
+        } catch (DateTimeException exception) {
+            // Continue with legacy slash-based parsing.
+        }
+        String[] parts = normalized.split("/");
         try {
             if (parts.length == 2) {
                 int month = Integer.parseInt(parts[0]);
