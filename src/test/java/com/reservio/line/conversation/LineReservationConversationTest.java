@@ -15,6 +15,7 @@ import com.reservio.line.repo.LineConversationRepo;
 import com.reservio.line.service.LineCustomerService;
 import com.reservio.line.service.LineCustomerResolution;
 import com.reservio.line.service.LineAccountLinkService;
+import com.reservio.line.service.LineReservationDateTokenService;
 import com.reservio.line.config.LineMessagingProperties;
 import com.reservio.line.entity.LineCustomer;
 import com.reservio.repo.ServiceItemRepo;
@@ -51,6 +52,7 @@ class LineReservationConversationTest {
     @Mock private ReservationCommandService reservationCommandService;
     @Mock private LineCustomerService lineCustomerService;
     @Mock private LineAccountLinkService accountLinkService;
+    @Mock private LineReservationDateTokenService dateTokenService;
 
     private final Clock clock = Clock.fixed(
             Instant.parse("2026-06-25T01:00:00Z"),
@@ -70,6 +72,7 @@ class LineReservationConversationTest {
                 reservationCommandService,
                 lineCustomerService,
                 accountLinkService,
+                dateTokenService,
                 new LineMessagingProperties("ignored", "https://www.reserv-io.com"),
                 new LineDateParser(clock),
                 new LineMessageFactory(),
@@ -127,16 +130,16 @@ class LineReservationConversationTest {
         LineConversation existing = conversation(LineConversationState.SELECTING_SERVICE);
         when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user")).thenReturn(Optional.of(existing));
         when(serviceItemRepo.findByBusinessIdAndNameAndActiveTrue(8L, "剪髮")).thenReturn(Optional.of(haircut));
+        when(dateTokenService.create(8L, "line-user", 20L)).thenReturn("date-token");
 
         LineReplyMessage reply = conversationService.handle(channel, "line-user", "剪髮");
 
         assertThat(existing.getState()).isEqualTo(LineConversationState.ENTERING_DATE);
         assertThat(existing.getServiceItemId()).isEqualTo(20L);
         assertThat(reply.text()).isEqualTo("想預約哪一天？請點選下方按鈕選擇日期。");
-        assertThat(reply.datePickerLabel()).isEqualTo("選擇日期");
-        assertThat(reply.datePickerData()).isEqualTo("reservio.action=select_date");
-        assertThat(reply.datePickerMin()).isEqualTo(LocalDate.of(2026, 6, 25));
-        assertThat(reply.datePickerMax()).isEqualTo(LocalDate.of(2026, 9, 25));
+        assertThat(reply.actionLabel()).isEqualTo("選擇預約日期");
+        assertThat(reply.actionUri()).isEqualTo(
+                "https://www.reserv-io.com/line/reservation-date?token=date-token");
     }
 
     @Test
