@@ -133,7 +133,11 @@ class LineReservationConversationTest {
 
         assertThat(existing.getState()).isEqualTo(LineConversationState.ENTERING_DATE);
         assertThat(existing.getServiceItemId()).isEqualTo(20L);
-        assertThat(reply.text()).contains("想預約哪一天");
+        assertThat(reply.text()).isEqualTo("想預約哪一天？請點選下方按鈕選擇日期。");
+        assertThat(reply.datePickerLabel()).isEqualTo("選擇日期");
+        assertThat(reply.datePickerData()).isEqualTo("reservio.action=select_date");
+        assertThat(reply.datePickerMin()).isEqualTo(LocalDate.of(2026, 6, 25));
+        assertThat(reply.datePickerMax()).isEqualTo(LocalDate.of(2026, 9, 25));
     }
 
     @Test
@@ -311,7 +315,8 @@ class LineReservationConversationTest {
         LineReplyMessage reply = conversationService.handle(channel, "line-user", "確認");
 
         assertThat(existing.getState()).isEqualTo(LineConversationState.COMPLETED);
-        assertThat(reply.text()).contains("預約已送出", "99");
+        assertThat(reply.text()).isEqualTo("預約已送出。");
+        assertThat(reply.text()).doesNotContain("預約編號", "99");
         assertThat(reply.actionLabel()).isEqualTo("綁定 Reservio 帳號");
         assertThat(reply.actionUri()).isEqualTo(
                 "https://www.reserv-io.com/line/account-link?request=request-token");
@@ -341,7 +346,8 @@ class LineReservationConversationTest {
 
         LineReplyMessage reply = conversationService.handle(channel, "line-user", "確認");
 
-        assertThat(reply.text()).contains("100");
+        assertThat(reply.text()).isEqualTo("預約已送出。");
+        assertThat(reply.text()).doesNotContain("預約編號", "100");
         assertThat(reply.actionUri()).isNull();
         verify(accountLinkService, never()).create(any(), any());
     }
