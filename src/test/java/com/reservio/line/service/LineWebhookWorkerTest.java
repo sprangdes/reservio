@@ -111,6 +111,33 @@ class LineWebhookWorkerTest {
     }
 
     @Test
+    void routesDatePickerPostbackToReservationConversation() {
+        LineWebhookEvent event = pendingEvent(0, """
+                {
+                  "type":"postback",
+                  "webhookEventId":"event-1",
+                  "replyToken":"reply-token",
+                  "source":{"type":"user","userId":"line-user"},
+                  "postback":{
+                    "data":"reservio.action=select_date",
+                    "params":{"date":"2026-06-29"}
+                  }
+                }
+                """);
+        when(eventRepo.findTop50ByStatusAndNextAttemptAtBeforeOrderById(
+                any(LineWebhookEventStatus.class), any(LocalDateTime.class)
+        )).thenReturn(List.of(event));
+        LineReplyMessage reply = new LineReplyMessage("請選擇可預約時段。", List.of("10:00"));
+        when(reservationConversation.handle(channel, "line-user", "2026-06-29")).thenReturn(reply);
+
+        worker.processPendingEvents();
+
+        verify(reservationConversation).handle(channel, "line-user", "2026-06-29");
+        verify(messagingClient).reply(channel, "reply-token", reply);
+        assertThat(event.getStatus()).isEqualTo(LineWebhookEventStatus.PROCESSED);
+    }
+
+    @Test
     void repliesFeaturePreparingForInactiveRichMenuPostbacks() {
         LineWebhookEvent event = pendingEvent(0, """
                 {

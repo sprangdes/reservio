@@ -69,7 +69,7 @@ public class LineMessagingClient {
             message = new LinkedHashMap<>();
             message.put("type", "text");
             message.put("text", replyMessage.text());
-            if (replyMessage.options() != null && !replyMessage.options().isEmpty()) {
+            if (hasQuickReply(replyMessage)) {
                 List<Map<String, Object>> items = new ArrayList<>();
                 for (String option : replyMessage.options()) {
                     items.add(Map.of(
@@ -79,6 +79,20 @@ public class LineMessagingClient {
                                     "label", option,
                                     "text", option
                             )
+                    ));
+                }
+                if (replyMessage.datePickerLabel() != null
+                        && !replyMessage.datePickerLabel().isBlank()) {
+                    Map<String, Object> action = new LinkedHashMap<>();
+                    action.put("type", "datetimepicker");
+                    action.put("label", replyMessage.datePickerLabel());
+                    action.put("data", replyMessage.datePickerData());
+                    action.put("mode", "date");
+                    action.put("min", replyMessage.datePickerMin().toString());
+                    action.put("max", replyMessage.datePickerMax().toString());
+                    items.add(Map.of(
+                            "type", "action",
+                            "action", action
                     ));
                 }
                 message.put("quickReply", Map.of("items", items));
@@ -98,6 +112,12 @@ public class LineMessagingClient {
                     .toBodilessEntity();
             return null;
         });
+    }
+
+    private boolean hasQuickReply(LineReplyMessage replyMessage) {
+        return (replyMessage.options() != null && !replyMessage.options().isEmpty())
+                || (replyMessage.datePickerLabel() != null
+                && !replyMessage.datePickerLabel().isBlank());
     }
 
     public String getBotDisplayName(BusinessLineChannel channel) {

@@ -160,6 +160,19 @@ public class LineWebhookWorker {
             LineReplyMessage reply = reservationConversation.handle(
                     event.getChannel(), lineUserId, "立即預約");
             messagingClient.reply(event.getChannel(), event.getReplyToken(), reply);
+        } else if (LineReservationConversation.DATE_PICKER_ACTION.equals(data)) {
+            String selectedDate = payload.path("postback").path("params").path("date").asText(null);
+            if (selectedDate == null || selectedDate.isBlank()) {
+                messagingClient.replyText(
+                        event.getChannel(),
+                        event.getReplyToken(),
+                        "未收到選擇的日期，請重新選擇。"
+                );
+                return;
+            }
+            LineReplyMessage reply = reservationConversation.handle(
+                    event.getChannel(), lineUserId, selectedDate);
+            messagingClient.reply(event.getChannel(), event.getReplyToken(), reply);
         } else if (LineRichMenuService.MY_RESERVATIONS_ACTION.equals(data)
                 || LineRichMenuService.AVAILABILITY_ACTION.equals(data)) {
             messagingClient.replyText(event.getChannel(), event.getReplyToken(), "功能準備中");

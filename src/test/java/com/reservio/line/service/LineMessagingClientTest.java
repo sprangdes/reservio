@@ -13,6 +13,7 @@ import org.springframework.web.client.ResourceAccessException;
 
 import java.util.Base64;
 import java.util.List;
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -119,6 +120,49 @@ class LineMessagingClientTest {
                         List.of(),
                         "綁定 Reservio 帳號",
                         "https://www.reserv-io.com/line/account-link?request=token"
+                ));
+
+        fixture.server.verify();
+    }
+
+    @Test
+    void sendsDatePickerQuickReplyAction() {
+        ClientFixture fixture = fixture();
+        fixture.server.expect(once(), requestTo("https://api.line.me/v2/bot/message/reply"))
+                .andExpect(content().json("""
+                        {
+                          "replyToken": "reply-token",
+                          "messages": [{
+                            "type": "text",
+                            "text": "想預約哪一天？請點選下方按鈕選擇日期。",
+                            "quickReply": {
+                              "items": [{
+                                "type": "action",
+                                "action": {
+                                  "type": "datetimepicker",
+                                  "label": "選擇日期",
+                                  "data": "reservio.action=select_date",
+                                  "mode": "date",
+                                  "min": "2026-06-25",
+                                  "max": "2026-09-25"
+                                }
+                              }]
+                            }
+                          }]
+                        }
+                        """))
+                .andRespond(withSuccess());
+
+        fixture.client.reply(fixture.channel, "reply-token",
+                new LineReplyMessage(
+                        "想預約哪一天？請點選下方按鈕選擇日期。",
+                        List.of(),
+                        null,
+                        null,
+                        "選擇日期",
+                        "reservio.action=select_date",
+                        LocalDate.of(2026, 6, 25),
+                        LocalDate.of(2026, 9, 25)
                 ));
 
         fixture.server.verify();
