@@ -2,7 +2,6 @@ package com.reservio.line.conversation;
 
 import com.reservio.controller.response.TimeSlotResponse;
 import com.reservio.entity.BusinessData;
-import com.reservio.entity.Reservation;
 import com.reservio.entity.ServiceItem;
 import com.reservio.entity.UserData;
 import com.reservio.enums.ReservationSource;
@@ -248,7 +247,7 @@ public class LineReservationConversation {
         );
         UserData customer = customerResolution.reservationUser();
         try {
-            Reservation reservation = reservationCommandService.createReservation(
+            reservationCommandService.createReservation(
                     customer,
                     conversation.getBusiness(),
                     service,
