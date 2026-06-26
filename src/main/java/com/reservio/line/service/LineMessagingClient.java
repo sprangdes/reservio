@@ -51,7 +51,13 @@ public class LineMessagingClient {
     public void reply(BusinessLineChannel channel, String replyToken, LineReplyMessage replyMessage) {
         String accessToken = cipher.decrypt(channel.getAccessTokenCiphertext());
         Map<String, Object> message;
-        if (replyMessage.actionUri() != null && !replyMessage.actionUri().isBlank()) {
+        if (replyMessage.flexContents() != null && !replyMessage.flexContents().isEmpty()) {
+            message = Map.of(
+                    "type", "flex",
+                    "altText", replyMessage.text(),
+                    "contents", replyMessage.flexContents()
+            );
+        } else if (replyMessage.actionUri() != null && !replyMessage.actionUri().isBlank()) {
             message = Map.of(
                     "type", "template",
                     "altText", replyMessage.text(),

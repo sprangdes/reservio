@@ -63,7 +63,6 @@ public class SecurityConfig {
                     "/api/auth/forgot-password/**",
                     "/api/auth/line/**",
                     "/api/integrations/line/webhook/**",
-                    "/api/line/reservation-dates/**",
                     "/login/oauth2/**"
                 )
             )
@@ -84,7 +83,6 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/csrf").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/businesses/category").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/line/account-links/*").permitAll()
-                .requestMatchers("/api/line/reservation-dates/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/integrations/line/webhook/**").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .anyRequest().authenticated()

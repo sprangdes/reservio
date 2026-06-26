@@ -156,12 +156,12 @@ public class LineWebhookWorker {
         if (lineUserId == null || event.getReplyToken() == null) {
             return;
         }
-        if (LineRichMenuService.BOOK_ACTION.equals(data)) {
-            LineReplyMessage reply = reservationConversation.handle(
-                    event.getChannel(), lineUserId, "立即預約");
+        if (data.startsWith("reservio.action=")
+                && !LineRichMenuService.AVAILABILITY_ACTION.equals(data)) {
+            LineReplyMessage reply = reservationConversation.handlePostback(
+                    event.getChannel(), lineUserId, data);
             messagingClient.reply(event.getChannel(), event.getReplyToken(), reply);
-        } else if (LineRichMenuService.MY_RESERVATIONS_ACTION.equals(data)
-                || LineRichMenuService.AVAILABILITY_ACTION.equals(data)) {
+        } else if (LineRichMenuService.AVAILABILITY_ACTION.equals(data)) {
             messagingClient.replyText(event.getChannel(), event.getReplyToken(), "功能準備中");
         }
     }
