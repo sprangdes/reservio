@@ -5,57 +5,6 @@ body {
     padding-top: var(--navbar-height);
 }
 
-.line-date-page {
-    max-width: 760px;
-}
-
-.line-date-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.65rem;
-}
-
-.line-date-cell {
-    min-height: 72px;
-    border: 1px solid rgba(34, 166, 91, 0.35);
-    border-radius: 0.85rem;
-    background: #ffffff;
-    color: #1f7a45;
-    font-weight: 700;
-}
-
-.line-date-cell:not(:disabled):hover,
-.line-date-cell:not(:disabled):focus {
-    border-color: #22a65b;
-    background: rgba(34, 166, 91, 0.1);
-}
-
-.line-date-cell--disabled {
-    border-color: #d6dde3;
-    background: #eef2f5;
-    color: #9aa5ad;
-}
-
-.line-date-cell__weekday,
-.line-date-cell__date {
-    display: block;
-}
-
-.line-date-cell__weekday {
-    font-size: 0.78rem;
-}
-
-.line-date-cell__date {
-    margin-top: 0.15rem;
-    font-size: 1.05rem;
-}
-
-@media (min-width: 576px) {
-    .line-date-grid {
-        grid-template-columns: repeat(7, minmax(0, 1fr));
-    }
-}
-
 :root {
     --navbar-height: 72px;
 }

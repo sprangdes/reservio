@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.reservio.enums.Role.ROLE_USER;
@@ -59,6 +60,19 @@ public class LineCustomerService {
                 reservationUser,
                 customer.getLinkedUser() != null
         );
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<LineCustomerResolution> findExistingCustomer(
+            BusinessData business,
+            String lineUserId) {
+        return lineCustomerRepo
+                .findByBusinessIdAndLineUserId(business.getId(), lineUserId)
+                .map(customer -> new LineCustomerResolution(
+                        customer,
+                        customer.getLinkedUser() != null ? customer.getLinkedUser() : customer.getUser(),
+                        customer.getLinkedUser() != null
+                ));
     }
 
     private LineCustomer updateExisting(

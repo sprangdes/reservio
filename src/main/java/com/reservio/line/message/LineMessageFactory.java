@@ -3,6 +3,7 @@ package com.reservio.line.message;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class LineMessageFactory {
@@ -24,5 +25,9 @@ public class LineMessageFactory {
 
     public LineReplyMessage uriButton(String text, String actionLabel, String actionUri) {
         return new LineReplyMessage(text, List.of(), actionLabel, actionUri);
+    }
+
+    public LineReplyMessage flex(String altText, Map<String, Object> contents) {
+        return LineReplyMessage.flex(altText, contents);
     }
 }

@@ -21,7 +21,6 @@ import NotificationSettingsPage from './pages/NotificationSettingsPage';
 import LineIntegrationPage from './pages/LineIntegrationPage';
 import LineAccountLinkPage from './pages/LineAccountLinkPage';
 import LineAccountLinksPage from './pages/LineAccountLinksPage';
-import LineReservationDatePage from './pages/LineReservationDatePage';
 import { useAuth } from './state/AuthContext';
 import {JSX} from "react";
 import SessionTimeoutManager from './components/SessionTimeoutManager';
@@ -235,10 +234,6 @@ export default function App() {
       <Route
         path="/line/account-link"
         element={<Layout><LineAccountLinkPage /></Layout>}
-      />
-      <Route
-        path="/line/reservation-date"
-        element={<Layout><LineReservationDatePage /></Layout>}
       />
       <Route
         path="/settings/line-accounts"
