@@ -14,6 +14,7 @@ import com.reservio.line.repo.LineConversationRepo;
 import com.reservio.line.service.LineCustomerService;
 import com.reservio.line.service.LineCustomerResolution;
 import com.reservio.line.service.LineAccountLinkService;
+import com.reservio.line.service.LineReservationDateTokenService;
 import com.reservio.line.config.LineMessagingProperties;
 import com.reservio.repo.ServiceItemRepo;
 import com.reservio.service.ReservationCommandService;
@@ -41,7 +42,6 @@ public class LineReservationConversation {
     private static final String RESTART = "重新開始";
     private static final String CANCEL = "取消";
     private static final String CONFIRM = "確認";
-    public static final String DATE_PICKER_ACTION = "reservio.action=select_date";
 
     private final LineConversationRepo conversationRepo;
     private final ServiceItemRepo serviceItemRepo;
@@ -49,6 +49,7 @@ public class LineReservationConversation {
     private final ReservationCommandService reservationCommandService;
     private final LineCustomerService lineCustomerService;
     private final LineAccountLinkService accountLinkService;
+    private final LineReservationDateTokenService dateTokenService;
     private final LineMessagingProperties properties;
     private final LineDateParser dateParser;
     private final LineMessageFactory messageFactory;
@@ -62,11 +63,12 @@ public class LineReservationConversation {
             ReservationCommandService reservationCommandService,
             LineCustomerService lineCustomerService,
             LineAccountLinkService accountLinkService,
+            LineReservationDateTokenService dateTokenService,
             LineMessagingProperties properties,
             LineDateParser dateParser,
             LineMessageFactory messageFactory) {
         this(conversationRepo, serviceItemRepo, reservationTimeService, reservationCommandService,
-                lineCustomerService, accountLinkService, properties, dateParser, messageFactory,
+                lineCustomerService, accountLinkService, dateTokenService, properties, dateParser, messageFactory,
                 Clock.systemDefaultZone());
     }
 
@@ -77,6 +79,7 @@ public class LineReservationConversation {
             ReservationCommandService reservationCommandService,
             LineCustomerService lineCustomerService,
             LineAccountLinkService accountLinkService,
+            LineReservationDateTokenService dateTokenService,
             LineMessagingProperties properties,
             LineDateParser dateParser,
             LineMessageFactory messageFactory,
@@ -87,6 +90,7 @@ public class LineReservationConversation {
         this.reservationCommandService = reservationCommandService;
         this.lineCustomerService = lineCustomerService;
         this.accountLinkService = accountLinkService;
+        this.dateTokenService = dateTokenService;
         this.properties = properties;
         this.dateParser = dateParser;
         this.messageFactory = messageFactory;
@@ -160,7 +164,7 @@ public class LineReservationConversation {
         }
         conversation.setServiceItemId(service.getId());
         conversation.setState(LineConversationState.ENTERING_DATE);
-        return datePickerMessage("想預約哪一天？請點選下方按鈕選擇日期。");
+        return dateSelectionButton(conversation, "想預約哪一天？請點選下方按鈕選擇日期。");
     }
 
     private LineReplyMessage enterDate(LineConversation conversation, String input) {
@@ -168,16 +172,16 @@ public class LineReservationConversation {
         try {
             date = dateParser.parse(input);
         } catch (IllegalArgumentException exception) {
-            return datePickerMessage(exception.getMessage() + "，請點選下方按鈕選擇日期。");
+            return dateSelectionButton(conversation, exception.getMessage() + "，請點選下方按鈕選擇日期。");
         }
         ServiceItem service = requiredService(conversation);
         Long businessId = conversation.getBusiness().getId();
         if (!reservationTimeService.isBusinessOpen(date, businessId)) {
-            return datePickerMessage("當日不營業，請選擇其他日期。");
+            return dateSelectionButton(conversation, "當日不營業，請選擇其他日期。");
         }
         List<String> available = availableTimes(date, service, businessId);
         if (available.isEmpty()) {
-            return datePickerMessage("當日已無可預約時段，請選擇其他日期。");
+            return dateSelectionButton(conversation, "當日已無可預約時段，請選擇其他日期。");
         }
         conversation.setReservationDate(date);
         conversation.setState(LineConversationState.SELECTING_TIME);
@@ -185,14 +189,17 @@ public class LineReservationConversation {
         return messageFactory.quickReply("請選擇可預約時段。", available);
     }
 
-    private LineReplyMessage datePickerMessage(String text) {
-        LocalDate today = LocalDate.now(clock);
-        return messageFactory.datePicker(
+    private LineReplyMessage dateSelectionButton(LineConversation conversation, String text) {
+        String token = dateTokenService.create(
+                conversation.getBusiness().getId(),
+                conversation.getLineUserId(),
+                conversation.getServiceItemId()
+        );
+        String baseUrl = properties.webhookBaseUrl().replaceAll("/+$", "");
+        return messageFactory.uriButton(
                 text,
-                "選擇日期",
-                DATE_PICKER_ACTION,
-                today,
-                today.plusMonths(3)
+                "選擇預約日期",
+                baseUrl + "/line/reservation-date?token=" + token
         );
     }
 
