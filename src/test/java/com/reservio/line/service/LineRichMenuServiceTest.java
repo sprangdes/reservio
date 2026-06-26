@@ -11,8 +11,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
@@ -117,6 +122,30 @@ class LineRichMenuServiceTest {
     }
 
     @Test
+    void renderedRichMenuImageContainsLargeIconLabels() throws IOException {
+        when(messagingClient.createRichMenu(channel, LineRichMenuService.richMenuDefinition()))
+                .thenReturn("richmenu-new");
+        ArgumentCaptor<byte[]> imageCaptor = ArgumentCaptor.forClass(byte[].class);
+
+        service.provisionRichMenu();
+
+        verify(messagingClient).uploadRichMenuImage(
+                org.mockito.ArgumentMatchers.eq(channel),
+                org.mockito.ArgumentMatchers.eq("richmenu-new"),
+                imageCaptor.capture()
+        );
+        BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageCaptor.getValue()));
+        assertThat(image.getWidth()).isEqualTo(2500);
+        assertThat(image.getHeight()).isEqualTo(843);
+        assertThat(countNearWhitePixels(image, 370, 190, 460, 340))
+                .isGreaterThan(80);
+        assertThat(countDarkPixels(image, 1200, 190, 1290, 340))
+                .isGreaterThan(80);
+        assertThat(countDarkPixels(image, 2035, 190, 2125, 340))
+                .isGreaterThan(80);
+    }
+
+    @Test
     void replacingRichMenuDeletesPreviousMenuAfterNewDefaultIsReady() {
         channel.setRichMenuId("richmenu-old");
         when(messagingClient.createRichMenu(channel, LineRichMenuService.richMenuDefinition()))
@@ -205,5 +234,53 @@ class LineRichMenuServiceTest {
         assertThatThrownBy(service::testConnection)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("逾時");
+    }
+
+    private int countNearWhitePixels(
+            BufferedImage image,
+            int minX,
+            int minY,
+            int maxX,
+            int maxY) {
+        int count = 0;
+        for (int y = minY; y <= maxY; y++) {
+            for (int x = minX; x <= maxX; x++) {
+                ColorComponents color = colorAt(image, x, y);
+                if (color.red() > 230 && color.green() > 230 && color.blue() > 230) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    private int countDarkPixels(
+            BufferedImage image,
+            int minX,
+            int minY,
+            int maxX,
+            int maxY) {
+        int count = 0;
+        for (int y = minY; y <= maxY; y++) {
+            for (int x = minX; x <= maxX; x++) {
+                ColorComponents color = colorAt(image, x, y);
+                if (color.red() < 120 && color.green() < 130 && color.blue() < 140) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    private ColorComponents colorAt(BufferedImage image, int x, int y) {
+        int rgb = image.getRGB(x, y);
+        return new ColorComponents(
+                (rgb >> 16) & 0xFF,
+                (rgb >> 8) & 0xFF,
+                rgb & 0xFF
+        );
+    }
+
+    private record ColorComponents(int red, int green, int blue) {
     }
 }
