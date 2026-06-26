@@ -2,7 +2,6 @@ package com.reservio.line.message;
 
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Component
@@ -25,14 +24,5 @@ public class LineMessageFactory {
 
     public LineReplyMessage uriButton(String text, String actionLabel, String actionUri) {
         return new LineReplyMessage(text, List.of(), actionLabel, actionUri);
-    }
-
-    public LineReplyMessage datePicker(
-            String text,
-            String label,
-            String data,
-            LocalDate min,
-            LocalDate max) {
-        return new LineReplyMessage(text, List.of(), null, null, label, data, min, max);
     }
 }

@@ -140,6 +140,13 @@ export const api = {
     request(`/api/line/account-links/${encodeURIComponent(requestToken)}/confirm`, {
       method: 'POST'
     }),
+  lineReservationDateStatus: (token: string) =>
+    request(`/api/line/reservation-dates/${encodeURIComponent(token)}`),
+  selectLineReservationDate: (token: string, date: string) =>
+    request(`/api/line/reservation-dates/${encodeURIComponent(token)}`, {
+      method: 'POST',
+      body: JSON.stringify({ date })
+    }),
   linkedLineBusinesses: () => request('/api/line/account-links'),
   unlinkLineBusiness: (lineCustomerId: string | number) =>
     request(`/api/line/account-links/${lineCustomerId}`, { method: 'DELETE' }),
