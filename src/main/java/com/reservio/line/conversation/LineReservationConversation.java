@@ -52,6 +52,8 @@ public class LineReservationConversation {
     private static final String CONFIRM_BUTTON_COLOR = "#557A5C";
     private static final String RESTART_BUTTON_COLOR = "#5F7185";
     private static final String CANCEL_BUTTON_COLOR = "#9A5F5F";
+    private static final int CALENDAR_COLUMNS = 7;
+    private static final int CALENDAR_WEEK_ROWS = 6;
 
     private final LineConversationRepo conversationRepo;
     private final ServiceItemRepo serviceItemRepo;
@@ -320,23 +322,37 @@ public class LineReservationConversation {
         for (int day = 1; day <= month.lengthOfMonth(); day++) {
             LocalDate date = month.atDay(day);
             currentRow.add(dateCell(date, today, maxDate, service, businessId));
-            if (currentRow.size() == 7) {
+            if (currentRow.size() == CALENDAR_COLUMNS) {
                 contents.add(row(currentRow));
                 currentRow = new ArrayList<>();
             }
         }
         if (!currentRow.isEmpty()) {
-            while (currentRow.size() < 7) {
+            while (currentRow.size() < CALENDAR_COLUMNS) {
                 currentRow.add(emptyDateCell());
             }
             contents.add(row(currentRow));
         }
+        int dateRowCount = contents.size() - 2;
+        while (dateRowCount < CALENDAR_WEEK_ROWS) {
+            List<Map<String, Object>> emptyRow = new ArrayList<>();
+            for (int column = 0; column < CALENDAR_COLUMNS; column++) {
+                emptyRow.add(emptyDateCell());
+            }
+            contents.add(row(emptyRow));
+            dateRowCount++;
+        }
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("type", "box");
         body.put("layout", "vertical");
-        body.put("spacing", "sm");
+        body.put("spacing", "xs");
+        body.put("paddingAll", "12px");
         body.put("contents", contents);
-        return Map.of("type", "bubble", "body", body);
+        return Map.of(
+                "type", "bubble",
+                "size", "giga",
+                "body", body
+        );
     }
 
     private Map<String, Object> weekdayRow() {
@@ -347,32 +363,53 @@ public class LineReservationConversation {
     }
 
     private Map<String, Object> weekday(String label) {
-        Map<String, Object> node = new LinkedHashMap<>();
-        node.put("type", "text");
-        node.put("text", label);
-        node.put("size", "xs");
-        node.put("align", "center");
-        node.put("color", "#888888");
-        node.put("flex", 1);
-        return node;
+        return calendarCell(calendarText(label, "sm", "bold", "#666666"));
     }
 
     private Map<String, Object> row(List<Map<String, Object>> cells) {
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("type", "box");
         row.put("layout", "horizontal");
-        row.put("spacing", "xs");
+        row.put("spacing", "2px");
         row.put("contents", cells);
         return row;
     }
 
     private Map<String, Object> emptyDateCell() {
+        return calendarCell(Map.of(
+                "type", "text",
+                "text", " ",
+                "size", "md"
+        ));
+    }
+
+    private Map<String, Object> calendarCell(Map<String, Object> label) {
         Map<String, Object> cell = new LinkedHashMap<>();
         cell.put("type", "box");
         cell.put("layout", "vertical");
+        cell.put("paddingAll", "8px");
         cell.put("flex", 1);
-        cell.put("contents", List.of(text(" ", "sm", "regular", "#BBBBBB")));
+        cell.put("contents", List.of(label));
         return cell;
+    }
+
+    private Map<String, Object> calendarText(
+            String value,
+            String size,
+            String weight,
+            String color) {
+        Map<String, Object> label = new LinkedHashMap<>();
+        label.put("type", "text");
+        label.put("text", value);
+        label.put("size", size);
+        if (!"regular".equals(weight)) {
+            label.put("weight", weight);
+        }
+        label.put("align", "center");
+        label.put("color", color);
+        label.put("scaling", true);
+        label.put("adjustMode", "shrink-to-fit");
+        return label;
     }
 
     private Map<String, Object> dateCell(
@@ -385,19 +422,12 @@ public class LineReservationConversation {
                 && !date.isAfter(maxDate)
                 && reservationTimeService.isBusinessOpen(date, businessId)
                 && !availableTimes(date, service, businessId).isEmpty();
-        Map<String, Object> label = new LinkedHashMap<>();
-        label.put("type", "text");
-        label.put("text", String.valueOf(date.getDayOfMonth()));
-        label.put("size", "sm");
-        label.put("align", "center");
-        label.put("color", selectable ? "#1DB446" : "#C8C8C8");
-        Map<String, Object> cell = new LinkedHashMap<>();
-        cell.put("type", "box");
-        cell.put("layout", "vertical");
-        cell.put("cornerRadius", "md");
-        cell.put("paddingAll", "4px");
-        cell.put("flex", 1);
-        cell.put("contents", List.of(label));
+        Map<String, Object> cell = calendarCell(calendarText(
+                String.valueOf(date.getDayOfMonth()),
+                "md",
+                "regular",
+                selectable ? "#1DB446" : "#C8C8C8"
+        ));
         if (selectable) {
             cell.put("action", Map.of(
                     "type", "postback",
