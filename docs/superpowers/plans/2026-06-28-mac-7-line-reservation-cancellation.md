@@ -94,7 +94,7 @@ Update the existing website reservation test to call `service()` instead of cons
 Run:
 
 ```bash
-./mvnw -q -Dtest=ReservationServiceTest test
+mvn -q -Dtest=ReservationServiceTest test
 ```
 
 Expected: compilation fails because `customerCancel(Reservation, String, String)` does not exist.
@@ -146,7 +146,7 @@ public void customerCancel(Reservation reservation, String cancelReason, String 
 Run:
 
 ```bash
-./mvnw -q -Dtest=ReservationServiceTest test
+mvn -q -Dtest=ReservationServiceTest test
 ```
 
 Expected: all `ReservationServiceTest` tests pass.
@@ -198,7 +198,7 @@ Keep the existing cancel button style assertion.
 Run:
 
 ```bash
-./mvnw -q -Dtest=LineReservationConversationTest#myReservationsPostbackReturnsReservationCards test
+mvn -q -Dtest=LineReservationConversationTest#myReservationsPostbackReturnsReservationCards test
 ```
 
 Expected: FAIL because cards still use `我的預約`, omit status, and render the second-bearing time without the required `HH:mm` format.
@@ -245,7 +245,7 @@ private String reservationStatusLabel(ReservationStatus status) {
 Run:
 
 ```bash
-./mvnw -q -Dtest=LineReservationConversationTest#myReservationsPostbackReturnsReservationCards test
+mvn -q -Dtest=LineReservationConversationTest#myReservationsPostbackReturnsReservationCards test
 ```
 
 Expected: PASS.
@@ -353,7 +353,7 @@ private void stubOwnedReservation(
 Run:
 
 ```bash
-./mvnw -q -Dtest=LineReservationConversationTest#pendingReservationCancellationCompletesImmediately+confirmedReservationCancellationRequestsReasonWithFourQuickReplies+customReasonSubmitsConfirmedCancellationRequest test
+mvn -q -Dtest=LineReservationConversationTest#pendingReservationCancellationCompletesImmediately+confirmedReservationCancellationRequestsReasonWithFourQuickReplies+customReasonSubmitsConfirmedCancellationRequest test
 ```
 
 Expected: compilation fails because the new state, field, service dependency, and interaction do not exist.
@@ -475,7 +475,7 @@ conversation.setPendingCancellationReservationId(null);
 Run:
 
 ```bash
-./mvnw -q -Dtest=LineReservationConversationTest#pendingReservationCancellationCompletesImmediately+confirmedReservationCancellationRequestsReasonWithFourQuickReplies+customReasonSubmitsConfirmedCancellationRequest test
+mvn -q -Dtest=LineReservationConversationTest#pendingReservationCancellationCompletesImmediately+confirmedReservationCancellationRequestsReasonWithFourQuickReplies+customReasonSubmitsConfirmedCancellationRequest test
 ```
 
 Expected: all three tests pass.
@@ -545,7 +545,7 @@ assertThat(existing.getPendingCancellationReservationId()).isNull();
 Run:
 
 ```bash
-./mvnw -q -Dtest=LineReservationConversationTest test
+mvn -q -Dtest=LineReservationConversationTest test
 ```
 
 Expected: all `LineReservationConversationTest` tests pass.
@@ -557,21 +557,21 @@ git add src/main/java/com/reservio/line/entity/LineConversation.java src/main/ja
 git commit -m "feat: add LINE cancellation request flow"
 ```
 
-### Task 4: Repair construction sites and run full regression
+### Task 4: Verify construction sites and run full regression
 
 **Files:**
 - Modify: `src/test/java/com/reservio/line/LineReservationIntegrationTest.java:129-140`
 - Verify: all files changed by Tasks 1-3
 
-- [ ] **Step 1: Run compilation and observe the remaining constructor failure**
+- [ ] **Step 1: Run compilation after updating constructor call sites**
 
 Run:
 
 ```bash
-./mvnw -q -DskipTests compile test-compile
+mvn -q -DskipTests compile test-compile
 ```
 
-Expected: test compilation reports the missing `ReservationService` argument in `LineReservationIntegrationTest`.
+Expected: compile and test-compile pass after Task 3 updates both unit and integration-test constructors.
 
 - [ ] **Step 2: Update the integration-test constructor**
 
@@ -597,7 +597,7 @@ LineReservationConversation conversation = new LineReservationConversation(
 Run:
 
 ```bash
-./mvnw -q -Dtest=ReservationServiceTest,LineReservationConversationTest,LineReservationIntegrationTest test
+mvn -q -Dtest=ReservationServiceTest,LineReservationConversationTest,LineReservationIntegrationTest test
 ```
 
 Expected: all focused tests pass with no failures or errors.
@@ -607,10 +607,10 @@ Expected: all focused tests pass with no failures or errors.
 Run:
 
 ```bash
-./mvnw test
+mvn test -Dtest='!DatabaseConnectionTest'
 ```
 
-Expected: Maven exits with `BUILD SUCCESS` and no test failures.
+Expected: Maven exits with `BUILD SUCCESS`; all 135 tests outside the pre-existing `DatabaseConnectionTest` environment failure pass.
 
 - [ ] **Step 5: Inspect the final diff**
 
