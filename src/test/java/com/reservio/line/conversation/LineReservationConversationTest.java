@@ -1,5 +1,6 @@
 package com.reservio.line.conversation;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.reservio.controller.response.TimeSlotResponse;
 import com.reservio.entity.BusinessData;
 import com.reservio.entity.Reservation;
@@ -29,6 +30,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -186,6 +189,93 @@ class LineReservationConversationTest {
                 .contains("2026年6月", "2026年7月", "2026年8月", "2026年9月")
                 .contains("reservio.action=select_date&date=2026-06-26")
                 .doesNotContain("reservio.action=select_date&date=2026-06-25");
+    }
+
+    @Test
+    void dateCalendarNormalizesFourFiveAndSixWeekMonthsToSixRows() {
+        LineReplyMessage reply = calendarReply(Instant.parse("2026-01-31T16:00:00Z"));
+
+        List<Map<String, Object>> bubbles = calendarBubbles(reply);
+        assertThat(bubbles).hasSize(4);
+        assertThat(bubbles).allSatisfy(bubble -> {
+            List<Map<String, Object>> contents = bodyContents(bubble);
+            assertThat(contents).hasSize(8);
+            assertThat(contents.subList(1, 8)).allSatisfy(row ->
+                    assertThat(rowCells(row)).hasSize(7));
+        });
+
+        List<Map<String, Object>> februaryContents = bodyContents(bubbles.get(0));
+        assertThat(cellLabel(rowCells(februaryContents.get(2)).get(0)).get("text"))
+                .isEqualTo("1");
+        assertThat(cellLabel(rowCells(februaryContents.get(5)).get(6)).get("text"))
+                .isEqualTo("28");
+        assertThat(cellLabel(rowCells(februaryContents.get(6)).get(0)).get("text"))
+                .isEqualTo(" ");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void dateCalendarUsesReadableEqualWidthCells() {
+        LineReplyMessage reply = calendarReply(Instant.parse("2026-01-31T16:00:00Z"));
+        Map<String, Object> bubble = calendarBubbles(reply).get(0);
+        Map<String, Object> body = (Map<String, Object>) bubble.get("body");
+
+        assertThat(bubble).containsEntry("size", "giga");
+        assertThat(body)
+                .containsEntry("paddingAll", "12px")
+                .containsEntry("spacing", "xs");
+
+        List<Map<String, Object>> rows = bodyContents(bubble).subList(1, 8);
+        assertThat(rows).allSatisfy(row -> {
+            assertThat(row).containsEntry("spacing", "2px");
+            assertThat(rowCells(row)).allSatisfy(cell -> assertThat(cell)
+                    .containsEntry("type", "box")
+                    .containsEntry("layout", "vertical")
+                    .containsEntry("paddingAll", "8px")
+                    .containsEntry("flex", 1));
+        });
+
+        Map<String, Object> weekdayLabel = cellLabel(rowCells(rows.get(0)).get(0));
+        assertThat(weekdayLabel)
+                .containsEntry("size", "sm")
+                .containsEntry("scaling", true)
+                .containsEntry("adjustMode", "shrink-to-fit");
+
+        assertThat(cellLabel(dateCellFor(bubble, "1")))
+                .containsEntry("size", "md")
+                .containsEntry("scaling", true)
+                .containsEntry("adjustMode", "shrink-to-fit");
+        assertThat(cellLabel(dateCellFor(bubble, "10")))
+                .containsEntry("size", "md")
+                .containsEntry("scaling", true)
+                .containsEntry("adjustMode", "shrink-to-fit");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void dateCalendarPreservesPostbackAndStaysWithinLineCarouselLimit() throws Exception {
+        when(reservationTimeService.isBusinessOpen(any(LocalDate.class), eq(8L))).thenReturn(true);
+        when(reservationTimeService.getTimeSlotsForDate(any(LocalDate.class), eq(60), eq(8L)))
+                .thenReturn(List.of(new TimeSlotResponse("10:00", true)));
+
+        LineReplyMessage reply = calendarReply(Instant.parse("2026-01-31T16:00:00Z"));
+        Map<String, Object> cell = dateCellFor(calendarBubbles(reply).get(0), "10");
+        Map<String, Object> action = (Map<String, Object>) cell.get("action");
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        assertThat(action)
+                .containsEntry("type", "postback")
+                .containsEntry("label", "10")
+                .containsEntry("data", "reservio.action=select_date&date=2026-02-10")
+                .containsEntry("displayText", "2026-02-10");
+        assertThat(objectMapper.writeValueAsBytes(reply.flexContents()).length)
+                .isLessThan(50 * 1024);
+        Files.createDirectories(Path.of("target"));
+        Files.writeString(
+                Path.of("target/mac-6-calendar-flex.json"),
+                objectMapper.writerWithDefaultPrettyPrinter()
+                        .writeValueAsString(reply.flexContents())
+        );
     }
 
     @Test
@@ -640,6 +730,60 @@ class LineReservationConversationTest {
         verify(reservationCommandService, never()).createReservation(
                 any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
         );
+    }
+
+    private LineReplyMessage calendarReply(Instant instant) {
+        conversationService = new LineReservationConversation(
+                conversationRepo,
+                serviceItemRepo,
+                reservationRepo,
+                reservationTimeService,
+                reservationCommandService,
+                lineCustomerService,
+                accountLinkService,
+                new LineMessagingProperties("ignored", "https://www.reserv-io.com"),
+                new LineMessageFactory(),
+                Clock.fixed(instant, ZoneId.of("Asia/Taipei"))
+        );
+        LineConversation existing = conversation(LineConversationState.SELECTING_SERVICE);
+        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
+                .thenReturn(Optional.of(existing));
+        when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
+        return conversationService.handlePostback(
+                channel,
+                "line-user",
+                "reservio.action=select_service&serviceItemId=20"
+        );
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> calendarBubbles(LineReplyMessage reply) {
+        return (List<Map<String, Object>>) reply.flexContents().get("contents");
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> bodyContents(Map<String, Object> bubble) {
+        Map<String, Object> body = (Map<String, Object>) bubble.get("body");
+        return (List<Map<String, Object>>) body.get("contents");
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> rowCells(Map<String, Object> row) {
+        return (List<Map<String, Object>>) row.get("contents");
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> cellLabel(Map<String, Object> cell) {
+        return ((List<Map<String, Object>>) cell.get("contents")).get(0);
+    }
+
+    private Map<String, Object> dateCellFor(Map<String, Object> bubble, String day) {
+        return bodyContents(bubble).stream()
+                .skip(2)
+                .flatMap(row -> rowCells(row).stream())
+                .filter(cell -> day.equals(cellLabel(cell).get("text")))
+                .findFirst()
+                .orElseThrow();
     }
 
     private Map<String, Object> buttonFor(LineReplyMessage reply, String postbackData) {
