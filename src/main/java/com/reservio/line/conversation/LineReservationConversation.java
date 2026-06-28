@@ -49,6 +49,9 @@ public class LineReservationConversation {
     private static final String RESTART = "重新開始";
     private static final String CANCEL = "取消";
     private static final String CONFIRM = "確認";
+    private static final String CONFIRM_BUTTON_COLOR = "#557A5C";
+    private static final String RESTART_BUTTON_COLOR = "#5F7185";
+    private static final String CANCEL_BUTTON_COLOR = "#9A5F5F";
 
     private final LineConversationRepo conversationRepo;
     private final ServiceItemRepo serviceItemRepo;
@@ -246,7 +249,7 @@ public class LineReservationConversation {
                         service.getName(),
                         "reservio.action=select_service&serviceItemId=" + service.getId()
                 )));
-        contents.add(button(CANCEL, "reservio.action=cancel"));
+        contents.add(controlButton(CANCEL, "reservio.action=cancel", CANCEL_BUTTON_COLOR));
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("type", "box");
         body.put("layout", "vertical");
@@ -441,8 +444,8 @@ public class LineReservationConversation {
                         time,
                         "reservio.action=select_time&time=" + time
                 )));
-        contents.add(button(RESTART, "reservio.action=restart"));
-        contents.add(button(CANCEL, "reservio.action=cancel"));
+        contents.add(controlButton(RESTART, "reservio.action=restart", RESTART_BUTTON_COLOR));
+        contents.add(controlButton(CANCEL, "reservio.action=cancel", CANCEL_BUTTON_COLOR));
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("type", "box");
         body.put("layout", "vertical");
@@ -460,9 +463,9 @@ public class LineReservationConversation {
         for (String line : summary.split("\\R")) {
             contents.add(text(line, "sm", "regular", "#444444"));
         }
-        contents.add(button(CONFIRM, "reservio.action=confirm_reservation"));
-        contents.add(button(RESTART, "reservio.action=restart"));
-        contents.add(button(CANCEL, "reservio.action=cancel"));
+        contents.add(controlButton(CONFIRM, "reservio.action=confirm_reservation", CONFIRM_BUTTON_COLOR));
+        contents.add(controlButton(RESTART, "reservio.action=restart", RESTART_BUTTON_COLOR));
+        contents.add(controlButton(CANCEL, "reservio.action=cancel", CANCEL_BUTTON_COLOR));
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("type", "box");
         body.put("layout", "vertical");
@@ -510,9 +513,10 @@ public class LineReservationConversation {
                 "sm", "regular", "#444444"));
         contents.add(text("時間：" + reservation.getStartTime(),
                 "sm", "regular", "#444444"));
-        contents.add(button(
+        contents.add(controlButton(
                 "取消預約",
-                "reservio.action=cancel_reservation&reservationId=" + reservation.getId()
+                "reservio.action=cancel_reservation&reservationId=" + reservation.getId(),
+                CANCEL_BUTTON_COLOR
         ));
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("type", "box");
@@ -703,6 +707,21 @@ public class LineReservationConversation {
                 "type", "button",
                 "style", "secondary",
                 "height", "sm",
+                "action", Map.of(
+                        "type", "postback",
+                        "label", label,
+                        "data", data,
+                        "displayText", label
+                )
+        );
+    }
+
+    private Map<String, Object> controlButton(String label, String data, String color) {
+        return Map.of(
+                "type", "button",
+                "style", "primary",
+                "height", "sm",
+                "color", color,
                 "action", Map.of(
                         "type", "postback",
                         "label", label,
