@@ -8,5 +8,6 @@ public enum LineConversationState {
     ENTERING_NAME,
     ENTERING_PHONE,
     CONFIRMING,
+    ENTERING_CANCEL_REASON,
     COMPLETED
 }
