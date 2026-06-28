@@ -23,6 +23,7 @@ import com.reservio.line.entity.LineCustomer;
 import com.reservio.repo.ReservationRepo;
 import com.reservio.repo.ServiceItemRepo;
 import com.reservio.service.ReservationCommandService;
+import com.reservio.service.ReservationService;
 import com.reservio.service.ReservationTimeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,11 +54,15 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class LineReservationConversationTest {
 
+    private static final List<String> CANCELLATION_REASONS_FOR_TEST = List.of(
+            "時間無法配合", "臨時有事", "已不需要服務", "想改約其他時間");
+
     @Mock private LineConversationRepo conversationRepo;
     @Mock private ServiceItemRepo serviceItemRepo;
     @Mock private ReservationRepo reservationRepo;
     @Mock private ReservationTimeService reservationTimeService;
     @Mock private ReservationCommandService reservationCommandService;
+    @Mock private ReservationService reservationService;
     @Mock private LineCustomerService lineCustomerService;
     @Mock private LineAccountLinkService accountLinkService;
 
@@ -78,6 +83,7 @@ class LineReservationConversationTest {
                 reservationRepo,
                 reservationTimeService,
                 reservationCommandService,
+                reservationService,
                 lineCustomerService,
                 accountLinkService,
                 new LineMessagingProperties("ignored", "https://www.reserv-io.com"),
@@ -627,38 +633,84 @@ class LineReservationConversationTest {
     }
 
     @Test
-    void cancelReservationPostbackMarksReservationCancelled() {
+    void pendingReservationCancellationCompletesImmediately() {
         LineConversation existing = conversation(LineConversationState.IDLE);
         UserData customer = UserData.builder().id(30L).build();
-        Reservation reservation = Reservation.builder()
-                .id(99L)
-                .business(business)
-                .user(customer)
-                .title("剪髮")
-                .reservationDate(LocalDate.of(2026, 6, 29))
-                .startTime(LocalTime.of(10, 0))
-                .status(ReservationStatus.PENDING)
-                .build();
-        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
-                .thenReturn(Optional.of(existing));
-        when(lineCustomerService.findExistingCustomer(business, "line-user"))
-                .thenReturn(Optional.of(new LineCustomerResolution(
-                        LineCustomer.builder().id(3L).business(business).user(customer).build(),
-                        customer,
-                        false
-                )));
-        when(reservationRepo.findByIdAndBusiness(99L, business)).thenReturn(Optional.of(reservation));
+        Reservation reservation = ownedReservation(customer, ReservationStatus.PENDING);
+        stubOwnedReservation(existing, customer, reservation);
 
         LineReplyMessage reply = conversationService.handlePostback(
-                channel,
-                "line-user",
-                "reservio.action=cancel_reservation&reservationId=99"
-        );
+                channel, "line-user", "reservio.action=cancel_reservation&reservationId=99");
 
-        assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CANCELLED);
-        assertThat(reservation.getCancelReason()).isEqualTo("LINE 使用者取消");
-        assertThat(reply.text()).isEqualTo("預約已取消。");
-        verify(reservationRepo).save(reservation);
+        verify(reservationService).customerCancel(reservation, null, "LINE");
+        assertThat(existing.getState()).isEqualTo(LineConversationState.IDLE);
+        assertThat(reply.text()).isEqualTo("您已取消「剪髮」的預約。");
+    }
+
+    @Test
+    void confirmedReservationCancellationRequestsReasonWithFourQuickReplies() {
+        LineConversation existing = conversation(LineConversationState.IDLE);
+        UserData customer = UserData.builder().id(30L).build();
+        Reservation reservation = ownedReservation(customer, ReservationStatus.CONFIRMED);
+        stubOwnedReservation(existing, customer, reservation);
+
+        LineReplyMessage reply = conversationService.handlePostback(
+                channel, "line-user", "reservio.action=cancel_reservation&reservationId=99");
+
+        assertThat(existing.getState()).isEqualTo(LineConversationState.ENTERING_CANCEL_REASON);
+        assertThat(existing.getPendingCancellationReservationId()).isEqualTo(99L);
+        assertThat(reply.text()).isEqualTo("請問您取消「剪髮」預約的原因？");
+        assertThat(reply.options()).containsExactlyElementsOf(CANCELLATION_REASONS_FOR_TEST);
+        verify(reservationService, never()).customerCancel(any(), any(), any());
+    }
+
+    @Test
+    void customReasonSubmitsConfirmedCancellationRequest() {
+        LineConversation existing = conversation(LineConversationState.ENTERING_CANCEL_REASON);
+        existing.setPendingCancellationReservationId(99L);
+        UserData customer = UserData.builder().id(30L).build();
+        Reservation reservation = ownedReservation(customer, ReservationStatus.CONFIRMED);
+        stubOwnedReservation(existing, customer, reservation);
+
+        LineReplyMessage reply = conversationService.handle(
+                channel, "line-user", " 改由其他廠商處理 ");
+
+        verify(reservationService).customerCancel(reservation, "改由其他廠商處理", "LINE");
+        assertThat(existing.getState()).isEqualTo(LineConversationState.IDLE);
+        assertThat(existing.getPendingCancellationReservationId()).isNull();
+        assertThat(reply.text()).isEqualTo(
+                "已收到您取消「剪髮」的申請。\n\n商家確認後，將完成取消並另行通知您。");
+    }
+
+    @Test
+    void blankCancellationReasonKeepsConversationWaiting() {
+        LineConversation existing = conversation(LineConversationState.ENTERING_CANCEL_REASON);
+        existing.setPendingCancellationReservationId(99L);
+        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
+                .thenReturn(Optional.of(existing));
+
+        LineReplyMessage reply = conversationService.handle(channel, "line-user", "   ");
+
+        assertThat(existing.getState()).isEqualTo(LineConversationState.ENTERING_CANCEL_REASON);
+        assertThat(existing.getPendingCancellationReservationId()).isEqualTo(99L);
+        assertThat(reply.options()).containsExactlyElementsOf(CANCELLATION_REASONS_FOR_TEST);
+        verify(reservationService, never()).customerCancel(any(), any(), any());
+    }
+
+    @Test
+    void changedReservationStateClearsPendingCancellation() {
+        LineConversation existing = conversation(LineConversationState.ENTERING_CANCEL_REASON);
+        existing.setPendingCancellationReservationId(99L);
+        UserData customer = UserData.builder().id(30L).build();
+        Reservation reservation = ownedReservation(customer, ReservationStatus.CANCEL_REQUESTED);
+        stubOwnedReservation(existing, customer, reservation);
+
+        LineReplyMessage reply = conversationService.handle(channel, "line-user", "臨時有事");
+
+        assertThat(existing.getState()).isEqualTo(LineConversationState.IDLE);
+        assertThat(existing.getPendingCancellationReservationId()).isNull();
+        assertThat(reply.text()).contains("預約狀態已變更");
+        verify(reservationService, never()).customerCancel(any(), any(), any());
     }
 
     @Test
@@ -732,15 +784,19 @@ class LineReservationConversationTest {
     @Test
     void cancelAndExpiredConversationDoNotContinueOldState() {
         LineConversation existing = conversation(LineConversationState.ENTERING_PHONE);
+        existing.setPendingCancellationReservationId(99L);
         existing.setExpiresAt(LocalDateTime.now(clock).minusSeconds(1));
         when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user")).thenReturn(Optional.of(existing));
 
         LineReplyMessage expired = conversationService.handle(channel, "line-user", "0912345678");
         assertThat(existing.getState()).isEqualTo(LineConversationState.IDLE);
+        assertThat(existing.getPendingCancellationReservationId()).isNull();
         assertThat(expired.text()).isEqualTo("預約流程已逾時，請點選「立即預約」重新開始。");
 
+        existing.setPendingCancellationReservationId(99L);
         LineReplyMessage cancelled = conversationService.handle(channel, "line-user", "取消");
         assertThat(existing.getState()).isEqualTo(LineConversationState.IDLE);
+        assertThat(existing.getPendingCancellationReservationId()).isNull();
         assertThat(cancelled.text()).isEqualTo("已取消目前的預約流程。");
         verify(reservationCommandService, never()).createReservation(
                 any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
@@ -754,6 +810,7 @@ class LineReservationConversationTest {
                 reservationRepo,
                 reservationTimeService,
                 reservationCommandService,
+                reservationService,
                 lineCustomerService,
                 accountLinkService,
                 new LineMessagingProperties("ignored", "https://www.reserv-io.com"),
@@ -840,6 +897,31 @@ class LineReservationConversationTest {
                 .updatedAt(LocalDateTime.now(clock))
                 .expiresAt(LocalDateTime.now(clock).plusMinutes(30))
                 .build();
+    }
+
+    private Reservation ownedReservation(UserData customer, ReservationStatus status) {
+        return Reservation.builder()
+                .id(99L)
+                .business(business)
+                .user(customer)
+                .title("剪髮")
+                .reservationDate(LocalDate.of(2026, 6, 29))
+                .startTime(LocalTime.of(10, 0))
+                .status(status)
+                .build();
+    }
+
+    private void stubOwnedReservation(
+            LineConversation conversation, UserData customer, Reservation reservation) {
+        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
+                .thenReturn(Optional.of(conversation));
+        when(lineCustomerService.findExistingCustomer(business, "line-user"))
+                .thenReturn(Optional.of(new LineCustomerResolution(
+                        LineCustomer.builder().id(3L).business(business).user(customer).build(),
+                        customer,
+                        false
+                )));
+        when(reservationRepo.findByIdAndBusiness(99L, business)).thenReturn(Optional.of(reservation));
     }
 
     private LineConversation completedInputConversation() {

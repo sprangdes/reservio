@@ -54,6 +54,9 @@ public class LineConversation {
     @Column(length = 50)
     private String phone;
 
+    @Column(name = "pending_cancellation_reservation_id")
+    private Long pendingCancellationReservationId;
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

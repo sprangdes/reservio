@@ -29,6 +29,7 @@ import com.reservio.repo.ServiceItemRepo;
 import com.reservio.repo.UserDataRepo;
 import com.reservio.service.ReservationCommandService;
 import com.reservio.service.ReservationNotificationService;
+import com.reservio.service.ReservationService;
 import com.reservio.service.ReservationTimeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -132,6 +133,7 @@ class LineReservationIntegrationTest {
                 reservationRepo,
                 reservationTimeService,
                 reservationCommandService,
+                mock(ReservationService.class),
                 customerService,
                 mock(LineAccountLinkService.class),
                 new LineMessagingProperties(encryptionKey, "https://www.reserv-io.com"),
