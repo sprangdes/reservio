@@ -21,6 +21,7 @@ import com.reservio.line.config.LineMessagingProperties;
 import com.reservio.repo.ReservationRepo;
 import com.reservio.repo.ServiceItemRepo;
 import com.reservio.service.ReservationCommandService;
+import com.reservio.service.ReservationService;
 import com.reservio.service.ReservationTimeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.Logger;
@@ -57,12 +58,15 @@ public class LineReservationConversation {
     private static final int CALENDAR_WEEK_ROWS = 6;
     private static final DateTimeFormatter RESERVATION_TIME_FORMAT =
             DateTimeFormatter.ofPattern("HH:mm");
+    private static final List<String> CANCELLATION_REASONS = List.of(
+            "時間無法配合", "臨時有事", "已不需要服務", "想改約其他時間");
 
     private final LineConversationRepo conversationRepo;
     private final ServiceItemRepo serviceItemRepo;
     private final ReservationRepo reservationRepo;
     private final ReservationTimeService reservationTimeService;
     private final ReservationCommandService reservationCommandService;
+    private final ReservationService reservationService;
     private final LineCustomerService lineCustomerService;
     private final LineAccountLinkService accountLinkService;
     private final LineMessagingProperties properties;
@@ -76,11 +80,13 @@ public class LineReservationConversation {
             ReservationRepo reservationRepo,
             ReservationTimeService reservationTimeService,
             ReservationCommandService reservationCommandService,
+            ReservationService reservationService,
             LineCustomerService lineCustomerService,
             LineAccountLinkService accountLinkService,
             LineMessagingProperties properties,
             LineMessageFactory messageFactory) {
         this(conversationRepo, serviceItemRepo, reservationRepo, reservationTimeService, reservationCommandService,
+                reservationService,
                 lineCustomerService, accountLinkService, properties, messageFactory,
                 Clock.systemDefaultZone());
     }
@@ -91,6 +97,7 @@ public class LineReservationConversation {
             ReservationRepo reservationRepo,
             ReservationTimeService reservationTimeService,
             ReservationCommandService reservationCommandService,
+            ReservationService reservationService,
             LineCustomerService lineCustomerService,
             LineAccountLinkService accountLinkService,
             LineMessagingProperties properties,
@@ -101,6 +108,7 @@ public class LineReservationConversation {
         this.reservationRepo = reservationRepo;
         this.reservationTimeService = reservationTimeService;
         this.reservationCommandService = reservationCommandService;
+        this.reservationService = reservationService;
         this.lineCustomerService = lineCustomerService;
         this.accountLinkService = accountLinkService;
         this.properties = properties;
@@ -137,6 +145,7 @@ public class LineReservationConversation {
             case ENTERING_NAME -> enterName(conversation, normalized);
             case ENTERING_PHONE -> enterPhone(conversation, normalized);
             case CONFIRMING -> confirm(channel, conversation, normalized);
+            case ENTERING_CANCEL_REASON -> enterCancellationReason(conversation, normalized);
             case IDLE, COMPLETED -> messageFactory.text("請點選「立即預約」開始預約。");
         };
         save(conversation);
@@ -584,24 +593,77 @@ public class LineReservationConversation {
         if (customer == null) {
             return messageFactory.text("目前找不到你的 LINE 預約紀錄。");
         }
-        Reservation reservation = reservationRepo
-                .findByIdAndBusiness(reservationId, conversation.getBusiness())
-                .filter(candidate -> candidate.getUser() != null
-                        && candidate.getUser().getId() != null
-                        && candidate.getUser().getId().equals(customer.reservationUser().getId()))
-                .filter(candidate -> candidate.getStatus() == ReservationStatus.PENDING
-                        || candidate.getStatus() == ReservationStatus.CONFIRMED)
-                .orElse(null);
+        Reservation reservation = ownedReservation(
+                conversation,
+                reservationId,
+                customer,
+                List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED));
         if (reservation == null) {
             return messageFactory.text("找不到可取消的預約。");
         }
-        reservation.setStatus(ReservationStatus.CANCELLED);
-        reservation.setCancelReason("LINE 使用者取消");
-        reservation.setCancelledAt(LocalDateTime.now(clock));
-        reservation.setUpdatedAt(LocalDateTime.now(clock));
-        reservation.setUpdatedBy("LINE");
-        reservationRepo.save(reservation);
-        return messageFactory.text("預約已取消。");
+        String title = reservationTitle(reservation);
+        if (reservation.getStatus() == ReservationStatus.PENDING) {
+            try {
+                reservationService.customerCancel(reservation, null, "LINE");
+            } catch (IllegalStateException exception) {
+                return messageFactory.text("找不到可取消的預約。");
+            }
+            reset(conversation);
+            return messageFactory.text("您已取消「" + title + "」的預約。");
+        }
+        conversation.setPendingCancellationReservationId(reservation.getId());
+        conversation.setState(LineConversationState.ENTERING_CANCEL_REASON);
+        return cancellationReasonPrompt(title);
+    }
+
+    private LineReplyMessage enterCancellationReason(LineConversation conversation, String reason) {
+        if (reason.isBlank()) {
+            return messageFactory.quickReply("請輸入取消原因。", CANCELLATION_REASONS);
+        }
+        LineCustomerResolution customer = lineCustomerService
+                .findExistingCustomer(conversation.getBusiness(), conversation.getLineUserId())
+                .orElse(null);
+        Reservation reservation = customer == null ? null : ownedReservation(
+                conversation,
+                conversation.getPendingCancellationReservationId(),
+                customer,
+                List.of(ReservationStatus.CONFIRMED));
+        if (reservation == null) {
+            reset(conversation);
+            return messageFactory.text("預約狀態已變更，請重新查詢我的預約。");
+        }
+        String title = reservationTitle(reservation);
+        try {
+            reservationService.customerCancel(reservation, reason, "LINE");
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            reset(conversation);
+            return messageFactory.text("預約狀態已變更，請重新查詢我的預約。");
+        }
+        reset(conversation);
+        return messageFactory.text("已收到您取消「" + title
+                + "」的申請。\n\n商家確認後，將完成取消並另行通知您。");
+    }
+
+    private LineReplyMessage cancellationReasonPrompt(String title) {
+        return messageFactory.quickReply(
+                "請問您取消「" + title + "」預約的原因？",
+                CANCELLATION_REASONS);
+    }
+
+    private Reservation ownedReservation(
+            LineConversation conversation,
+            Long reservationId,
+            LineCustomerResolution customer,
+            List<ReservationStatus> allowedStatuses) {
+        if (reservationId == null) {
+            return null;
+        }
+        return reservationRepo.findByIdAndBusiness(reservationId, conversation.getBusiness())
+                .filter(candidate -> candidate.getUser() != null)
+                .filter(candidate -> candidate.getUser().getId() != null)
+                .filter(candidate -> candidate.getUser().getId().equals(customer.reservationUser().getId()))
+                .filter(candidate -> allowedStatuses.contains(candidate.getStatus()))
+                .orElse(null);
     }
 
     private LineReplyMessage enterName(LineConversation conversation, String input) {
@@ -807,6 +869,7 @@ public class LineReservationConversation {
         conversation.setStartTime(null);
         conversation.setCustomerName(null);
         conversation.setPhone(null);
+        conversation.setPendingCancellationReservationId(null);
     }
 
     private void save(LineConversation conversation) {
