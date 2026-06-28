@@ -569,7 +569,7 @@ class LineReservationConversationTest {
     }
 
     @Test
-    void myReservationsPostbackReturnsReservationCards() {
+    void myReservationsPostbackReturnsReservationCards() throws Exception {
         LineConversation existing = conversation(LineConversationState.IDLE);
         UserData customer = UserData.builder().id(30L).build();
         LineCustomer lineCustomer = LineCustomer.builder()
@@ -587,13 +587,22 @@ class LineReservationConversationTest {
                 .startTime(LocalTime.of(10, 0))
                 .status(ReservationStatus.PENDING)
                 .build();
+        Reservation confirmed = Reservation.builder()
+                .id(100L)
+                .business(business)
+                .user(customer)
+                .title("染髮")
+                .reservationDate(LocalDate.of(2026, 6, 30))
+                .startTime(LocalTime.of(14, 5, 30))
+                .status(ReservationStatus.CONFIRMED)
+                .build();
         when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
                 .thenReturn(Optional.of(existing));
         when(lineCustomerService.findExistingCustomer(business, "line-user"))
                 .thenReturn(Optional.of(new LineCustomerResolution(lineCustomer, customer, false)));
         when(reservationRepo.findAllByBusinessAndUserAndReservationDateGreaterThanEqualAndStatusInOrderByReservationDateAscStartTimeAsc(
                 eq(business), eq(customer), eq(LocalDate.of(2026, 6, 25)), any()
-        )).thenReturn(List.of(reservation));
+        )).thenReturn(List.of(reservation, confirmed));
 
         LineReplyMessage reply = conversationService.handlePostback(
                 channel,
@@ -603,12 +612,18 @@ class LineReservationConversationTest {
 
         assertThat(reply.text()).isEqualTo("我的預約");
         assertThat(reply.flexContents().toString())
-                .contains("剪髮", "2026-06-29", "10:00",
-                        "reservio.action=cancel_reservation&reservationId=99");
+                .contains("剪髮", "日期：2026-06-29", "時間：10:00", "狀態：待確認")
+                .contains("染髮", "日期：2026-06-30", "時間：14:05", "狀態：已確認")
+                .doesNotContain("text=我的預約", "項目：");
         assertThat(buttonFor(reply, "reservio.action=cancel_reservation&reservationId=99"))
                 .containsEntry("style", "primary")
                 .containsEntry("height", "sm")
                 .containsEntry("color", "#9A5F5F");
+        Files.createDirectories(Path.of("target"));
+        Files.writeString(
+                Path.of("target/mac-7-reservation-cards-flex.json"),
+                new ObjectMapper().writerWithDefaultPrettyPrinter()
+                        .writeValueAsString(reply.flexContents()));
     }
 
     @Test
