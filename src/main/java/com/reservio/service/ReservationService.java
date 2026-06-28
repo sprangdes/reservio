@@ -199,31 +199,36 @@ public class ReservationService {
         Reservation reservation = reservationRepo.findByIdAndUser(reservationId, currentUser)
                 .orElseThrow(() -> new IllegalArgumentException("找不到您的預約或無權限操作: " + reservationId));
 
+        customerCancel(reservation, cancelReason, currentUser.getUsername());
+    }
+
+    @Transactional
+    public void customerCancel(Reservation reservation, String cancelReason, String updatedBy) {
         if (isEnded(reservation)) {
             markCompleted(reservation);
             throw new IllegalStateException("已完成的預約不可取消");
         }
 
         ReservationStatus currentStatus = reservation.getStatus();
-
         if (currentStatus == COMPLETED) {
             throw new IllegalStateException("已完成的預約不可取消");
-        }
-
-        if (currentStatus == PENDING) {
+        } else if (currentStatus == PENDING) {
             reservation.setStatus(CANCELLED);
             reservation.setCancelledAt(LocalDateTime.now());
             reservation.setCancelReason(null);
         } else if (currentStatus == CONFIRMED) {
-            reservation.setStatus(CANCEL_REQUESTED);
             String reason = cancelReason == null ? "" : cancelReason.trim();
+            if (reason.isBlank()) {
+                throw new IllegalArgumentException("已確認預約必須提供取消原因");
+            }
+            reservation.setStatus(CANCEL_REQUESTED);
             reservation.setCancelReason(reason);
         } else {
             throw new IllegalStateException("此預約狀態不可取消: " + currentStatus);
         }
 
         reservation.setUpdatedAt(LocalDateTime.now());
-        reservation.setUpdatedBy(currentUser.getUsername());
+        reservation.setUpdatedBy(updatedBy);
         reservationRepo.save(reservation);
         reservationNotificationService.notifyBusinessOfCustomerChange(reservation);
     }
