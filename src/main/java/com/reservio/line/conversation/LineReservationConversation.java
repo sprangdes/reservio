@@ -34,6 +34,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -54,6 +55,8 @@ public class LineReservationConversation {
     private static final String CANCEL_BUTTON_COLOR = "#9A5F5F";
     private static final int CALENDAR_COLUMNS = 7;
     private static final int CALENDAR_WEEK_ROWS = 6;
+    private static final DateTimeFormatter RESERVATION_TIME_FORMAT =
+            DateTimeFormatter.ofPattern("HH:mm");
 
     private final LineConversationRepo conversationRepo;
     private final ServiceItemRepo serviceItemRepo;
@@ -536,12 +539,12 @@ public class LineReservationConversation {
 
     private Map<String, Object> reservationBubble(Reservation reservation) {
         List<Map<String, Object>> contents = new ArrayList<>();
-        contents.add(text("我的預約", "lg", "bold", "#222222"));
-        contents.add(text("項目：" + Objects.requireNonNullElse(reservation.getTitle(), "預約"),
-                "sm", "regular", "#444444"));
+        contents.add(text(reservationTitle(reservation), "lg", "bold", "#222222"));
         contents.add(text("日期：" + reservation.getReservationDate(),
                 "sm", "regular", "#444444"));
-        contents.add(text("時間：" + reservation.getStartTime(),
+        contents.add(text("時間：" + reservation.getStartTime().format(RESERVATION_TIME_FORMAT),
+                "sm", "regular", "#444444"));
+        contents.add(text("狀態：" + reservationStatusLabel(reservation.getStatus()),
                 "sm", "regular", "#444444"));
         contents.add(controlButton(
                 "取消預約",
@@ -554,6 +557,18 @@ public class LineReservationConversation {
         body.put("spacing", "md");
         body.put("contents", contents);
         return Map.of("type", "bubble", "body", body);
+    }
+
+    private String reservationTitle(Reservation reservation) {
+        return Objects.requireNonNullElse(reservation.getTitle(), "預約");
+    }
+
+    private String reservationStatusLabel(ReservationStatus status) {
+        return switch (status) {
+            case PENDING -> "待確認";
+            case CONFIRMED -> "已確認";
+            default -> status.name();
+        };
     }
 
     private LineReplyMessage cancelReservation(LineConversation conversation, String reservationIdText) {
