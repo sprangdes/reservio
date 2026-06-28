@@ -36,6 +36,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
@@ -127,6 +128,24 @@ class LineReservationConversationTest {
 
         assertThat(reply.flexContents().toString()).contains("服務12", "取消");
         assertThat(reply.flexContents().toString()).doesNotContain("服務13");
+    }
+
+    @Test
+    void serviceFlexKeepsOptionsSecondaryAndColorsCancelRed() {
+        LineConversation existing = conversation(LineConversationState.IDLE);
+        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
+                .thenReturn(Optional.of(existing));
+        when(serviceItemRepo.findAllByBusinessIdAndActiveTrue(8L)).thenReturn(List.of(haircut));
+
+        LineReplyMessage reply = conversationService.handle(channel, "line-user", "立即預約");
+
+        assertThat(buttonFor(reply, "reservio.action=select_service&serviceItemId=20"))
+                .containsEntry("style", "secondary")
+                .doesNotContainKey("color");
+        assertThat(buttonFor(reply, "reservio.action=cancel"))
+                .containsEntry("style", "primary")
+                .containsEntry("height", "sm")
+                .containsEntry("color", "#9A5F5F");
     }
 
     @Test
@@ -268,6 +287,15 @@ class LineReservationConversationTest {
         );
 
         assertThat(reply.flexContents().toString()).contains("重新開始", "取消", "09:00");
+        assertThat(buttonFor(reply, "reservio.action=select_time&time=09:00"))
+                .containsEntry("style", "secondary")
+                .doesNotContainKey("color");
+        assertThat(buttonFor(reply, "reservio.action=restart"))
+                .containsEntry("style", "primary")
+                .containsEntry("color", "#5F7185");
+        assertThat(buttonFor(reply, "reservio.action=cancel"))
+                .containsEntry("style", "primary")
+                .containsEntry("color", "#9A5F5F");
     }
 
     @Test
@@ -309,6 +337,25 @@ class LineReservationConversationTest {
                 .contains("確認預約", "Reservio Salon", "剪髮", "2026-06-29", "10:00",
                         "王小明", "0912-345-678", "reservio.action=confirm_reservation",
                         "重新開始", "取消");
+    }
+
+    @Test
+    void confirmationFlexUsesSemanticControlButtonColors() {
+        LineConversation existing = completedInputConversation();
+        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
+                .thenReturn(Optional.of(existing));
+
+        LineReplyMessage reply = conversationService.handle(channel, "line-user", "無效操作");
+
+        assertThat(buttonFor(reply, "reservio.action=confirm_reservation"))
+                .containsEntry("style", "primary")
+                .containsEntry("color", "#557A5C");
+        assertThat(buttonFor(reply, "reservio.action=restart"))
+                .containsEntry("style", "primary")
+                .containsEntry("color", "#5F7185");
+        assertThat(buttonFor(reply, "reservio.action=cancel"))
+                .containsEntry("style", "primary")
+                .containsEntry("color", "#9A5F5F");
     }
 
     @Test
@@ -468,6 +515,10 @@ class LineReservationConversationTest {
         assertThat(reply.flexContents().toString())
                 .contains("剪髮", "2026-06-29", "10:00",
                         "reservio.action=cancel_reservation&reservationId=99");
+        assertThat(buttonFor(reply, "reservio.action=cancel_reservation&reservationId=99"))
+                .containsEntry("style", "primary")
+                .containsEntry("height", "sm")
+                .containsEntry("color", "#9A5F5F");
     }
 
     @Test
@@ -589,6 +640,36 @@ class LineReservationConversationTest {
         verify(reservationCommandService, never()).createReservation(
                 any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
         );
+    }
+
+    private Map<String, Object> buttonFor(LineReplyMessage reply, String postbackData) {
+        return findButton(reply.flexContents(), postbackData).orElseThrow();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Optional<Map<String, Object>> findButton(Object node, String postbackData) {
+        if (node instanceof Map<?, ?> map) {
+            Object actionValue = map.get("action");
+            if ("button".equals(map.get("type"))
+                    && actionValue instanceof Map<?, ?> action
+                    && postbackData.equals(action.get("data"))) {
+                return Optional.of((Map<String, Object>) map);
+            }
+            for (Object child : map.values()) {
+                Optional<Map<String, Object>> match = findButton(child, postbackData);
+                if (match.isPresent()) {
+                    return match;
+                }
+            }
+        } else if (node instanceof List<?> list) {
+            for (Object child : list) {
+                Optional<Map<String, Object>> match = findButton(child, postbackData);
+                if (match.isPresent()) {
+                    return match;
+                }
+            }
+        }
+        return Optional.empty();
     }
 
     private LineConversation conversation(LineConversationState state) {
