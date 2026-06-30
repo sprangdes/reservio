@@ -5,13 +5,16 @@ import com.reservio.entity.UserData;
 import com.reservio.line.config.LineMessagingProperties;
 import com.reservio.line.controller.response.LineIntegrationStatusResponse;
 import com.reservio.line.entity.BusinessLineChannel;
+import com.reservio.line.entity.LineCustomer;
 import com.reservio.line.repo.BusinessLineChannelRepo;
+import com.reservio.line.repo.LineCustomerRepo;
 import com.reservio.service.UserDataService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.imageio.ImageIO;
@@ -28,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -35,6 +39,7 @@ import static org.mockito.Mockito.when;
 class LineRichMenuServiceTest {
 
     @Mock private BusinessLineChannelRepo channelRepo;
+    @Mock private LineCustomerRepo customerRepo;
     @Mock private UserDataService userDataService;
     @Mock private LineMessagingClient messagingClient;
 
@@ -60,6 +65,7 @@ class LineRichMenuServiceTest {
                 .build();
         service = new LineRichMenuService(
                 channelRepo,
+                customerRepo,
                 userDataService,
                 messagingClient,
                 new LineMessagingProperties("ignored", "https://www.reserv-io.com")
@@ -104,8 +110,7 @@ class LineRichMenuServiceTest {
 
     @Test
     void provisionsThreeAreaRichMenuAndStoresNewMenuId() {
-        when(messagingClient.createRichMenu(channel, LineRichMenuService.richMenuDefinition()))
-                .thenReturn("richmenu-new");
+        stubDualMenuCreation("richmenu-new", "richmenu-linked");
 
         LineIntegrationStatusResponse status = service.provisionRichMenu();
 
@@ -117,14 +122,117 @@ class LineRichMenuServiceTest {
         verify(messagingClient).setDefaultRichMenu(channel, "richmenu-new");
         verify(messagingClient, never()).deleteRichMenu(any(), any());
         assertThat(channel.getRichMenuId()).isEqualTo("richmenu-new");
+        assertThat(channel.getLinkedRichMenuId()).isEqualTo("richmenu-linked");
         assertThat(channel.getRichMenuUpdatedAt()).isNotNull();
         assertThat(status.richMenuReady()).isTrue();
     }
 
     @Test
+    void provisionsBothMenusBeforeSettingDefaultAndAssignsLinkedCustomers() {
+        LineCustomer linkedCustomer = LineCustomer.builder()
+                .id(12L)
+                .business(channel.getBusiness())
+                .lineUserId("U-linked")
+                .linkedUser(UserData.builder().id(30L).build())
+                .build();
+        when(messagingClient.createRichMenu(
+                channel,
+                LineRichMenuService.unlinkedRichMenuDefinition()
+        )).thenReturn("richmenu-unlinked");
+        when(messagingClient.createRichMenu(
+                channel,
+                LineRichMenuService.linkedRichMenuDefinition(
+                        "https://www.reserv-io.com/profile")
+        )).thenReturn("richmenu-linked");
+        when(customerRepo.findAllByBusinessIdAndLinkedUserIsNotNull(8L))
+                .thenReturn(java.util.List.of(linkedCustomer));
+
+        LineIntegrationStatusResponse status = service.provisionRichMenu();
+
+        InOrder order = inOrder(messagingClient);
+        order.verify(messagingClient).createRichMenu(
+                channel,
+                LineRichMenuService.unlinkedRichMenuDefinition()
+        );
+        order.verify(messagingClient).uploadRichMenuImage(
+                org.mockito.ArgumentMatchers.eq(channel),
+                org.mockito.ArgumentMatchers.eq("richmenu-unlinked"),
+                any(byte[].class)
+        );
+        order.verify(messagingClient).createRichMenu(
+                channel,
+                LineRichMenuService.linkedRichMenuDefinition(
+                        "https://www.reserv-io.com/profile")
+        );
+        order.verify(messagingClient).uploadRichMenuImage(
+                org.mockito.ArgumentMatchers.eq(channel),
+                org.mockito.ArgumentMatchers.eq("richmenu-linked"),
+                any(byte[].class)
+        );
+        order.verify(messagingClient).setDefaultRichMenu(channel, "richmenu-unlinked");
+        order.verify(messagingClient).linkRichMenuToUser(
+                channel,
+                "U-linked",
+                "richmenu-linked"
+        );
+        assertThat(channel.getRichMenuId()).isEqualTo("richmenu-unlinked");
+        assertThat(channel.getLinkedRichMenuId()).isEqualTo("richmenu-linked");
+        assertThat(status.richMenuReady()).isTrue();
+    }
+
+    @Test
+    void assignsAndRemovesLinkedMenuForIndividualUser() {
+        channel.setLinkedRichMenuId("richmenu-linked");
+
+        service.assignLinkedMenu(channel, "U123");
+        service.removeLinkedMenu(channel, "U123");
+
+        verify(messagingClient).linkRichMenuToUser(
+                channel,
+                "U123",
+                "richmenu-linked"
+        );
+        verify(messagingClient).unlinkRichMenuFromUser(channel, "U123");
+    }
+
+    @Test
+    void rejectsAssignmentWhenLinkedMenuIsNotProvisioned() {
+        assertThatThrownBy(() -> service.assignLinkedMenu(channel, "U123"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("已綁定 Rich Menu");
+        verify(messagingClient, never()).linkRichMenuToUser(any(), any(), any());
+    }
+
+    @Test
+    void failedLinkedMenuCreationKeepsOldConfigurationAndCleansNewMenu() {
+        LocalDateTime previousUpdate = LocalDateTime.now().minusDays(2);
+        channel.setRichMenuId("richmenu-old-unlinked");
+        channel.setLinkedRichMenuId("richmenu-old-linked");
+        channel.setRichMenuUpdatedAt(previousUpdate);
+        when(messagingClient.createRichMenu(
+                channel,
+                LineRichMenuService.unlinkedRichMenuDefinition()
+        )).thenReturn("richmenu-new-unlinked");
+        when(messagingClient.createRichMenu(
+                channel,
+                LineRichMenuService.linkedRichMenuDefinition(
+                        "https://www.reserv-io.com/profile")
+        )).thenThrow(new LineApiException(LineApiError.OTHER, "create failed"));
+
+        assertThatThrownBy(service::provisionRichMenu)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("LINE API");
+
+        assertThat(channel.getRichMenuId()).isEqualTo("richmenu-old-unlinked");
+        assertThat(channel.getLinkedRichMenuId()).isEqualTo("richmenu-old-linked");
+        assertThat(channel.getRichMenuUpdatedAt()).isEqualTo(previousUpdate);
+        verify(messagingClient).deleteRichMenu(channel, "richmenu-new-unlinked");
+        verify(channelRepo, never()).save(channel);
+    }
+
+    @Test
     void renderedRichMenuImageContainsLargeIconLabels() throws IOException {
-        when(messagingClient.createRichMenu(channel, LineRichMenuService.richMenuDefinition()))
-                .thenReturn("richmenu-new");
+        stubDualMenuCreation("richmenu-new", "richmenu-linked");
         ArgumentCaptor<byte[]> imageCaptor = ArgumentCaptor.forClass(byte[].class);
 
         service.provisionRichMenu();
@@ -148,8 +256,7 @@ class LineRichMenuServiceTest {
     @Test
     void replacingRichMenuDeletesPreviousMenuAfterNewDefaultIsReady() {
         channel.setRichMenuId("richmenu-old");
-        when(messagingClient.createRichMenu(channel, LineRichMenuService.richMenuDefinition()))
-                .thenReturn("richmenu-new");
+        stubDualMenuCreation("richmenu-new", "richmenu-linked");
 
         service.provisionRichMenu();
 
@@ -161,8 +268,7 @@ class LineRichMenuServiceTest {
     @Test
     void oldRichMenuCleanupFailureDoesNotDiscardNewDefault() {
         channel.setRichMenuId("richmenu-old");
-        when(messagingClient.createRichMenu(channel, LineRichMenuService.richMenuDefinition()))
-                .thenReturn("richmenu-new");
+        stubDualMenuCreation("richmenu-new", "richmenu-linked");
         doThrow(new LineApiException(LineApiError.OTHER, "delete failed"))
                 .when(messagingClient).deleteRichMenu(channel, "richmenu-old");
 
@@ -174,22 +280,36 @@ class LineRichMenuServiceTest {
     }
 
     @Test
-    void richMenuUsesThreeFixedPostbackActions() {
+    void richMenusUseStateSpecificThirdActions() {
         @SuppressWarnings("unchecked")
-        java.util.List<java.util.Map<String, Object>> areas =
+        java.util.List<java.util.Map<String, Object>> unlinkedAreas =
                 (java.util.List<java.util.Map<String, Object>>)
-                        LineRichMenuService.richMenuDefinition().get("areas");
+                        LineRichMenuService.unlinkedRichMenuDefinition().get("areas");
+        @SuppressWarnings("unchecked")
+        java.util.List<java.util.Map<String, Object>> linkedAreas =
+                (java.util.List<java.util.Map<String, Object>>)
+                        LineRichMenuService.linkedRichMenuDefinition(
+                                "https://www.reserv-io.com/profile").get("areas");
 
-        assertThat(areas).hasSize(3);
-        assertThat(areas.stream()
+        assertThat(unlinkedAreas).hasSize(3);
+        assertThat(unlinkedAreas.stream()
                 .map(area -> String.valueOf(
                         ((java.util.Map<?, ?>) area.get("action")).get("data")))
                 .toList())
                 .containsExactly(
                         LineRichMenuService.BOOK_ACTION,
                         LineRichMenuService.MY_RESERVATIONS_ACTION,
-                        LineRichMenuService.AVAILABILITY_ACTION
+                        LineRichMenuService.LINK_ACCOUNT_ACTION
                 );
+        assertThat(unlinkedAreas.get(2).get("action"))
+                .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.MAP)
+                .containsEntry("type", "postback")
+                .containsEntry("label", "綁定 LINE 帳號");
+        assertThat(linkedAreas.get(2).get("action"))
+                .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.MAP)
+                .containsEntry("type", "uri")
+                .containsEntry("label", "修改我的資料")
+                .containsEntry("uri", "https://www.reserv-io.com/profile");
     }
 
     @Test
@@ -279,6 +399,18 @@ class LineRichMenuServiceTest {
                 (rgb >> 8) & 0xFF,
                 rgb & 0xFF
         );
+    }
+
+    private void stubDualMenuCreation(String unlinkedId, String linkedId) {
+        when(messagingClient.createRichMenu(
+                channel,
+                LineRichMenuService.unlinkedRichMenuDefinition()
+        )).thenReturn(unlinkedId);
+        when(messagingClient.createRichMenu(
+                channel,
+                LineRichMenuService.linkedRichMenuDefinition(
+                        "https://www.reserv-io.com/profile")
+        )).thenReturn(linkedId);
     }
 
     private record ColorComponents(int red, int green, int blue) {
