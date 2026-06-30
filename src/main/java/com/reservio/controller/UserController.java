@@ -1,6 +1,7 @@
 package com.reservio.controller;
 
 import com.reservio.controller.request.SetPreferredBusinessesRequest;
+import com.reservio.controller.request.UpdateProfileRequest;
 import com.reservio.controller.response.ApiResponse;
 import com.reservio.controller.response.BusinessResponse;
 import com.reservio.controller.response.UserResponse;
@@ -9,9 +10,17 @@ import com.reservio.entity.UserData;
 import com.reservio.exception.UserNotFoundException;
 import com.reservio.service.BusinessDataService;
 import com.reservio.service.UserDataService;
+import com.reservio.service.UserProfileService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.SecurityContextRepository;
 
 import java.util.List;
 
@@ -24,10 +33,46 @@ public class UserController {
 
     private final UserDataService userDataService;
     private final BusinessDataService businessDataService;
+    private final UserProfileService userProfileService;
+    private final SecurityContextRepository securityContextRepository;
 
-    public UserController(UserDataService userDataService, BusinessDataService businessDataService) {
+    public UserController(
+            UserDataService userDataService,
+            BusinessDataService businessDataService,
+            UserProfileService userProfileService,
+            SecurityContextRepository securityContextRepository) {
         this.userDataService = userDataService;
         this.businessDataService = businessDataService;
+        this.userProfileService = userProfileService;
+        this.securityContextRepository = securityContextRepository;
+    }
+
+    @PutMapping("/me/profile")
+    public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
+            @RequestBody UpdateProfileRequest request,
+            HttpServletRequest servletRequest,
+            HttpServletResponse servletResponse) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserData updated = userProfileService.update(
+                userDataService.getCurrentUser(),
+                request
+        );
+        UsernamePasswordAuthenticationToken refreshed =
+                new UsernamePasswordAuthenticationToken(
+                        updated.getUsername(),
+                        null,
+                        authentication.getAuthorities()
+                );
+        refreshed.setDetails(authentication.getDetails());
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(refreshed);
+        SecurityContextHolder.setContext(context);
+        securityContextRepository.saveContext(context, servletRequest, servletResponse);
+        return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
+                .success(true)
+                .message("個人資料已更新")
+                .data(toUserResponse(updated))
+                .build());
     }
 
     /**

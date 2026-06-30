@@ -30,6 +30,8 @@ public class UserUtil {
                 .emailVerified(user.getEmailVerified())
                 .role(user.getRole())
                 .mustChangePassword(user.getMustChangePassword())
+                .lineLoginLinked(user.getLineUserId() != null
+                        && !user.getLineUserId().isBlank())
                 .business(businessResponse)
                 .build();
     }

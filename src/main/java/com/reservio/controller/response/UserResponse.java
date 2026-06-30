@@ -16,5 +16,6 @@ public class UserResponse {
     private Boolean emailVerified;
     private String role;
     private Boolean mustChangePassword;
+    private Boolean lineLoginLinked;
     private BusinessResponse business;
 }
