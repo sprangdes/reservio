@@ -35,7 +35,8 @@ function RequireAuth({ children }: Readonly<{ children: JSX.Element }>) {
   }
 
   if (!me) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+    const returnTo = encodeURIComponent(`${location.pathname}${location.search}`);
+    return <Navigate to={`/login?returnTo=${returnTo}`} replace />;
   }
 
   return children;

@@ -3,6 +3,9 @@ package com.reservio.util;
 import com.reservio.controller.response.BusinessResponse;
 import com.reservio.controller.response.UserResponse;
 import com.reservio.entity.UserData;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import static com.reservio.config.LineOAuth2AuthenticationSuccessHandler.isLineLogin;
 
 public class UserUtil {
 
@@ -32,6 +35,8 @@ public class UserUtil {
                 .mustChangePassword(user.getMustChangePassword())
                 .lineLoginLinked(user.getLineUserId() != null
                         && !user.getLineUserId().isBlank())
+                .lineLoginSession(isLineLogin(
+                        SecurityContextHolder.getContext().getAuthentication()))
                 .business(businessResponse)
                 .build();
     }

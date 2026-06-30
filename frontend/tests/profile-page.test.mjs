@@ -19,14 +19,17 @@ test('customer profile page edits username and email then refreshes auth', () =>
 });
 
 test('profile route and update API are registered', () => {
-  assert.match(source('src/App.tsx'), /path="\/profile"/);
+  const app = source('src/App.tsx');
+  assert.match(app, /path="\/profile"/);
+  assert.match(app, /encodeURIComponent\(`\$\{location\.pathname}/);
+  assert.match(app, /\/login\?returnTo=\$\{returnTo}/);
   assert.match(source('src/api.ts'), /updateProfile:[\s\S]*\/api\/me\/profile/);
 });
 
 test('account linking requires a LINE-linked customer session', () => {
   const page = source('src/pages/LineAccountLinkPage.tsx');
   assert.match(page, /API_BASE/);
-  assert.match(page, /me\.lineLoginLinked/);
+  assert.match(page, /me\.lineLoginSession/);
   assert.match(page, /\/api\/auth\/line\/user/);
   assert.match(page, /使用 LINE 登入並繼續/);
 });

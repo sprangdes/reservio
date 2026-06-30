@@ -67,7 +67,7 @@ export default function LineAccountLinkPage() {
         <div className="card-body p-4">
           <h2 className="h4">綁定 Reservio 帳號</h2>
           <p>確認後，您在「{status.businessName}」透過 LINE 建立的既有預約會同步到目前帳號。</p>
-          {!me || me.role !== 'ROLE_USER' || !me.lineLoginLinked ? (
+          {!me || me.role !== 'ROLE_USER' || !me.lineLoginSession ? (
             <a
               href={`${API_BASE}/api/auth/line/user`}
               className="btn btn-success"

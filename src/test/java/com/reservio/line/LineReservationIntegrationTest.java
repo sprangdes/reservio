@@ -34,6 +34,7 @@ import com.reservio.service.ReservationService;
 import com.reservio.service.ReservationTimeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -52,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 @DataJpaTest(showSql = false, properties = {
         "spring.jpa.hibernate.ddl-auto=create-drop",
@@ -77,6 +79,8 @@ class LineReservationIntegrationTest {
     private LineWebhookIngestionService ingestionService;
     private LineWebhookWorker worker;
     private ReservationTimeService reservationTimeService;
+    private LineMessagingClient messagingClient;
+    private LineAccountLinkService accountLinkService;
     private int eventSequence;
 
     @BeforeEach
@@ -128,6 +132,8 @@ class LineReservationIntegrationTest {
                 userRepo,
                 new BCryptPasswordEncoder()
         );
+        accountLinkService = mock(LineAccountLinkService.class);
+        when(accountLinkService.create(any(), any())).thenReturn("request-token");
         LineReservationConversation conversation = new LineReservationConversation(
                 conversationRepo,
                 serviceRepo,
@@ -136,7 +142,7 @@ class LineReservationIntegrationTest {
                 reservationCommandService,
                 mock(ReservationService.class),
                 customerService,
-                mock(LineAccountLinkService.class),
+                accountLinkService,
                 mock(LineRichMenuService.class),
                 new LineMessagingProperties(encryptionKey, "https://www.reserv-io.com"),
                 new LineMessageFactory()
@@ -148,12 +154,13 @@ class LineReservationIntegrationTest {
                 cipher,
                 objectMapper
         );
+        messagingClient = mock(LineMessagingClient.class);
         worker = new LineWebhookWorker(
                 eventRepo,
-                mock(LineMessagingClient.class),
+                messagingClient,
                 conversation,
                 new LineMessageRateLimiter(100, 60),
-                mock(LineAccountLinkService.class),
+                accountLinkService,
                 mock(LineRichMenuService.class),
                 objectMapper
         );
@@ -262,6 +269,27 @@ class LineReservationIntegrationTest {
 
         assertThat(currentState()).isEqualTo(LineConversationState.ENTERING_DATE);
         assertThat(reservationRepo.count()).isZero();
+    }
+
+    @Test
+    void unlinkedMyReservationsCreatesAccountLinkPrompt() throws Exception {
+        postback("reservio.action=my_reservations");
+
+        ArgumentCaptor<com.reservio.line.message.LineReplyMessage> replyCaptor =
+                ArgumentCaptor.forClass(com.reservio.line.message.LineReplyMessage.class);
+        verify(messagingClient).reply(
+                org.mockito.ArgumentMatchers.eq(channel),
+                org.mockito.ArgumentMatchers.anyString(),
+                replyCaptor.capture()
+        );
+        assertThat(replyCaptor.getValue().actionLabel())
+                .isEqualTo("使用 LINE 登入並綁定");
+        assertThat(replyCaptor.getValue().actionUri())
+                .endsWith("request=request-token");
+        assertThat(customerRepo.findByBusinessIdAndLineUserId(
+                channel.getBusiness().getId(),
+                "integration-line-user"
+        )).isPresent();
     }
 
     private void send(String text) throws Exception {
