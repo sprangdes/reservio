@@ -119,6 +119,10 @@ export const api = {
   }),
   session: () => request('/api/session'),
   me: () => request('/api/me'),
+  updateProfile: (payload: { username: string; email: string }) => request('/api/me/profile', {
+    method: 'PUT',
+    body: JSON.stringify(payload)
+  }),
   notifications: (page = 0, size = 20) => request(`/api/notifications?page=${page}&size=${size}`),
   notificationUnreadCount: () => request('/api/notifications/unread-count'),
   markNotificationRead: (id: string | number) => request(`/api/notifications/${id}/read`, { method: 'POST' }),

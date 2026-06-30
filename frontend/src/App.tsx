@@ -21,6 +21,7 @@ import NotificationSettingsPage from './pages/NotificationSettingsPage';
 import LineIntegrationPage from './pages/LineIntegrationPage';
 import LineAccountLinkPage from './pages/LineAccountLinkPage';
 import LineAccountLinksPage from './pages/LineAccountLinksPage';
+import ProfilePage from './pages/ProfilePage';
 import { useAuth } from './state/AuthContext';
 import {JSX} from "react";
 import SessionTimeoutManager from './components/SessionTimeoutManager';
@@ -241,6 +242,16 @@ export default function App() {
           <Layout>
             <RequireAuth>
               <LineAccountLinksPage />
+            </RequireAuth>
+          </Layout>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <Layout>
+            <RequireAuth>
+              <ProfilePage />
             </RequireAuth>
           </Layout>
         }

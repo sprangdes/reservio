@@ -7,6 +7,7 @@ interface AuthUser {
   username?: string;
   email?: string;
   emailVerified?: boolean;
+  lineLoginLinked?: boolean;
   business?: {
     id?: string | number;
     name?: string;
