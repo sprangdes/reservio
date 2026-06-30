@@ -154,6 +154,7 @@ class LineReservationIntegrationTest {
                 conversation,
                 new LineMessageRateLimiter(100, 60),
                 mock(LineAccountLinkService.class),
+                mock(LineRichMenuService.class),
                 objectMapper
         );
     }
