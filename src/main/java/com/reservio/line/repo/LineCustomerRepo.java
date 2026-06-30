@@ -11,4 +11,10 @@ public interface LineCustomerRepo extends JpaRepository<LineCustomer, Long> {
     Optional<LineCustomer> findByBusinessIdAndLineUserId(Long businessId, String lineUserId);
     Optional<LineCustomer> findByIdAndLinkedUser(Long id, UserData linkedUser);
     List<LineCustomer> findAllByLinkedUser(UserData linkedUser);
+    List<LineCustomer> findAllByBusinessIdAndLinkedUserIsNotNull(Long businessId);
+    boolean existsByBusinessIdAndLinkedUserAndIdNot(
+            Long businessId,
+            UserData linkedUser,
+            Long id
+    );
 }

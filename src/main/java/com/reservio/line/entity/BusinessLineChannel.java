@@ -56,6 +56,9 @@ public class BusinessLineChannel {
     @Column(name = "rich_menu_id", length = 100)
     private String richMenuId;
 
+    @Column(name = "linked_rich_menu_id", length = 100)
+    private String linkedRichMenuId;
+
     @Column(name = "rich_menu_updated_at")
     private LocalDateTime richMenuUpdatedAt;
 }

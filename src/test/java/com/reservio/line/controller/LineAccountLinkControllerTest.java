@@ -9,11 +9,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -36,13 +39,35 @@ class LineAccountLinkControllerTest {
         when(userDataService.getCurrentUser()).thenReturn(user);
         when(service.confirm("request-token", user)).thenReturn("https://access.line.me/link");
         when(service.linkedBusinesses(user)).thenReturn(List.of(linked));
+        UsernamePasswordAuthenticationToken lineAuthentication =
+                new UsernamePasswordAuthenticationToken(
+                        user.getUsername(),
+                        null,
+                        List.of(
+                                new SimpleGrantedAuthority("ROLE_USER"),
+                                new SimpleGrantedAuthority("LINE_LOGIN")
+                        ));
 
         assertThat(controller.status("request-token").getBody().getData()).isEqualTo(status);
-        assertThat(controller.confirm("request-token").getBody().getData().redirectUrl())
+        assertThat(controller.confirm("request-token", lineAuthentication)
+                .getBody().getData().redirectUrl())
                 .isEqualTo("https://access.line.me/link");
         assertThat(controller.list().getBody().getData()).containsExactly(linked);
         controller.unlink(3L);
 
         verify(service).unlink(3L, user);
+    }
+
+    @Test
+    void rejectsConfirmationFromPasswordSession() {
+        LineAccountLinkController controller =
+                new LineAccountLinkController(service, userDataService);
+        UsernamePasswordAuthenticationToken passwordAuthentication =
+                new UsernamePasswordAuthenticationToken(
+                        "customer", null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
+
+        assertThatThrownBy(() -> controller.confirm("request-token", passwordAuthentication))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("必須使用 LINE 登入進行綁定");
     }
 }

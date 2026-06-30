@@ -16,6 +16,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -123,5 +124,54 @@ class LineCustomerServiceTest {
 
         linked.setLinkedUser(null);
         assertThat(service.findLinkedPrefill(8L, "line-user")).isEmpty();
+    }
+
+    @Test
+    void resolvesExistingCustomerForLinkWithoutClearingContactData() {
+        UserData syntheticUser = UserData.builder().id(30L).build();
+        LineCustomer existing = LineCustomer.builder()
+                .id(1L)
+                .user(syntheticUser)
+                .displayName("王小明")
+                .phone("0912345678")
+                .build();
+        when(lineCustomerRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
+                .thenReturn(Optional.of(existing));
+        LineCustomerService service = new LineCustomerService(
+                lineCustomerRepo, userDataRepo, passwordEncoder
+        );
+
+        LineCustomerResolution result = service.resolveForAccountLink(
+                BusinessData.builder().id(8L).build(),
+                "line-user"
+        );
+
+        assertThat(result.customer()).isSameAs(existing);
+        assertThat(result.reservationUser()).isSameAs(syntheticUser);
+        assertThat(existing.getDisplayName()).isEqualTo("王小明");
+        assertThat(existing.getPhone()).isEqualTo("0912345678");
+        verify(lineCustomerRepo, never()).save(existing);
+    }
+
+    @Test
+    void createsCustomerForLinkWhenNoneExists() {
+        BusinessData business = BusinessData.builder().id(8L).build();
+        when(lineCustomerRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
+                .thenReturn(Optional.empty());
+        when(passwordEncoder.encode(any())).thenReturn("encoded-random-password");
+        when(userDataRepo.save(any(UserData.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(lineCustomerRepo.save(any(LineCustomer.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        LineCustomerService service = new LineCustomerService(
+                lineCustomerRepo, userDataRepo, passwordEncoder
+        );
+
+        LineCustomerResolution result = service.resolveForAccountLink(business, "line-user");
+
+        assertThat(result.customer().getBusiness()).isSameAs(business);
+        assertThat(result.customer().getLineUserId()).isEqualTo("line-user");
+        assertThat(result.customer().getDisplayName()).isNull();
+        assertThat(result.customer().getPhone()).isNull();
+        assertThat(result.linked()).isFalse();
     }
 }

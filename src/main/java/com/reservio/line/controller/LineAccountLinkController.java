@@ -8,9 +8,12 @@ import com.reservio.line.controller.response.LinkedLineBusinessResponse;
 import com.reservio.line.service.LineAccountLinkService;
 import com.reservio.service.UserDataService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
+import static com.reservio.config.LineOAuth2AuthenticationSuccessHandler.isLineLogin;
 
 @RestController
 @RequestMapping("/api/line/account-links")
@@ -37,7 +40,11 @@ public class LineAccountLinkController {
 
     @PostMapping("/{requestToken}/confirm")
     public ResponseEntity<ApiResponse<LineAccountLinkConfirmResponse>> confirm(
-            @PathVariable String requestToken) {
+            @PathVariable String requestToken,
+            Authentication authentication) {
+        if (!isLineLogin(authentication)) {
+            throw new IllegalArgumentException("必須使用 LINE 登入進行綁定");
+        }
         UserData currentUser = userDataService.getCurrentUser();
         return ResponseEntity.ok(success(
                 "請至 LINE 完成帳號綁定",

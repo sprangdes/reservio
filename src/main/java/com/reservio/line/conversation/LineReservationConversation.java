@@ -14,6 +14,7 @@ import com.reservio.line.message.LineMessageFactory;
 import com.reservio.line.message.LineReplyMessage;
 import com.reservio.line.repo.LineConversationRepo;
 import com.reservio.line.service.LineCustomerService;
+import com.reservio.line.service.LineRichMenuService;
 import com.reservio.line.service.LineCustomerResolution;
 import com.reservio.line.service.LineCustomerPrefill;
 import com.reservio.line.service.LineAccountLinkService;
@@ -69,6 +70,7 @@ public class LineReservationConversation {
     private final ReservationService reservationService;
     private final LineCustomerService lineCustomerService;
     private final LineAccountLinkService accountLinkService;
+    private final LineRichMenuService richMenuService;
     private final LineMessagingProperties properties;
     private final LineMessageFactory messageFactory;
     private final Clock clock;
@@ -83,11 +85,12 @@ public class LineReservationConversation {
             ReservationService reservationService,
             LineCustomerService lineCustomerService,
             LineAccountLinkService accountLinkService,
+            LineRichMenuService richMenuService,
             LineMessagingProperties properties,
             LineMessageFactory messageFactory) {
         this(conversationRepo, serviceItemRepo, reservationRepo, reservationTimeService, reservationCommandService,
                 reservationService,
-                lineCustomerService, accountLinkService, properties, messageFactory,
+                lineCustomerService, accountLinkService, richMenuService, properties, messageFactory,
                 Clock.systemDefaultZone());
     }
 
@@ -100,6 +103,7 @@ public class LineReservationConversation {
             ReservationService reservationService,
             LineCustomerService lineCustomerService,
             LineAccountLinkService accountLinkService,
+            LineRichMenuService richMenuService,
             LineMessagingProperties properties,
             LineMessageFactory messageFactory,
             Clock clock) {
@@ -111,6 +115,7 @@ public class LineReservationConversation {
         this.reservationService = reservationService;
         this.lineCustomerService = lineCustomerService;
         this.accountLinkService = accountLinkService;
+        this.richMenuService = richMenuService;
         this.properties = properties;
         this.messageFactory = messageFactory;
         this.clock = clock;
@@ -179,7 +184,12 @@ public class LineReservationConversation {
             case "select_date" -> selectDate(conversation, postback.value("date"));
             case "select_time" -> selectTime(conversation, postback.value("time"));
             case "confirm_reservation" -> confirm(channel, conversation, CONFIRM);
-            case "my_reservations" -> myReservations(conversation);
+            case "my_reservations" -> myReservations(channel, conversation);
+            case "link_account" -> accountLinkPrompt(
+                    channel,
+                    lineUserId,
+                    lineCustomerService.resolveForAccountLink(business, lineUserId)
+            );
             case "cancel_reservation" -> cancelReservation(conversation, postback.value("reservationId"));
             default -> messageFactory.text("此操作已失效，請點選「立即預約」重新開始。");
         };
@@ -519,17 +529,55 @@ public class LineReservationConversation {
         ));
     }
 
-    private LineReplyMessage myReservations(LineConversation conversation) {
+    private LineReplyMessage myReservations(
+            BusinessLineChannel channel,
+            LineConversation conversation) {
         return lineCustomerService
                 .findExistingCustomer(conversation.getBusiness(), conversation.getLineUserId())
-                .map(customer -> reservationCards(reservationRepo
-                        .findAllByBusinessAndUserAndReservationDateGreaterThanEqualAndStatusInOrderByReservationDateAscStartTimeAsc(
+                .map(customer -> customer.linked()
+                        ? reservationCards(reservationRepo
+                                .findAllByBusinessAndUserAndReservationDateGreaterThanEqualAndStatusInOrderByReservationDateAscStartTimeAsc(
+                                        conversation.getBusiness(),
+                                        customer.reservationUser(),
+                                        LocalDate.now(clock),
+                                        List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED)
+                                ))
+                        : accountLinkPrompt(channel, conversation.getLineUserId(), customer))
+                .orElseGet(() -> accountLinkPrompt(
+                        channel,
+                        conversation.getLineUserId(),
+                        lineCustomerService.resolveForAccountLink(
                                 conversation.getBusiness(),
-                                customer.reservationUser(),
-                                LocalDate.now(clock),
-                                List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED)
-                        )))
-                .orElseGet(() -> messageFactory.text("目前找不到你的 LINE 預約紀錄。"));
+                                conversation.getLineUserId()
+                        )
+                ));
+    }
+
+    private LineReplyMessage accountLinkPrompt(
+            BusinessLineChannel channel,
+            String lineUserId,
+            LineCustomerResolution customer) {
+        if (customer.linked()) {
+            richMenuService.assignLinkedMenu(channel, lineUserId);
+            return messageFactory.text("LINE 帳號已完成綁定。");
+        }
+        try {
+            String requestToken = accountLinkService.create(channel, customer.customer());
+            String baseUrl = properties.webhookBaseUrl().replaceAll("/+$", "");
+            return messageFactory.uriButton(
+                    "請先綁定 LINE 帳號，再查詢 Reservio 預約。",
+                    "使用 LINE 登入並綁定",
+                    baseUrl + "/line/account-link?request=" + requestToken
+            );
+        } catch (RuntimeException exception) {
+            log.warn(
+                    "line_account_link_prompt_failed business_id={} event_id={} error_type={}",
+                    channel.getBusiness().getId(),
+                    eventId(),
+                    exception.getClass().getSimpleName()
+            );
+            return messageFactory.text("目前無法建立綁定連結，請稍後再試。");
+        }
     }
 
     private LineReplyMessage reservationCards(List<Reservation> reservations) {

@@ -3,6 +3,7 @@ package com.reservio.line.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.reservio.line.repo.LineAccountLinkRepo;
 import com.reservio.line.repo.LineCustomerRepo;
+import com.reservio.line.repo.BusinessLineChannelRepo;
 import com.reservio.line.security.LineAccountLinkTokenService;
 import com.reservio.line.security.LineCredentialCipher;
 import com.reservio.repo.ReservationRepo;
@@ -24,6 +25,10 @@ class LineAccountLinkServiceSpringTest {
             context.registerBean(LineAccountLinkRepo.class, () -> mock(LineAccountLinkRepo.class));
             context.registerBean(LineCustomerRepo.class, () -> mock(LineCustomerRepo.class));
             context.registerBean(ReservationRepo.class, () -> mock(ReservationRepo.class));
+            context.registerBean(BusinessLineChannelRepo.class,
+                    () -> mock(BusinessLineChannelRepo.class));
+            context.registerBean(LineRichMenuService.class,
+                    () -> mock(LineRichMenuService.class));
             context.registerBean(LineCredentialCipher.class, () -> new LineCredentialCipher(
                     Base64.getEncoder().encodeToString(new byte[32])));
             context.registerBean(LineAccountLinkTokenService.class);

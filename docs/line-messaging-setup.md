@@ -40,15 +40,16 @@ Reservio production 必須設定：
 
 ## 3. Rich Menu 行為
 
-第一版包含三個固定 postback action：
+每個商家會建立兩套 Rich Menu。未綁定版是官方帳號 default menu；完成綁定後，系統用 per-user Rich Menu API 指派已綁定版。
 
-| 入口 | Postback data | 行為 |
-|---|---|---|
-| 立即預約 | `reservio.action=book` | 啟動聊天式預約 |
-| 我的預約 | `reservio.action=my_reservations` | 回覆「功能準備中」 |
-| 查詢可預約時段 | `reservio.action=availability` | 回覆「功能準備中」 |
+| 狀態 | 入口 | Action | 行為 |
+|---|---|---|---|
+| 共用 | 立即預約 | `reservio.action=book` | 啟動聊天式預約 |
+| 共用 | 我的預約 | `reservio.action=my_reservations` | 已綁定者查詢預約；未綁定者先進入綁定引導 |
+| 未綁定 | 綁定 LINE 帳號 | `reservio.action=link_account` | 建立短效 Account Link request |
+| 已綁定 | 修改我的資料 | URI `/profile` | 開啟 Reservio 客戶資料編輯頁 |
 
-後端依 postback data 路由，不依顯示文字判斷。
+重新建立 Rich Menu 時，系統會先建立並上傳兩套新 menu，將未綁定版設為 default，重新指派既有已綁定使用者，再清理舊 menu。
 
 ## 4. 試點驗收表
 
@@ -189,25 +190,29 @@ Reservio production 必須設定：
 - 保留 event ID、business ID 與 reservation ID 供調查，不要保存聊天內容。
 ## 10. Reservio 帳號綁定測試
 
-LINE 預約完成後，尚未綁定的客戶會收到「綁定 Reservio 帳號」按鈕。此功能使用 LINE Messaging API Account Link，不需要新增環境變數，但必須符合以下條件：
+LINE 預約完成後，尚未綁定的客戶會收到綁定按鈕，也可從未綁定 Rich Menu 的「綁定 LINE 帳號」進入。流程同時使用 LINE Login 與 LINE Messaging API Account Link，必須符合以下條件：
 
 - `LINE_WEBHOOK_BASE_URL` 必須是客戶可公開存取的 HTTPS 網址。
 - Cloudflare 規則必須允許 LINE Platform 對既有 webhook path 發送 `accountLink` event。
 - `/line/account-link` 必須由 frontend SPA 正常接管。
 - `/api/line/account-links/{requestToken}` 的 GET request 必須可在未登入狀態存取。
 - 確認、列表及解除綁定 API 必須保持 session 與 CSRF 保護。
+- LINE Login 的 `line-user` OAuth client 必須可用，因為一般帳密 session 不允許確認綁定。
+- 商家必須重新執行「建立 Rich Menu」，確認未綁定與已綁定兩個 menu ID 都已建立。
 
 手動測試：
 
 1. 使用尚未綁定的 LINE 帳號，在商家聊天頁完成一筆預約。
 2. 確認商家預約列表顯示客戶在聊天流程輸入的姓名，而不是系統產生的 `line_customer_*` 名稱。
-3. 點擊「綁定 Reservio 帳號」。
-4. 使用既有 Reservio 客戶帳號登入；登入後應返回原本的綁定確認頁。
+3. 點擊「綁定 LINE 帳號」或預約完成訊息中的綁定按鈕。
+4. 使用 LINE 客戶登入；登入後應返回原本的綁定確認頁。帳密登入不得直接確認。
 5. 點擊「確認綁定」，並在 LINE 頁面允許帳號綁定。
 6. LINE 聊天室應收到「Reservio 帳號綁定成功，既有 LINE 預約已同步」。
 7. 登入 Reservio 客戶帳號，確認綁定前建立的 LINE 預約已出現在「我的預約」。
 8. 再建立一筆 LINE 預約，確認不再顯示綁定按鈕，且新預約直接出現在同一 Reservio 帳號。
-9. 至「LINE 帳號綁定」頁解除該商家，確認歷史預約仍保留。
+9. 確認聊天畫面的第三格已切換為「修改我的資料」，並可開啟 `/profile` 更新使用者名稱與 Email。
+10. 至「LINE 帳號綁定」頁解除該商家，確認歷史預約仍保留，Rich Menu 回到未綁定版。
+11. 嘗試讓同一 LINE Login 帳號在同商家綁定另一個 Messaging API userId，確認系統阻擋並要求先解除原綁定。
 
 故障排查可使用：
 

@@ -32,6 +32,7 @@ class LineWebhookWorkerTest {
     @Mock private LineReservationConversation reservationConversation;
     @Mock private LineMessageRateLimiter rateLimiter;
     @Mock private LineAccountLinkService accountLinkService;
+    @Mock private LineRichMenuService richMenuService;
 
     private LineWebhookWorker worker;
     private BusinessLineChannel channel;
@@ -44,6 +45,7 @@ class LineWebhookWorkerTest {
                 reservationConversation,
                 rateLimiter,
                 accountLinkService,
+                richMenuService,
                 new ObjectMapper()
         );
         channel = BusinessLineChannel.builder().id(4L).build();
@@ -253,6 +255,7 @@ class LineWebhookWorkerTest {
         worker.processPendingEvents();
 
         verify(accountLinkService).complete(channel, "line-user", "ok", "nonce-value");
+        verify(richMenuService).assignLinkedMenu(channel, "line-user");
         verify(messagingClient).replyText(
                 channel,
                 "reply-token",
@@ -260,6 +263,33 @@ class LineWebhookWorkerTest {
         );
         verify(rateLimiter, never()).tryAcquire(any(), any());
         assertThat(event.getStatus()).isEqualTo(LineWebhookEventStatus.PROCESSED);
+    }
+
+    @Test
+    void retriesCompletedAccountLinkWhenRichMenuAssignmentFails() {
+        LineWebhookEvent event = pendingEvent(0, """
+                {
+                  "type":"accountLink",
+                  "webhookEventId":"event-link",
+                  "replyToken":"reply-token",
+                  "source":{"type":"user","userId":"line-user"},
+                  "link":{"result":"ok","nonce":"nonce-value"}
+                }
+                """);
+        when(eventRepo.findTop50ByStatusAndNextAttemptAtBeforeOrderById(
+                any(LineWebhookEventStatus.class), any(LocalDateTime.class)
+        )).thenReturn(List.of(event));
+        when(accountLinkService.complete(channel, "line-user", "ok", "nonce-value"))
+                .thenReturn(0);
+        doThrow(new IllegalStateException("LINE API 503"))
+                .when(richMenuService).assignLinkedMenu(channel, "line-user");
+
+        worker.processPendingEvents();
+
+        assertThat(event.getStatus()).isEqualTo(LineWebhookEventStatus.PENDING);
+        assertThat(event.getAttemptCount()).isEqualTo(1);
+        assertThat(event.getFailureReason()).isEqualTo("LINE API 503");
+        verify(messagingClient, never()).replyText(any(), any(), any());
     }
 
     private LineWebhookEvent pendingEvent(int attempts, String payload) {

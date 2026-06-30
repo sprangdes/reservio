@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +24,8 @@ import java.util.List;
 @Component
 @Slf4j
 public class LineOAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
+
+    public static final String LINE_LOGIN_AUTHORITY = "LINE_LOGIN";
 
     private final LineAuthService lineAuthService;
     private final SecurityContextRepository securityContextRepository;
@@ -67,7 +70,10 @@ public class LineOAuth2AuthenticationSuccessHandler implements AuthenticationSuc
         UsernamePasswordAuthenticationToken appAuth = new UsernamePasswordAuthenticationToken(
                 user.getUsername(),
                 null,
-                List.of(new SimpleGrantedAuthority(user.getRole()))
+                List.of(
+                        new SimpleGrantedAuthority(user.getRole()),
+                        new SimpleGrantedAuthority(LINE_LOGIN_AUTHORITY)
+                )
         );
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
@@ -100,5 +106,11 @@ public class LineOAuth2AuthenticationSuccessHandler implements AuthenticationSuc
             return UriComponentsBuilder.fromUriString(target);
         }
         return UriComponentsBuilder.fromPath(target == null || target.isBlank() ? "/login" : target);
+    }
+
+    public static boolean isLineLogin(Authentication authentication) {
+        return authentication != null
+                && authentication.getAuthorities().stream()
+                .anyMatch(authority -> LINE_LOGIN_AUTHORITY.equals(authority.getAuthority()));
     }
 }
