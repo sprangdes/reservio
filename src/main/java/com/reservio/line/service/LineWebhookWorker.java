@@ -27,6 +27,7 @@ public class LineWebhookWorker {
     private final LineReservationConversation reservationConversation;
     private final LineMessageRateLimiter rateLimiter;
     private final LineAccountLinkService accountLinkService;
+    private final LineRichMenuService richMenuService;
     private final ObjectMapper objectMapper;
 
     public LineWebhookWorker(
@@ -35,12 +36,14 @@ public class LineWebhookWorker {
             LineReservationConversation reservationConversation,
             LineMessageRateLimiter rateLimiter,
             LineAccountLinkService accountLinkService,
+            LineRichMenuService richMenuService,
             ObjectMapper objectMapper) {
         this.eventRepo = eventRepo;
         this.messagingClient = messagingClient;
         this.reservationConversation = reservationConversation;
         this.rateLimiter = rateLimiter;
         this.accountLinkService = accountLinkService;
+        this.richMenuService = richMenuService;
         this.objectMapper = objectMapper;
     }
 
@@ -174,6 +177,9 @@ public class LineWebhookWorker {
             throw new IllegalArgumentException("LINE Account Link callback 資料不完整");
         }
         accountLinkService.complete(event.getChannel(), lineUserId, result, nonce);
+        if ("ok".equals(result)) {
+            richMenuService.assignLinkedMenu(event.getChannel(), lineUserId);
+        }
         if (event.getReplyToken() != null) {
             String reply = "ok".equals(result)
                     ? "Reservio 帳號綁定成功，既有 LINE 預約已同步。"

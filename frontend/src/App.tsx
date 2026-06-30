@@ -21,6 +21,7 @@ import NotificationSettingsPage from './pages/NotificationSettingsPage';
 import LineIntegrationPage from './pages/LineIntegrationPage';
 import LineAccountLinkPage from './pages/LineAccountLinkPage';
 import LineAccountLinksPage from './pages/LineAccountLinksPage';
+import ProfilePage from './pages/ProfilePage';
 import { useAuth } from './state/AuthContext';
 import {JSX} from "react";
 import SessionTimeoutManager from './components/SessionTimeoutManager';
@@ -34,7 +35,8 @@ function RequireAuth({ children }: Readonly<{ children: JSX.Element }>) {
   }
 
   if (!me) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+    const returnTo = encodeURIComponent(`${location.pathname}${location.search}`);
+    return <Navigate to={`/login?returnTo=${returnTo}`} replace />;
   }
 
   return children;
@@ -241,6 +243,16 @@ export default function App() {
           <Layout>
             <RequireAuth>
               <LineAccountLinksPage />
+            </RequireAuth>
+          </Layout>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <Layout>
+            <RequireAuth>
+              <ProfilePage />
             </RequireAuth>
           </Layout>
         }

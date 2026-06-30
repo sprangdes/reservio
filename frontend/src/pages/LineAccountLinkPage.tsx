@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { api } from '../api';
+import { useLocation } from 'react-router-dom';
+import { api, API_BASE } from '../api';
 import { useAuth } from '../state/AuthContext';
 
 interface LinkStatus {
@@ -12,7 +12,6 @@ interface LinkStatus {
 export default function LineAccountLinkPage() {
   const { me, loading } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
   const requestToken = useMemo(
     () => new URLSearchParams(location.search).get('request') || '',
     [location.search]
@@ -31,10 +30,9 @@ export default function LineAccountLinkPage() {
       .catch((reason) => setError(reason instanceof Error ? reason.message : '讀取綁定資訊失敗'));
   }, [requestToken]);
 
-  const login = () => {
+  const rememberReturnPath = () => {
     const returnTo = `${location.pathname}${location.search}`;
     sessionStorage.setItem('reservio.returnTo', returnTo);
-    navigate(`/login?returnTo=${encodeURIComponent(returnTo)}`);
   };
 
   const confirm = async () => {
@@ -69,12 +67,14 @@ export default function LineAccountLinkPage() {
         <div className="card-body p-4">
           <h2 className="h4">綁定 Reservio 帳號</h2>
           <p>確認後，您在「{status.businessName}」透過 LINE 建立的既有預約會同步到目前帳號。</p>
-          {!me ? (
-            <button type="button" className="btn btn-primary" onClick={login}>
-              登入 Reservio 後繼續
-            </button>
-          ) : me.role !== 'ROLE_USER' ? (
-            <div className="alert alert-warning mb-0">請登出商家帳號，改用 Reservio 客戶帳號登入。</div>
+          {!me || me.role !== 'ROLE_USER' || !me.lineLoginSession ? (
+            <a
+              href={`${API_BASE}/api/auth/line/user`}
+              className="btn btn-success"
+              onClick={rememberReturnPath}
+            >
+              使用 LINE 登入並繼續
+            </a>
           ) : (
             <button
               type="button"

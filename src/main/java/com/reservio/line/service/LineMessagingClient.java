@@ -175,6 +175,35 @@ public class LineMessagingClient {
         });
     }
 
+    public void linkRichMenuToUser(
+            BusinessLineChannel channel,
+            String lineUserId,
+            String richMenuId) {
+        execute(channel, "link_rich_menu_to_user", () -> {
+            restClient.post()
+                    .uri(
+                            "https://api.line.me/v2/bot/user/{userId}/richmenu/{richMenuId}",
+                            lineUserId,
+                            richMenuId
+                    )
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken(channel))
+                    .retrieve()
+                    .toBodilessEntity();
+            return null;
+        });
+    }
+
+    public void unlinkRichMenuFromUser(BusinessLineChannel channel, String lineUserId) {
+        execute(channel, "unlink_rich_menu_from_user", () -> {
+            restClient.delete()
+                    .uri("https://api.line.me/v2/bot/user/{userId}/richmenu", lineUserId)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken(channel))
+                    .retrieve()
+                    .toBodilessEntity();
+            return null;
+        });
+    }
+
     public void deleteRichMenu(BusinessLineChannel channel, String richMenuId) {
         execute(channel, "delete_rich_menu", () -> {
             restClient.delete()

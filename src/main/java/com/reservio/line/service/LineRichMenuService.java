@@ -7,6 +7,7 @@ import com.reservio.line.config.LineMessagingProperties;
 import com.reservio.line.controller.response.LineIntegrationStatusResponse;
 import com.reservio.line.entity.BusinessLineChannel;
 import com.reservio.line.repo.BusinessLineChannelRepo;
+import com.reservio.line.repo.LineCustomerRepo;
 import com.reservio.service.UserDataService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,20 +33,21 @@ public class LineRichMenuService {
     public static final String BOOK_ACTION = "reservio.action=book";
     public static final String MY_RESERVATIONS_ACTION = "reservio.action=my_reservations";
     public static final String AVAILABILITY_ACTION = "reservio.action=availability";
+    public static final String LINK_ACCOUNT_ACTION = "reservio.action=link_account";
 
     private static final int WIDTH = 2500;
     private static final int HEIGHT = 843;
     private static final int FONT_SIZE = 100;
     private static final int ICON_SIZE = 170;
-    private static final List<String> LABELS = List.of(
+    private static final List<String> UNLINKED_DISPLAY_LABELS = List.of(
             "立即預約",
             "我的預約",
-            "查詢可預約時段"
+            "綁定 LINE 帳號"
     );
-    private static final List<String> DISPLAY_LABELS = List.of(
+    private static final List<String> LINKED_DISPLAY_LABELS = List.of(
             "立即預約",
             "我的預約",
-            "查詢時段"
+            "修改我的資料"
     );
     private static final List<String> PREFERRED_FONT_FAMILIES = List.of(
             "Noto Sans CJK TC",
@@ -55,16 +57,19 @@ public class LineRichMenuService {
     );
 
     private final BusinessLineChannelRepo channelRepo;
+    private final LineCustomerRepo customerRepo;
     private final UserDataService userDataService;
     private final LineMessagingClient messagingClient;
     private final LineMessagingProperties properties;
 
     public LineRichMenuService(
             BusinessLineChannelRepo channelRepo,
+            LineCustomerRepo customerRepo,
             UserDataService userDataService,
             LineMessagingClient messagingClient,
             LineMessagingProperties properties) {
         this.channelRepo = channelRepo;
+        this.customerRepo = customerRepo;
         this.userDataService = userDataService;
         this.messagingClient = messagingClient;
         this.properties = properties;
@@ -109,43 +114,102 @@ public class LineRichMenuService {
     @Transactional
     public LineIntegrationStatusResponse provisionRichMenu() {
         BusinessLineChannel channel = currentChannel();
-        String oldRichMenuId = channel.getRichMenuId();
+        String oldUnlinkedRichMenuId = channel.getRichMenuId();
+        String oldLinkedRichMenuId = channel.getLinkedRichMenuId();
+        String newUnlinkedRichMenuId = null;
+        String newLinkedRichMenuId = null;
         try {
-            String newRichMenuId = messagingClient.createRichMenu(channel, richMenuDefinition());
-            messagingClient.uploadRichMenuImage(channel, newRichMenuId, renderRichMenuImage());
-            messagingClient.setDefaultRichMenu(channel, newRichMenuId);
-            if (oldRichMenuId != null && !oldRichMenuId.isBlank()
-                    && !oldRichMenuId.equals(newRichMenuId)) {
-                try {
-                    messagingClient.deleteRichMenu(channel, oldRichMenuId);
-                } catch (LineApiException exception) {
-                    log.warn(
-                            "line_rich_menu_cleanup_failed business_id={} error_type={}",
-                            channel.getBusiness().getId(),
-                            exception.getError()
-                    );
-                }
+            newUnlinkedRichMenuId = messagingClient.createRichMenu(
+                    channel,
+                    unlinkedRichMenuDefinition()
+            );
+            messagingClient.uploadRichMenuImage(
+                    channel,
+                    newUnlinkedRichMenuId,
+                    renderRichMenuImage(UNLINKED_DISPLAY_LABELS)
+            );
+            newLinkedRichMenuId = messagingClient.createRichMenu(
+                    channel,
+                    linkedRichMenuDefinition(profileUrl())
+            );
+            messagingClient.uploadRichMenuImage(
+                    channel,
+                    newLinkedRichMenuId,
+                    renderRichMenuImage(LINKED_DISPLAY_LABELS)
+            );
+            messagingClient.setDefaultRichMenu(channel, newUnlinkedRichMenuId);
+            for (var customer : customerRepo.findAllByBusinessIdAndLinkedUserIsNotNull(
+                    channel.getBusiness().getId())) {
+                messagingClient.linkRichMenuToUser(
+                        channel,
+                        customer.getLineUserId(),
+                        newLinkedRichMenuId
+                );
             }
-            channel.setRichMenuId(newRichMenuId);
+            channel.setRichMenuId(newUnlinkedRichMenuId);
+            channel.setLinkedRichMenuId(newLinkedRichMenuId);
             channel.setRichMenuUpdatedAt(LocalDateTime.now());
             channelRepo.save(channel);
+            cleanupOldMenu(channel, oldUnlinkedRichMenuId, newUnlinkedRichMenuId);
+            cleanupOldMenu(channel, oldLinkedRichMenuId, newLinkedRichMenuId);
             return toStatus(channel, null, null);
         } catch (LineApiException exception) {
+            cleanupNewMenu(channel, newUnlinkedRichMenuId);
+            cleanupNewMenu(channel, newLinkedRichMenuId);
             throw translate(exception);
         }
     }
 
+    public void assignLinkedMenu(BusinessLineChannel channel, String lineUserId) {
+        if (channel.getLinkedRichMenuId() == null || channel.getLinkedRichMenuId().isBlank()) {
+            throw new IllegalStateException("尚未建立已綁定 Rich Menu");
+        }
+        messagingClient.linkRichMenuToUser(
+                channel,
+                lineUserId,
+                channel.getLinkedRichMenuId()
+        );
+    }
+
+    public void removeLinkedMenu(BusinessLineChannel channel, String lineUserId) {
+        messagingClient.unlinkRichMenuFromUser(channel, lineUserId);
+    }
+
     public static Map<String, Object> richMenuDefinition() {
+        return unlinkedRichMenuDefinition();
+    }
+
+    public static Map<String, Object> unlinkedRichMenuDefinition() {
         int third = WIDTH / 3;
         return Map.of(
                 "size", Map.of("width", WIDTH, "height", HEIGHT),
                 "selected", true,
-                "name", "Reservio 預約選單",
+                "name", "Reservio 預約選單（未綁定）",
                 "chatBarText", "預約服務",
                 "areas", List.of(
                         area(0, third, "立即預約", BOOK_ACTION),
                         area(third, third, "我的預約", MY_RESERVATIONS_ACTION),
-                        area(third * 2, WIDTH - third * 2, "查詢可預約時段", AVAILABILITY_ACTION)
+                        area(third * 2, WIDTH - third * 2, "綁定 LINE 帳號", LINK_ACCOUNT_ACTION)
+                )
+        );
+    }
+
+    public static Map<String, Object> linkedRichMenuDefinition(String profileUrl) {
+        int third = WIDTH / 3;
+        return Map.of(
+                "size", Map.of("width", WIDTH, "height", HEIGHT),
+                "selected", true,
+                "name", "Reservio 預約選單（已綁定）",
+                "chatBarText", "預約服務",
+                "areas", List.of(
+                        area(0, third, "立即預約", BOOK_ACTION),
+                        area(third, third, "我的預約", MY_RESERVATIONS_ACTION),
+                        uriArea(
+                                third * 2,
+                                WIDTH - third * 2,
+                                "修改我的資料",
+                                profileUrl
+                        )
                 )
         );
     }
@@ -166,6 +230,21 @@ public class LineRichMenuService {
         );
     }
 
+    private static Map<String, Object> uriArea(
+            int x,
+            int width,
+            String label,
+            String uri) {
+        return Map.of(
+                "bounds", Map.of("x", x, "y", 0, "width", width, "height", HEIGHT),
+                "action", Map.of(
+                        "type", "uri",
+                        "label", label,
+                        "uri", uri
+                )
+        );
+    }
+
     static String preferredFontFamily(Set<String> availableFamilies) {
         return PREFERRED_FONT_FAMILIES.stream()
                 .filter(availableFamilies::contains)
@@ -174,7 +253,7 @@ public class LineRichMenuService {
                         "Rich Menu 圖片產生失敗：執行環境缺少可用的中文字型"));
     }
 
-    private byte[] renderRichMenuImage() {
+    private byte[] renderRichMenuImage(List<String> displayLabels) {
         System.setProperty("java.awt.headless", "true");
         BufferedImage image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = image.createGraphics();
@@ -203,7 +282,7 @@ public class LineRichMenuService {
                     Font.BOLD,
                     FONT_SIZE
             );
-            DISPLAY_LABELS.forEach(label -> {
+            displayLabels.forEach(label -> {
                 if (font.canDisplayUpTo(label) != -1) {
                     throw new IllegalStateException(
                             "Rich Menu 圖片產生失敗：中文字型無法顯示選單文字");
@@ -219,7 +298,7 @@ public class LineRichMenuService {
                         width,
                         colors[index],
                         foregrounds[index],
-                        DISPLAY_LABELS.get(index),
+                        displayLabels.get(index),
                         index
                 );
                 if (index > 0) {
@@ -309,6 +388,7 @@ public class LineRichMenuService {
         boolean tokenValid = channel.getTokenValidatedAt() != null;
         boolean webhookReady = channel.getWebhookVerifiedAt() != null;
         boolean richMenuReady = channel.getRichMenuId() != null
+                && channel.getLinkedRichMenuId() != null
                 && channel.getRichMenuUpdatedAt() != null;
         LocalDateTime checkedAt = latest(
                 channel.getTokenValidatedAt(),
@@ -370,5 +450,35 @@ public class LineRichMenuService {
         return properties.webhookBaseUrl().replaceAll("/+$", "")
                 + "/api/integrations/line/webhook/"
                 + channel.getWebhookKey();
+    }
+
+    private String profileUrl() {
+        return properties.webhookBaseUrl().replaceAll("/+$", "") + "/profile";
+    }
+
+    private void cleanupOldMenu(
+            BusinessLineChannel channel,
+            String oldRichMenuId,
+            String newRichMenuId) {
+        if (oldRichMenuId == null || oldRichMenuId.isBlank()
+                || oldRichMenuId.equals(newRichMenuId)) {
+            return;
+        }
+        cleanupNewMenu(channel, oldRichMenuId);
+    }
+
+    private void cleanupNewMenu(BusinessLineChannel channel, String richMenuId) {
+        if (richMenuId == null || richMenuId.isBlank()) {
+            return;
+        }
+        try {
+            messagingClient.deleteRichMenu(channel, richMenuId);
+        } catch (LineApiException exception) {
+            log.warn(
+                    "line_rich_menu_cleanup_failed business_id={} error_type={}",
+                    channel.getBusiness().getId(),
+                    exception.getError()
+            );
+        }
     }
 }

@@ -52,14 +52,19 @@ public class LineCustomerService {
                 .findByBusinessIdAndLineUserId(business.getId(), lineUserId)
                 .map(existing -> updateExisting(existing, displayName, phone))
                 .orElseGet(() -> createCustomer(business, lineUserId, displayName, phone));
-        UserData reservationUser = customer.getLinkedUser() != null
-                ? customer.getLinkedUser()
-                : customer.getUser();
-        return new LineCustomerResolution(
-                customer,
-                reservationUser,
-                customer.getLinkedUser() != null
-        );
+        return resolution(customer);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public LineCustomerResolution resolveForAccountLink(
+            BusinessData business,
+            String lineUserId) {
+        return lineCustomerRepo
+                .findByBusinessIdAndLineUserId(business.getId(), lineUserId)
+                .map(this::resolution)
+                .orElseGet(() -> resolution(
+                        createCustomer(business, lineUserId, null, null)
+                ));
     }
 
     @Transactional(readOnly = true)
@@ -120,6 +125,17 @@ public class LineCustomerService {
                 .createdAt(LocalDateTime.now())
                 .build();
         return lineCustomerRepo.save(customer);
+    }
+
+    private LineCustomerResolution resolution(LineCustomer customer) {
+        UserData reservationUser = customer.getLinkedUser() != null
+                ? customer.getLinkedUser()
+                : customer.getUser();
+        return new LineCustomerResolution(
+                customer,
+                reservationUser,
+                customer.getLinkedUser() != null
+        );
     }
 
     private String normalize(String value) {

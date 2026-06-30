@@ -8,6 +8,7 @@ import com.reservio.line.entity.LineAccountLink;
 import com.reservio.line.entity.LineAccountLinkStatus;
 import com.reservio.line.entity.LineCustomer;
 import com.reservio.line.repo.LineAccountLinkRepo;
+import com.reservio.line.repo.BusinessLineChannelRepo;
 import com.reservio.line.repo.LineCustomerRepo;
 import com.reservio.line.security.LineAccountLinkTokenService;
 import com.reservio.line.security.LineCredentialCipher;
@@ -41,6 +42,8 @@ class LineAccountLinkServiceTest {
     @Mock private LineCustomerRepo customerRepo;
     @Mock private ReservationRepo reservationRepo;
     @Mock private LineMessagingClient messagingClient;
+    @Mock private BusinessLineChannelRepo channelRepo;
+    @Mock private LineRichMenuService richMenuService;
 
     private final Clock clock = Clock.fixed(
             Instant.parse("2026-06-25T02:00:00Z"),
@@ -61,7 +64,9 @@ class LineAccountLinkServiceTest {
                 linkRepo,
                 customerRepo,
                 reservationRepo,
+                channelRepo,
                 messagingClient,
+                richMenuService,
                 cipher,
                 tokenService,
                 clock
@@ -97,7 +102,8 @@ class LineAccountLinkServiceTest {
     @Test
     void authenticatedCustomerConfirmationCreatesNonceAndLineUrl() {
         String requestToken = tokenService.generateToken();
-        UserData target = UserData.builder().id(40L).role("ROLE_USER").build();
+        UserData target = UserData.builder().id(40L).role("ROLE_USER")
+                .lineUserId("line-login-user").build();
         LineAccountLink link = pendingLink(requestToken);
         when(linkRepo.findByRequestTokenHash(tokenService.hash(requestToken)))
                 .thenReturn(Optional.of(link));
@@ -115,7 +121,8 @@ class LineAccountLinkServiceTest {
 
     @Test
     void completionLinksCustomerAndTransfersMatchingLineReservations() {
-        UserData target = UserData.builder().id(40L).role("ROLE_USER").build();
+        UserData target = UserData.builder().id(40L).role("ROLE_USER")
+                .lineUserId("line-login-user").build();
         String nonce = tokenService.generateToken();
         LineAccountLink link = pendingLink("request-token");
         link.setNonceHash(tokenService.hash(nonce));
@@ -140,7 +147,8 @@ class LineAccountLinkServiceTest {
         String nonce = tokenService.generateToken();
         LineAccountLink link = pendingLink("request-token");
         link.setNonceHash(tokenService.hash(nonce));
-        link.setTargetUser(UserData.builder().id(40L).role("ROLE_USER").build());
+        link.setTargetUser(UserData.builder().id(40L).role("ROLE_USER")
+                .lineUserId("line-login-user").build());
         link.setStatus(LineAccountLinkStatus.AWAITING_LINE);
         when(linkRepo.findByNonceHash(tokenService.hash(nonce))).thenReturn(Optional.of(link));
 
@@ -170,15 +178,18 @@ class LineAccountLinkServiceTest {
 
     @Test
     void linkedUserCanUnlinkWithoutMovingHistoricalReservationsBack() {
-        UserData target = UserData.builder().id(40L).role("ROLE_USER").build();
+        UserData target = UserData.builder().id(40L).role("ROLE_USER")
+                .lineUserId("line-login-user").build();
         customer.setLinkedUser(target);
         customer.setLinkedAt(LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC));
         when(customerRepo.findByIdAndLinkedUser(3L, target)).thenReturn(Optional.of(customer));
+        when(channelRepo.findByBusinessId(8L)).thenReturn(Optional.of(channel));
 
         service.unlink(3L, target);
 
         assertThat(customer.getLinkedUser()).isNull();
         assertThat(customer.getLinkedAt()).isNull();
+        verify(richMenuService).removeLinkedMenu(channel, "U123");
         verify(customerRepo).save(customer);
         verify(reservationRepo, never()).transferLineReservations(
                 org.mockito.ArgumentMatchers.any(),
@@ -186,6 +197,48 @@ class LineAccountLinkServiceTest {
                 org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any()
         );
+    }
+
+    @Test
+    void menuFailureLeavesDatabaseLinkIntact() {
+        UserData target = UserData.builder().id(40L).role("ROLE_USER")
+                .lineUserId("line-login-user").build();
+        customer.setLinkedUser(target);
+        LocalDateTime linkedAt = LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC);
+        customer.setLinkedAt(linkedAt);
+        when(customerRepo.findByIdAndLinkedUser(3L, target)).thenReturn(Optional.of(customer));
+        when(channelRepo.findByBusinessId(8L)).thenReturn(Optional.of(channel));
+        org.mockito.Mockito.doThrow(new IllegalStateException("LINE API 503"))
+                .when(richMenuService).removeLinkedMenu(channel, "U123");
+
+        assertThatThrownBy(() -> service.unlink(3L, target))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("503");
+
+        assertThat(customer.getLinkedUser()).isSameAs(target);
+        assertThat(customer.getLinkedAt()).isEqualTo(linkedAt);
+        verify(customerRepo, never()).save(customer);
+    }
+
+    @Test
+    void persistenceFailureRestoresLinkedMenuAndInMemoryState() {
+        UserData target = UserData.builder().id(40L).role("ROLE_USER")
+                .lineUserId("line-login-user").build();
+        customer.setLinkedUser(target);
+        LocalDateTime linkedAt = LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC);
+        customer.setLinkedAt(linkedAt);
+        when(customerRepo.findByIdAndLinkedUser(3L, target)).thenReturn(Optional.of(customer));
+        when(channelRepo.findByBusinessId(8L)).thenReturn(Optional.of(channel));
+        org.mockito.Mockito.doThrow(new IllegalStateException("database unavailable"))
+                .when(customerRepo).save(customer);
+
+        assertThatThrownBy(() -> service.unlink(3L, target))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("database");
+
+        assertThat(customer.getLinkedUser()).isSameAs(target);
+        assertThat(customer.getLinkedAt()).isEqualTo(linkedAt);
+        verify(richMenuService).assignLinkedMenu(channel, "U123");
     }
 
     @Test
@@ -211,7 +264,8 @@ class LineAccountLinkServiceTest {
         String nonce = tokenService.generateToken();
         LineAccountLink link = pendingLink("request-token");
         link.setNonceHash(tokenService.hash(nonce));
-        link.setTargetUser(UserData.builder().id(40L).role("ROLE_USER").build());
+        link.setTargetUser(UserData.builder().id(40L).role("ROLE_USER")
+                .lineUserId("line-login-user").build());
         link.setStatus(LineAccountLinkStatus.AWAITING_LINE);
         link.setExpiresAt(LocalDateTime.ofInstant(clock.instant().minusSeconds(1), ZoneOffset.UTC));
         when(linkRepo.findByNonceHash(tokenService.hash(nonce))).thenReturn(Optional.of(link));
@@ -224,8 +278,10 @@ class LineAccountLinkServiceTest {
     @Test
     void doesNotOverwriteAnotherLinkedReservioUser() {
         String nonce = tokenService.generateToken();
-        UserData target = UserData.builder().id(40L).role("ROLE_USER").build();
-        customer.setLinkedUser(UserData.builder().id(41L).role("ROLE_USER").build());
+        UserData target = UserData.builder().id(40L).role("ROLE_USER")
+                .lineUserId("line-login-user").build();
+        customer.setLinkedUser(UserData.builder().id(41L).role("ROLE_USER")
+                .lineUserId("other-line-login-user").build());
         LineAccountLink link = pendingLink("request-token");
         link.setNonceHash(tokenService.hash(nonce));
         link.setTargetUser(target);
@@ -235,6 +291,43 @@ class LineAccountLinkServiceTest {
         assertThatThrownBy(() -> service.complete(channel, "U123", "ok", nonce))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("其他 Reservio 帳號");
+    }
+
+    @Test
+    void confirmationRequiresLineLoginIdentity() {
+        String requestToken = tokenService.generateToken();
+        UserData passwordUser = UserData.builder().id(40L).role("ROLE_USER").build();
+
+        assertThatThrownBy(() -> service.confirm(requestToken, passwordUser))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("LINE 登入");
+        verify(linkRepo, never()).findByRequestTokenHash(
+                org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void rejectsSameLoginIdentityForAnotherMessagingUserInBusiness() {
+        String nonce = tokenService.generateToken();
+        UserData target = UserData.builder().id(40L).role("ROLE_USER")
+                .lineUserId("line-login-user").build();
+        LineAccountLink link = pendingLink("request-token");
+        link.setNonceHash(tokenService.hash(nonce));
+        link.setTargetUser(target);
+        link.setStatus(LineAccountLinkStatus.AWAITING_LINE);
+        when(linkRepo.findByNonceHash(tokenService.hash(nonce))).thenReturn(Optional.of(link));
+        when(customerRepo.existsByBusinessIdAndLinkedUserAndIdNot(8L, target, 3L))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> service.complete(channel, "U123", "ok", nonce))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("同一商家");
+
+        verify(customerRepo, never()).save(customer);
+        verify(reservationRepo, never()).transferLineReservations(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any());
     }
 
     private LineAccountLink pendingLink(String requestToken) {

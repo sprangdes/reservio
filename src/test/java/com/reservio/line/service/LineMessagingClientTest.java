@@ -20,11 +20,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.ExpectedCount.once;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
+import static org.springframework.http.HttpMethod.DELETE;
+import static org.springframework.http.HttpMethod.POST;
 
 class LineMessagingClientTest {
 
@@ -237,6 +240,38 @@ class LineMessagingClientTest {
         String linkToken = fixture.client.issueLinkToken(fixture.channel, "U123");
 
         assertThat(linkToken).isEqualTo("line-link-token");
+        fixture.server.verify();
+    }
+
+    @Test
+    void linksRichMenuToLineUser() {
+        ClientFixture fixture = fixture();
+        fixture.server.expect(once(), requestTo(
+                        "https://api.line.me/v2/bot/user/U123/richmenu/richmenu-linked"))
+                .andExpect(method(POST))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+                .andRespond(withSuccess());
+
+        fixture.client.linkRichMenuToUser(
+                fixture.channel,
+                "U123",
+                "richmenu-linked"
+        );
+
+        fixture.server.verify();
+    }
+
+    @Test
+    void unlinksRichMenuFromLineUser() {
+        ClientFixture fixture = fixture();
+        fixture.server.expect(once(), requestTo(
+                        "https://api.line.me/v2/bot/user/U123/richmenu"))
+                .andExpect(method(DELETE))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+                .andRespond(withSuccess());
+
+        fixture.client.unlinkRichMenuFromUser(fixture.channel, "U123");
+
         fixture.server.verify();
     }
 

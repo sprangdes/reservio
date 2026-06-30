@@ -18,6 +18,7 @@ import com.reservio.line.service.LineCustomerService;
 import com.reservio.line.service.LineCustomerResolution;
 import com.reservio.line.service.LineCustomerPrefill;
 import com.reservio.line.service.LineAccountLinkService;
+import com.reservio.line.service.LineRichMenuService;
 import com.reservio.line.config.LineMessagingProperties;
 import com.reservio.line.entity.LineCustomer;
 import com.reservio.repo.ReservationRepo;
@@ -65,6 +66,7 @@ class LineReservationConversationTest {
     @Mock private ReservationService reservationService;
     @Mock private LineCustomerService lineCustomerService;
     @Mock private LineAccountLinkService accountLinkService;
+    @Mock private LineRichMenuService richMenuService;
 
     private final Clock clock = Clock.fixed(
             Instant.parse("2026-06-25T01:00:00Z"),
@@ -86,6 +88,7 @@ class LineReservationConversationTest {
                 reservationService,
                 lineCustomerService,
                 accountLinkService,
+                richMenuService,
                 new LineMessagingProperties("ignored", "https://www.reserv-io.com"),
                 new LineMessageFactory(),
                 clock
@@ -605,7 +608,7 @@ class LineReservationConversationTest {
         when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
                 .thenReturn(Optional.of(existing));
         when(lineCustomerService.findExistingCustomer(business, "line-user"))
-                .thenReturn(Optional.of(new LineCustomerResolution(lineCustomer, customer, false)));
+                .thenReturn(Optional.of(new LineCustomerResolution(lineCustomer, customer, true)));
         when(reservationRepo.findAllByBusinessAndUserAndReservationDateGreaterThanEqualAndStatusInOrderByReservationDateAscStartTimeAsc(
                 eq(business), eq(customer), eq(LocalDate.of(2026, 6, 25)), any()
         )).thenReturn(List.of(reservation, confirmed));
@@ -630,6 +633,118 @@ class LineReservationConversationTest {
                 Path.of("target/mac-7-reservation-cards-flex.json"),
                 new ObjectMapper().writerWithDefaultPrettyPrinter()
                         .writeValueAsString(reply.flexContents()));
+    }
+
+    @Test
+    void linkAccountPostbackCreatesLineLoginPrompt() {
+        LineConversation existing = conversation(LineConversationState.IDLE);
+        UserData syntheticUser = UserData.builder().id(30L).build();
+        LineCustomer lineCustomer = LineCustomer.builder()
+                .id(3L)
+                .business(business)
+                .user(syntheticUser)
+                .lineUserId("line-user")
+                .build();
+        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
+                .thenReturn(Optional.of(existing));
+        when(lineCustomerService.resolveForAccountLink(business, "line-user"))
+                .thenReturn(new LineCustomerResolution(lineCustomer, syntheticUser, false));
+        when(accountLinkService.create(channel, lineCustomer)).thenReturn("request-token");
+
+        LineReplyMessage reply = conversationService.handlePostback(
+                channel,
+                "line-user",
+                "reservio.action=link_account"
+        );
+
+        assertThat(reply.text()).contains("綁定 LINE 帳號");
+        assertThat(reply.actionLabel()).isEqualTo("使用 LINE 登入並綁定");
+        assertThat(reply.actionUri()).isEqualTo(
+                "https://www.reserv-io.com/line/account-link?request=request-token");
+    }
+
+    @Test
+    void unlinkedMyReservationsPromptsForAccountLink() {
+        LineConversation existing = conversation(LineConversationState.IDLE);
+        UserData syntheticUser = UserData.builder().id(30L).build();
+        LineCustomer lineCustomer = LineCustomer.builder()
+                .id(3L)
+                .business(business)
+                .user(syntheticUser)
+                .lineUserId("line-user")
+                .build();
+        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
+                .thenReturn(Optional.of(existing));
+        when(lineCustomerService.findExistingCustomer(business, "line-user"))
+                .thenReturn(Optional.of(new LineCustomerResolution(
+                        lineCustomer,
+                        syntheticUser,
+                        false
+                )));
+        when(accountLinkService.create(channel, lineCustomer)).thenReturn("request-token");
+
+        LineReplyMessage reply = conversationService.handlePostback(
+                channel,
+                "line-user",
+                "reservio.action=my_reservations"
+        );
+
+        assertThat(reply.actionLabel()).isEqualTo("使用 LINE 登入並綁定");
+        verify(reservationRepo, never())
+                .findAllByBusinessAndUserAndReservationDateGreaterThanEqualAndStatusInOrderByReservationDateAscStartTimeAsc(
+                        any(), any(), any(), any());
+    }
+
+    @Test
+    void staleLinkActionForLinkedCustomerRepairsRichMenu() {
+        LineConversation existing = conversation(LineConversationState.IDLE);
+        UserData linkedUser = UserData.builder().id(40L).build();
+        LineCustomer lineCustomer = LineCustomer.builder()
+                .id(3L)
+                .business(business)
+                .linkedUser(linkedUser)
+                .lineUserId("line-user")
+                .build();
+        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
+                .thenReturn(Optional.of(existing));
+        when(lineCustomerService.resolveForAccountLink(business, "line-user"))
+                .thenReturn(new LineCustomerResolution(lineCustomer, linkedUser, true));
+
+        LineReplyMessage reply = conversationService.handlePostback(
+                channel,
+                "line-user",
+                "reservio.action=link_account"
+        );
+
+        assertThat(reply.text()).contains("已完成綁定");
+        verify(richMenuService).assignLinkedMenu(channel, "line-user");
+        verify(accountLinkService, never()).create(any(), any());
+    }
+
+    @Test
+    void accountLinkApiFailureReturnsRetryableMessage() {
+        LineConversation existing = conversation(LineConversationState.IDLE);
+        UserData syntheticUser = UserData.builder().id(30L).build();
+        LineCustomer lineCustomer = LineCustomer.builder()
+                .id(3L)
+                .business(business)
+                .user(syntheticUser)
+                .lineUserId("line-user")
+                .build();
+        when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
+                .thenReturn(Optional.of(existing));
+        when(lineCustomerService.resolveForAccountLink(business, "line-user"))
+                .thenReturn(new LineCustomerResolution(lineCustomer, syntheticUser, false));
+        when(accountLinkService.create(channel, lineCustomer))
+                .thenThrow(new IllegalStateException("LINE API unavailable"));
+
+        LineReplyMessage reply = conversationService.handlePostback(
+                channel,
+                "line-user",
+                "reservio.action=link_account"
+        );
+
+        assertThat(reply.text()).isEqualTo("目前無法建立綁定連結，請稍後再試。");
     }
 
     @Test
@@ -813,6 +928,7 @@ class LineReservationConversationTest {
                 reservationService,
                 lineCustomerService,
                 accountLinkService,
+                richMenuService,
                 new LineMessagingProperties("ignored", "https://www.reserv-io.com"),
                 new LineMessageFactory(),
                 Clock.fixed(instant, ZoneId.of("Asia/Taipei"))
