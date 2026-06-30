@@ -20,6 +20,7 @@ import com.reservio.line.service.LineAccountLinkService;
 import com.reservio.line.service.LineCustomerService;
 import com.reservio.line.service.LineMessageRateLimiter;
 import com.reservio.line.service.LineMessagingClient;
+import com.reservio.line.service.LineRichMenuService;
 import com.reservio.line.service.LineSignatureVerifier;
 import com.reservio.line.service.LineWebhookIngestionService;
 import com.reservio.line.service.LineWebhookWorker;
@@ -136,6 +137,7 @@ class LineReservationIntegrationTest {
                 mock(ReservationService.class),
                 customerService,
                 mock(LineAccountLinkService.class),
+                mock(LineRichMenuService.class),
                 new LineMessagingProperties(encryptionKey, "https://www.reserv-io.com"),
                 new LineMessageFactory()
         );
