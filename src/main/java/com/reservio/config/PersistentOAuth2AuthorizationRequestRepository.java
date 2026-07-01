@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
@@ -25,6 +26,7 @@ public class PersistentOAuth2AuthorizationRequestRepository
     private final Clock clock;
     private final Duration ttl;
 
+    @Autowired
     public PersistentOAuth2AuthorizationRequestRepository(
             OAuth2AuthorizationRequestStateRepo stateRepo,
             ObjectMapper objectMapper,
