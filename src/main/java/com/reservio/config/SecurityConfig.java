@@ -51,6 +51,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(
             HttpSecurity http,
             LineOAuth2AuthenticationSuccessHandler lineOAuth2AuthenticationSuccessHandler,
+            PersistentOAuth2AuthorizationRequestRepository authorizationRequestRepository,
             LineOAuth2Properties lineOAuth2Properties) throws Exception {
         http
             .csrf(csrf -> csrf
@@ -98,6 +99,9 @@ public class SecurityConfig {
                 .maximumSessions(1)
             )
             .oauth2Login(oauth2 -> oauth2
+                .authorizationEndpoint(endpoint -> endpoint
+                    .authorizationRequestRepository(authorizationRequestRepository)
+                )
                 .successHandler(lineOAuth2AuthenticationSuccessHandler)
                 .failureHandler((request, response, exception) -> {
                     String reason = exception.getClass().getSimpleName();
