@@ -7,6 +7,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.boot.convert.ApplicationConversionService;
+import org.springframework.core.env.MapPropertySource;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
@@ -84,5 +87,31 @@ class PersistentOAuth2AuthorizationRequestRepositoryTest {
                 .isEqualTo("https://www.reserv-io.com/login/oauth2/code/line-user");
         assertThat(loaded.getAttributes()).containsEntry("registration_id", "line-user");
         verify(stateRepo).delete(saved);
+    }
+
+    @Test
+    void springContextCreatesRepositoryWithInjectedConstructor() {
+        try (AnnotationConfigApplicationContext context =
+                     new AnnotationConfigApplicationContext()) {
+            context.getBeanFactory().setConversionService(
+                    ApplicationConversionService.getSharedInstance());
+            context.getEnvironment().getPropertySources().addFirst(
+                    new MapPropertySource(
+                            "test",
+                            Map.of("app.auth.authorization-request-ttl", "10m")
+                    )
+            );
+            context.registerBean(
+                    OAuth2AuthorizationRequestStateRepo.class,
+                    () -> stateRepo
+            );
+            context.registerBean(ObjectMapper.class, () -> new ObjectMapper());
+            context.register(PersistentOAuth2AuthorizationRequestRepository.class);
+
+            context.refresh();
+
+            assertThat(context.getBean(PersistentOAuth2AuthorizationRequestRepository.class))
+                    .isNotNull();
+        }
     }
 }
