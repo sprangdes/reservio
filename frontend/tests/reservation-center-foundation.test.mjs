@@ -79,6 +79,7 @@ test('normalizes query defaults, date ranges, preset filters, and unsupported va
   assert.deepEqual(range.filter.statuses, ['PENDING']);
   const changed = query.updateReservationQuery({ ...all, page: 3 }, { filter: { ...all.filter, service: '剪髮' } });
   assert.equal(changed.page, 0);
+  assert.equal(query.updateReservationQuery({ ...all, page: 3 }, { sort: { field: 'username', direction: 'asc' } }).page, 0);
   const backend = query.toBackendReservationQuery({ ...pending, filter: { ...pending.filter, resourceId: 'not-supported' } });
   assert.deepEqual(backend.condition, { startDate: null, endDate: null, service: null, keyword: null, status: 'PENDING,CANCEL_REQUESTED' });
 });

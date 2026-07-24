@@ -41,7 +41,7 @@ export function normalizeReservationQuery(input: Partial<ReservationQuery>, now 
 }
 
 export function updateReservationQuery(current: ReservationQuery, patch: Partial<ReservationQuery>, now = new Date()): ReservationQuery {
-  const filtersChanged = patch.filter !== undefined || patch.preset !== undefined;
+  const filtersChanged = patch.filter !== undefined || patch.preset !== undefined || patch.sort !== undefined || patch.pageSize !== undefined;
   return normalizeReservationQuery({ ...current, ...patch, page: filtersChanged ? 0 : patch.page ?? current.page }, now);
 }
 

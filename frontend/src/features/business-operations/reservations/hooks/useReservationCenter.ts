@@ -22,6 +22,15 @@ export function useReservationCenter({ preset = 'all', adapter = reservationCent
   resultRef.current = result;
   const queryKey = useMemo(() => reservationQueryKey(query), [query]);
 
+  useEffect(() => {
+    if (queryRef.current.preset !== preset) {
+      const next = defaultReservationQuery(preset, now);
+      setQuery(next);
+      setMobilePages(createMobileReservationPageState(reservationQueryKey(next)));
+      setSelection(null);
+    }
+  }, [now, preset]);
+
   const load = useCallback(async (mode: 'initial' | 'refresh' | 'retry' = 'initial') => {
     const current = normalizeReservationQuery(queryRef.current, now);
     setLoadState({ phase: mode === 'refresh' && resultRef.current ? 'refreshing' : 'initial-loading', error: null, hasStaleData: Boolean(resultRef.current) });
