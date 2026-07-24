@@ -9,5 +9,3 @@ export function ReservationEmptyState({ preset, filtered, onClear }: Readonly<{ 
 }
 
 export function ReservationErrorState({ state, onRetry }: Readonly<{ state: ReservationLoadState; onRetry: () => void }>) { return <section className="reservation-center-ui__error" role="alert"><i className="bi bi-exclamation-triangle" aria-hidden="true" /><div><h2>無法載入預約</h2><p>{state.error?.message || '請稍後再試。'}</p></div><button type="button" onClick={onRetry}>重試</button></section>; }
-
-export function ReservationCalendarBoundary() { return <section className="reservation-center-ui__calendar-boundary" aria-live="polite"><i className="bi bi-calendar3" aria-hidden="true" /><h2>行事曆正在整合</h2><p>目前尚未提供可安全使用的統一行事曆資料，因此不顯示預約時段。</p></section>; }
