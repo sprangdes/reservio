@@ -136,6 +136,7 @@ test('selection reconciliation and mutation states retain only list-derived deta
   assert.equal(selected?.availability, 'partial');
   const updated = mappers.mapReservationItem({ id: 8, status: 'CONFIRMED' });
   assert.equal(selection.reconcileReservationSelection(selected, [updated])?.item.status, 'CONFIRMED');
+  assert.equal(selection.reconcileReservationSelection(selected, []), null);
   const pending = mutationState.reservationMutationPending(8, 'confirm');
   const success = mutationState.reservationMutationSuccess(8, 'confirm');
   assert.equal(pending.phase, 'pending');
