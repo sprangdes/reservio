@@ -9,6 +9,105 @@ body {
     --navbar-height: 72px;
 }
 
+/* Family 3 business workspace: intentionally scoped so public and customer surfaces retain their existing shell. */
+.business-workspace {
+    --workspace-green: #004c37;
+    --workspace-green-deep: #003626;
+    --workspace-green-soft: #e9f0eb;
+    --workspace-ink: #14201d;
+    --workspace-muted: #69716e;
+    --workspace-line: #e5dfd7;
+    --workspace-canvas: #faf8f4;
+    --workspace-panel: #fffefd;
+    min-height: 100dvh;
+    background: var(--workspace-canvas);
+    color: var(--workspace-ink);
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+}
+
+.business-workspace *, .business-workspace *::before, .business-workspace *::after { box-sizing: border-box; }
+.business-workspace a { color: inherit; }
+.business-workspace a:focus-visible, .business-workspace button:focus-visible { outline: 3px solid #ef7d22; outline-offset: 3px; }
+.business-workspace__skip-link { position: fixed; z-index: 1100; top: .75rem; left: 50%; padding: .7rem 1rem; background: #fff; color: var(--workspace-green); transform: translate(-50%, -200%); transition: transform .2s ease; }
+.business-workspace__skip-link:focus { transform: translate(-50%, 0); }
+.business-workspace__sidebar { position: fixed; z-index: 20; inset: 0 auto 0 0; display: flex; width: 16.1rem; flex-direction: column; padding: 1.5rem 1rem; overflow-y: auto; color: #f8fbf7; background: radial-gradient(circle at 12% 16%, rgba(29, 116, 84, .5), transparent 28rem), linear-gradient(155deg, #003827, #00513a 56%, #003326); }
+.business-workspace__brand { display: flex; align-items: center; gap: .7rem; font-family: Georgia, "Times New Roman", serif; font-size: 1.65rem; text-decoration: none; }
+.business-workspace__brand span { display: grid; width: 2.25rem; height: 2.25rem; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-size: 1.35rem; }
+.business-workspace__identity { display: flex; align-items: center; gap: .65rem; margin: 2.25rem 0 2rem; font-size: 1rem; }
+.business-workspace__identity strong { overflow: hidden; flex: 1; text-overflow: ellipsis; white-space: nowrap; }
+.business-workspace__identity-mark { display: grid; width: 2.65rem; height: 2.65rem; place-items: center; border: 1px solid rgba(255,255,255,.8); border-radius: 50%; font-size: 1.25rem; }
+.business-workspace__nav-section { margin-bottom: 1.55rem; }
+.business-workspace__nav-section p { margin: 0 0 .45rem .85rem; color: rgba(255,255,255,.7); font-size: .8rem; letter-spacing: .08em; }
+.business-workspace__nav-link { display: flex; min-height: 3.1rem; align-items: center; gap: .95rem; padding: .65rem .85rem; border-radius: .45rem; color: inherit; font-size: 1rem; font-weight: 600; text-decoration: none; transition: background-color .18s ease, transform .18s ease; }
+.business-workspace__nav-link:hover { background: rgba(255,255,255,.1); color: #fff; }
+.business-workspace__nav-link:active { transform: translateY(1px); }
+.business-workspace__nav-link.is-active { background: linear-gradient(100deg, rgba(133, 192, 158, .32), rgba(133, 192, 158, .18)); box-shadow: inset 1px 0 rgba(255,255,255,.16); }
+.business-workspace__nav-link i { width: 1.35rem; font-size: 1.35rem; text-align: center; }
+.business-workspace__nav-link small { margin-left: auto; color: #d4e5d9; font-size: .7rem; font-weight: 500; }
+.business-workspace__nav-link--preview { cursor: default; opacity: .88; }
+.business-workspace__frame { min-height: 100dvh; margin-left: 16.1rem; }
+.business-workspace__topbar { display: flex; min-height: 4.6rem; align-items: center; justify-content: space-between; gap: 1rem; padding: 0 2rem; border-bottom: 1px solid var(--workspace-line); background: rgba(255,254,253,.92); }
+.business-workspace__topbar p { margin: 0; font-size: 1.08rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.business-workspace__topbar-actions, .business-workspace__account { display: flex; align-items: center; gap: 1rem; }
+.business-workspace__icon-button { position: relative; display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border-radius: 50%; color: var(--workspace-ink); font-size: 1.35rem; text-decoration: none; }
+.business-workspace__icon-button:hover { background: var(--workspace-green-soft); color: var(--workspace-green); }
+.business-workspace__notification-dot { position: absolute; top: .45rem; right: .48rem; width: .5rem; height: .5rem; border: 1px solid #fff; border-radius: 50%; background: #f36b21; }
+.business-workspace__account { min-height: 2.75rem; color: var(--workspace-ink); font-size: .95rem; text-decoration: none; }
+.business-workspace__account > span { display: grid; width: 2.4rem; height: 2.4rem; place-items: center; border-radius: 50%; color: #fff; background: var(--workspace-green); font-weight: 700; }
+.business-workspace__account i { font-size: .75rem; }
+.business-workspace__content { min-height: calc(100dvh - 4.6rem); padding: 2rem; }
+.business-workspace__mobile-header, .business-workspace__bottom-nav { display: none; }
+.operations-overview, .reservation-center { max-width: 94rem; margin: 0 auto; }
+.operations-overview > header, .reservation-center__header { margin-bottom: 1.8rem; }
+.operations-overview > header p, .reservation-center__header p { margin: 0 0 .35rem; color: var(--workspace-green); font-size: .84rem; font-weight: 700; letter-spacing: .08em; }
+.operations-overview h1, .reservation-center h1 { margin: 0; color: var(--workspace-green-deep); font-size: clamp(2rem, 3vw, 2.55rem); font-weight: 800; letter-spacing: -.05em; }
+.operations-overview > header span, .reservation-center__header > span { display: block; margin-top: .55rem; color: var(--workspace-muted); font-size: 1.05rem; }
+.operations-overview__state, .reservation-center__state { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 1.25rem; max-width: 59rem; padding: 1.6rem; border: 1px solid var(--workspace-line); border-radius: .75rem; background: var(--workspace-panel); box-shadow: 0 .8rem 2rem rgba(57, 49, 38, .06); }
+.operations-overview__state-icon, .reservation-center__state-symbol { display: grid; width: 3rem; height: 3rem; place-items: center; border-radius: 50%; color: var(--workspace-green); background: var(--workspace-green-soft); font-size: 1.35rem; }
+.operations-overview__state h2, .reservation-center__state h2 { margin: 0 0 .35rem; font-size: 1.15rem; font-weight: 800; }
+.operations-overview__state p, .reservation-center__state p { margin: 0; color: var(--workspace-muted); line-height: 1.7; }
+.operations-overview__link, .reservation-center__legacy-link { color: var(--workspace-green); font-weight: 700; text-decoration: none; white-space: nowrap; }
+.operations-overview__link:hover, .reservation-center__legacy-link:hover, .reservation-center__back-link:hover { color: #007154; text-decoration: underline; }
+.reservation-center__presets { display: flex; align-items: stretch; width: fit-content; min-height: 3.25rem; margin-bottom: 1.75rem; overflow: hidden; border: 1px solid #dcd6ce; border-radius: .5rem; background: var(--workspace-panel); }
+.reservation-center__presets a, .reservation-center__calendar-boundary { display: inline-flex; min-width: 6.5rem; align-items: center; justify-content: center; gap: .55rem; padding: .65rem 1.1rem; border-right: 1px solid #e1dcd5; color: var(--workspace-ink); font-weight: 700; text-decoration: none; }
+.reservation-center__presets a:hover { background: #f6f4f0; }
+.reservation-center__presets a.is-active { color: #fff; background: var(--workspace-green); }
+.reservation-center__calendar-boundary { color: var(--workspace-muted); border: 0; font-size: .9rem; font-weight: 500; }
+.reservation-center__state { max-width: 66rem; }
+.reservation-center__legacy { padding-bottom: 2rem; }
+.reservation-center__legacy .list-page { max-width: none; margin: 0; }
+.reservation-center__back-link { display: inline-flex; align-items: center; gap: .45rem; margin-top: .75rem; color: var(--workspace-green); font-weight: 700; text-decoration: none; }
+
+@media (max-width: 768px) {
+    .business-workspace__sidebar, .business-workspace__topbar { display: none; }
+    .business-workspace__frame { min-height: 100dvh; margin-left: 0; }
+    .business-workspace__mobile-header { display: flex; min-height: 5.25rem; align-items: center; justify-content: space-between; padding: .75rem 1.25rem; border-bottom: 1px solid var(--workspace-line); background: rgba(255,254,253,.96); }
+    .business-workspace__mobile-header > div { display: flex; min-width: 0; align-items: center; gap: .75rem; }
+    .business-workspace__mobile-header strong, .business-workspace__mobile-header span:not(.business-workspace__mobile-mark) { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .business-workspace__mobile-header strong { font-size: 1rem; }
+    .business-workspace__mobile-header span:not(.business-workspace__mobile-mark) { margin-top: .15rem; color: var(--workspace-muted); font-size: .8rem; }
+    .business-workspace__mobile-mark { display: grid; width: 2.5rem; height: 2.5rem; flex: 0 0 auto; place-items: center; border: 1px solid var(--workspace-green); border-radius: 50%; color: var(--workspace-green); font-family: Georgia, serif; font-size: 1.45rem; }
+    .business-workspace__content { min-height: calc(100dvh - 5.25rem); padding: 1.65rem 1.1rem calc(6.8rem + env(safe-area-inset-bottom)); }
+    .business-workspace__bottom-nav { position: fixed; z-index: 30; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(4, 1fr); min-height: calc(4.9rem + env(safe-area-inset-bottom)); padding: .45rem .35rem env(safe-area-inset-bottom); border-top: 1px solid var(--workspace-line); background: rgba(255,254,253,.97); box-shadow: 0 -.6rem 1.8rem rgba(55,47,36,.06); }
+    .business-workspace__bottom-nav a { display: grid; min-height: 2.75rem; place-items: center; align-content: center; gap: .18rem; border-radius: .6rem; color: #4a514e; font-size: .78rem; text-decoration: none; }
+    .business-workspace__bottom-nav a.is-active { color: var(--workspace-green); background: var(--workspace-green-soft); font-weight: 800; }
+    .business-workspace__bottom-icon { position: relative; height: 1.55rem; font-size: 1.4rem; line-height: 1; }
+    .business-workspace__bottom-icon b { position: absolute; top: -.25rem; right: -.45rem; width: .5rem; height: .5rem; border-radius: 50%; background: #f36b21; }
+    .operations-overview > header, .reservation-center__header { margin-bottom: 1.45rem; }
+    .operations-overview h1, .reservation-center h1 { font-size: 2.05rem; }
+    .operations-overview > header span, .reservation-center__header > span { font-size: .98rem; line-height: 1.6; }
+    .operations-overview__state, .reservation-center__state { grid-template-columns: auto minmax(0, 1fr); gap: 1rem; padding: 1.2rem; }
+    .operations-overview__state p, .reservation-center__state p { font-size: .92rem; }
+    .operations-overview__link, .reservation-center__legacy-link { grid-column: 1 / -1; min-height: 2.75rem; padding-top: .45rem; }
+    .reservation-center__presets { display: grid; width: 100%; grid-template-columns: repeat(3, 1fr); overflow: visible; border-radius: .45rem; }
+    .reservation-center__presets a { min-width: 0; padding: .65rem .2rem; }
+    .reservation-center__calendar-boundary { grid-column: 1 / -1; min-height: 2.75rem; border-top: 1px solid #e1dcd5; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .business-workspace *, .business-workspace *::before, .business-workspace *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+
 main {
     flex: 1;
 }
