@@ -16,7 +16,7 @@ test('unified reservation page consumes the Phase 2 controller and exposes all l
   assert.match(page, /ReservationEmptyState/);
   assert.match(page, /ReservationErrorState/);
   assert.match(page, /ReservationMobileLoadMore/);
-  assert.match(page, /ReservationCalendarBoundary/);
+  assert.match(page, /ReservationCalendarView/);
   assert.doesNotMatch(page, /businessReservations\(/);
 });
 

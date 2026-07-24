@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isReservationActionAvailable, resolveReservationActionCapabilities } from '../capabilities';
 import { initialReservationMutationState, reservationMutationError, reservationMutationPending, reservationMutationStale, reservationMutationSuccess } from '../mutationState';
 import { appendReservationPage, createMobileReservationPageState, getReservationPaginationState, setMobileLoadMoreError, setMobileLoadingMore } from '../pagination';
-import { defaultReservationQuery, normalizeReservationQuery, reservationQueryKey, updateReservationQuery } from '../query';
+import { defaultReservationQuery, localDate, normalizeReservationQuery, reservationQueryKey, updateReservationQuery } from '../query';
+import { createReservationCalendarQuery } from '../calendar';
 import { reconcileReservationSelection, selectReservation } from '../selection';
 import { reservationCenterAdapter } from '../data/reservationCenterAdapter';
-import type { ReservationAction, ReservationCenterAdapter, ReservationCenterItem, ReservationDetailsSelection, ReservationLoadState, ReservationMutationState, ReservationPageResult, ReservationQuery, ReservationViewPreset } from '../types';
+import type { ReservationAction, ReservationCalendarState, ReservationCenterAdapter, ReservationCenterItem, ReservationDetailsSelection, ReservationLoadState, ReservationMutationState, ReservationPageResult, ReservationQuery, ReservationViewPreset } from '../types';
 
 const initialLoadState: ReservationLoadState = { phase: 'idle', error: null, hasStaleData: false };
 
@@ -16,10 +17,14 @@ export function useReservationCenter({ preset = 'all', adapter = reservationCent
   const [mobilePages, setMobilePages] = useState(() => createMobileReservationPageState(reservationQueryKey(defaultReservationQuery(preset, now))));
   const [selection, setSelection] = useState<ReservationDetailsSelection | null>(null);
   const [mutationState, setMutationState] = useState<ReservationMutationState>(initialReservationMutationState);
+  const [calendar, setCalendar] = useState<ReservationCalendarState>(() => ({ selectedDate: localDate(now), mode: defaultReservationQuery('calendar', now).calendarView, result: null, loadState: initialLoadState, requestKey: '' }));
   const queryRef = useRef(query);
   const resultRef = useRef<ReservationPageResult | null>(result);
+  const calendarRef = useRef(calendar);
+  const calendarRequestRef = useRef(0);
   queryRef.current = query;
   resultRef.current = result;
+  calendarRef.current = calendar;
   const queryKey = useMemo(() => reservationQueryKey(query), [query]);
 
   useEffect(() => {
@@ -56,6 +61,31 @@ export function useReservationCenter({ preset = 'all', adapter = reservationCent
     setMobilePages(createMobileReservationPageState(reservationQueryKey(updateReservationQuery(queryRef.current, patch, now))));
   }, [now]);
 
+  const setCalendarDate = useCallback((selectedDate: string) => setCalendar((current) => ({ ...current, selectedDate })), []);
+  const setCalendarMode = useCallback((mode: ReservationCalendarState['mode']) => {
+    setCalendar((current) => ({ ...current, mode }));
+    applyQuery({ calendarView: mode });
+  }, [applyQuery]);
+  const loadCalendar = useCallback(async (mode: 'initial' | 'refresh' | 'retry' = 'initial') => {
+    const requestId = calendarRequestRef.current + 1;
+    calendarRequestRef.current = requestId;
+    const currentCalendar = calendarRef.current;
+    const request = createReservationCalendarQuery(queryRef.current, currentCalendar.selectedDate, currentCalendar.mode);
+    const requestKey = reservationQueryKey(request);
+    setCalendar((current) => ({ ...current, requestKey, loadState: { phase: mode === 'refresh' && current.result ? 'refreshing' : 'initial-loading', error: null, hasStaleData: Boolean(current.result) } }));
+    try {
+      const next = await adapter.query(request);
+      if (calendarRequestRef.current !== requestId) return next;
+      setCalendar((current) => ({ ...current, result: next, requestKey, loadState: { phase: next.items.length ? 'ready' : Boolean(request.filter.service || request.filter.keyword || request.filter.statuses.length) ? 'filter-empty' : 'empty', error: null, hasStaleData: false } }));
+      setSelection((currentSelection) => reconcileReservationSelection(currentSelection, next.items));
+      return next;
+    } catch (error) {
+      const resolved = error instanceof Error ? error : new Error('載入行事曆失敗');
+      if (calendarRequestRef.current === requestId) setCalendar((current) => ({ ...current, requestKey, loadState: { phase: 'query-error', error: resolved, hasStaleData: Boolean(current.result) } }));
+      throw resolved;
+    }
+  }, [adapter]);
+
   const refresh = useCallback(() => load('refresh'), [load]);
   const retry = useCallback(() => load('retry'), [load]);
   const loadMore = useCallback(async () => {
@@ -88,5 +118,5 @@ export function useReservationCenter({ preset = 'all', adapter = reservationCent
     }
   }, [adapter, refresh]);
 
-  return { query, result, items: result?.items || [], pagination: result ? getReservationPaginationState(result) : null, loadState, mobilePages, selection, mutationState, setQuery: applyQuery, refresh, retry, loadMore, select, clearSelection, mutate };
+  return { query, result, items: result?.items || [], pagination: result ? getReservationPaginationState(result) : null, loadState, mobilePages, selection, mutationState, calendar, setCalendarDate, setCalendarMode, loadCalendar, setQuery: applyQuery, refresh, retry, loadMore, select, clearSelection, mutate };
 }
