@@ -57,6 +57,16 @@ export interface ReservationQuery {
 }
 
 export interface ReservationPageResult { items: ReservationCenterItem[]; page: number; pageSize: number; totalPages: number; totalCount: number; hasNextPage: boolean; }
+export interface ReservationCalendarEvent {
+  id: string | number;
+  item: ReservationCenterItem;
+  date: string;
+  startMinutes?: number;
+  endMinutes?: number;
+  durationMinutes?: number;
+  hasExplicitEnd: boolean;
+}
+export interface ReservationCalendarState { selectedDate: string; mode: ReservationCalendarViewMode; result: ReservationPageResult | null; loadState: ReservationLoadState; requestKey: string; }
 export interface ReservationPaginationState { page: number; totalPages: number; totalCount: number; pageSize: number; hasPreviousPage: boolean; hasNextPage: boolean; }
 export interface MobileReservationPageState { items: ReservationCenterItem[]; nextPage: number; hasMore: boolean; isLoadingMore: boolean; error: Error | null; queryKey: string; }
 export type ReservationLoadPhase = 'idle' | 'initial-loading' | 'ready' | 'refreshing' | 'empty' | 'filter-empty' | 'query-error' | 'loading-more' | 'load-more-error';
