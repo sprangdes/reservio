@@ -22,6 +22,9 @@ import LineIntegrationPage from './pages/LineIntegrationPage';
 import LineAccountLinkPage from './pages/LineAccountLinkPage';
 import LineAccountLinksPage from './pages/LineAccountLinksPage';
 import ProfilePage from './pages/ProfilePage';
+import BusinessWorkspaceShell from './features/business-operations/BusinessWorkspaceShell';
+import OperationsOverviewPage from './features/business-operations/OperationsOverviewPage';
+import ReservationCenterPage, { type ReservationCenterPreset } from './features/business-operations/ReservationCenterPage';
 import { useAuth } from './state/AuthContext';
 import {JSX} from "react";
 import SessionTimeoutManager from './components/SessionTimeoutManager';
@@ -70,6 +73,18 @@ function BusinessSetupGuard({ children }: Readonly<{ children: JSX.Element }>) {
   return children;
 }
 
+function BusinessAwareHome() {
+  const { me } = useAuth();
+  if (me?.role === 'ROLE_BUSINESS') {
+    return <BusinessWorkspaceShell><OperationsOverviewPage /></BusinessWorkspaceShell>;
+  }
+  return <Layout><HomePage /></Layout>;
+}
+
+function ReservationCenterRoute({ preset, legacyContent }: Readonly<{ preset: ReservationCenterPreset; legacyContent: JSX.Element }>) {
+  return <BusinessWorkspaceShell><ReservationCenterPage preset={preset} legacyContent={legacyContent} /></BusinessWorkspaceShell>;
+}
+
 export default function App() {
   return (
     <PasswordResetGuard>
@@ -79,11 +94,7 @@ export default function App() {
         <Routes>
       <Route
         path="/"
-        element={
-          <Layout>
-            <HomePage />
-          </Layout>
-        }
+        element={<BusinessAwareHome />}
       />
       <Route
         path="/login"
@@ -168,31 +179,19 @@ export default function App() {
       <Route
         path="/reservation/today/manage"
         element={
-          <Layout>
-            <RequireAuth>
-              <ManageTodayPage />
-            </RequireAuth>
-          </Layout>
+          <RequireAuth><ReservationCenterRoute preset="today" legacyContent={<ManageTodayPage />} /></RequireAuth>
         }
       />
       <Route
         path="/reservation/manage"
         element={
-          <Layout>
-            <RequireAuth>
-              <ManageAllPage />
-            </RequireAuth>
-          </Layout>
+          <RequireAuth><ReservationCenterRoute preset="all" legacyContent={<ManageAllPage />} /></RequireAuth>
         }
       />
       <Route
         path="/reservation/pending/manage"
         element={
-          <Layout>
-            <RequireAuth>
-              <ManagePendingPage />
-            </RequireAuth>
-          </Layout>
+          <RequireAuth><ReservationCenterRoute preset="pending" legacyContent={<ManagePendingPage />} /></RequireAuth>
         }
       />
       <Route
