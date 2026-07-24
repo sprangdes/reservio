@@ -1,0 +1,383 @@
+## 1. 現況架構
+
+`image-to-code` 技能未安裝；本契約依核准設計、現有前端與後端合約制定。
+
+- 路由集中於 `frontend/src/App.tsx`，目前商家首頁、今日、待處理、全部預約分散為不同頁面。
+- `HomePage.tsx` 同時承擔公開首頁、顧客首頁與商家儀表板；商家版目前仍是歡迎 Hero、統計與舊行事曆。
+- 預約清單主要共用 `useBusinessReservationList`、`BusinessReservationList`；但今日頁另有重複的查詢、篩選、排序與分頁實作。
+- 預約 API 已支援商家查詢、篩選、排序、分頁、確認、處理取消申請；沒有預約詳情、歷程、資源、人員、匯出、批次、報表 API。
+- 行事曆 API 僅回傳 `CONFIRMED`、`COMPLETED`，且只支援伺服器當日／本週／本月；不能滿足核准設計中的待確認、取消申請、任意日期範圍與資源維度。
+- 預約清單目前沒有元件層 loading／retry／詳情選取狀態；失敗以 toast 呈現。
+- 現有 Bootstrap 與 `styles.css` 使用紫藍漸層固定 Navbar、卡片與桌面表格內部捲動，與核准的森林綠工作區系統不一致。
+- 後端在 reservation service 層驗證商家擁有權；前端商家預約路由目前僅有登入與商家設定 guard，沒有明確的商家視圖 guard。
+
+## 2. 現有路由表
+
+| 路由 | 現有頁面 | 保護／用途 |
+|---|---|---|
+| `/` | `HomePage` | 公開、顧客或商家首頁 |
+| `/reservation/today/manage` | `ManageTodayPage` | 商家今日預約 |
+| `/reservation/pending/manage` | `ManagePendingPage` | 商家待處理預約 |
+| `/reservation/manage` | `ManageAllPage` | 商家全部預約 |
+| `/service/manage` | `ServiceManagementPage` | 商家服務管理 |
+| `/business/setup` | `BusinessSetupPage` | 商家設定流程 |
+| `/business/info` | `BusinessInfoPage` | 商家資訊 |
+| `/business/line-integration` | `LineIntegrationPage` | LINE 整合設定與健康狀態 |
+| `/notifications` | `NotificationsPage` | 通知中心 |
+| `/notifications/settings` | `NotificationSettingsPage` | 通知設定 |
+| `/settings/line-accounts` | `LineAccountSettingsPage` | LINE 帳號設定 |
+| `/my/reservations` | `MyReservationsPage` | 顧客預約 |
+| `/reservation/new` | `ReservationPage` | 顧客建立預約 |
+| `/preferred-businesses` | `PreferredBusinessesPage` | 顧客收藏商家 |
+| `/profile` | `ProfilePage` | 帳號資料 |
+| `/force-change-password` | `ForceChangePasswordPage` | 強制改密碼 |
+| `/login`、`/register` 等 | Auth pages | 公開認證流程 |
+
+所有既有商家預約路由必須保留。
+
+## 3. 現有 API 與資料表
+
+| 能力 | 現有 API／參數 | 回應或限制 |
+|---|---|---|
+| 商家預約查詢 | `POST /api/reservations/business/query?page&size&sortBy&sortDir` | Body：`startDate`、`endDate`、`service`、`status`、`keyword`；回傳分頁 |
+| 今日行事曆 | `GET /api/reservations/today` | 僅 `CONFIRMED`、`COMPLETED` |
+| 本週行事曆 | `GET /api/reservations/week` | 固定伺服器本週；僅已確認／完成 |
+| 本月行事曆 | `GET /api/reservations/month` | 固定伺服器本月；僅已確認／完成 |
+| 更新狀態 | `POST /api/reservations/{id}/status` | Body：`{ action }` |
+| 顧客取消 | `POST /api/reservations/{id}/cancel` | 顧客本人；已確認時建立取消申請 |
+| 商家服務 | `GET /api/businesses/{id}/services/active` | 可作為服務篩選來源 |
+| 儀表板 | `GET /api/dashboard` | `todayCount`、`pendingCount`、`user` |
+| 通知列表 | `GET /api/notifications?page&size` | `id`、`reservationId`、`eventType`、`title`、`content`、`read`、`createdAt` |
+| 未讀通知數 | `GET /api/notifications/unread-count` | `{ count }` |
+| LINE 健康 | `GET /api/integrations/line/status` | `configured`、`enabled`、Webhook、token、rich menu 狀態 |
+
+### 預約查詢可用排序欄位
+
+| 前端欄位 | 後端 `sortBy` |
+|---|---|
+| 日期 | `reservationDate` |
+| 時間 | `startTime` |
+| 顧客 | `username` |
+| 服務 | `title` |
+| 備註 | `remark` |
+| 狀態 | `status` |
+| 商家名稱 | `businessName` |
+
+### 現有狀態
+
+`PENDING`、`CONFIRMED`、`CANCEL_REQUESTED`、`CANCELLED`、`COMPLETED`
+
+### 現有 mutation 語意
+
+| 前端 action | 現有後端結果 |
+|---|---|
+| `confirm` | `CONFIRMED` |
+| `approveCancel` | `CANCEL_REQUESTED → CANCELLED` |
+| `rejectCancel` | `CANCEL_REQUESTED → CONFIRMED` |
+| `cancel` | 目前依 controller 的其他 action 分支變成 `CANCELLED` |
+
+`rejectCancel` 是「駁回顧客取消申請」，不是「駁回待確認預約」。待確認預約的商家駁回 API 目前不存在。
+
+### 現有狀態處理
+
+| 情境 | 現況 |
+|---|---|
+| 清單載入 | 沒有明確 loading state |
+| 清單空白 | 以空列表／表格呈現，沒有任務導向 empty state |
+| 請求失敗 | Toast「載入失敗」；沒有區域 retry |
+| mutation 進行中 | 沒有按鈕 loading／避免重複提交狀態 |
+| mutation 失敗 | Toast；重新查詢 |
+| 日期 | `ManageTodayPage` 固定今日；其餘使用 `flatpickr` 日期區間 |
+| 分頁 | API page 由 0 起算，現有 UI 支援 10／20／50 與前後頁 |
+| 行動版 | 沿用傳統 pagination，沒有 load-more |
+
+## 4. 能力分類矩陣
+
+| 功能 | 分類 | 初始 Family 3 處置 |
+|---|---|---|
+| 統一預約中心 | B | 共用現有商家查詢 API，改為同一頁的 preset 與 view state |
+| 今天／待處理／全部 preset | B | 以查詢條件建立 `today`、`pending`、`all` |
+| 清單／行事曆切換 | B | 共用中心狀態；現有行事曆先支援既有資料範圍 |
+| 任意日期的跨狀態行事曆 | D | 現有 calendar API 資料不足 |
+| 預約詳情：現有欄位 | B | 從選取列提供暫時詳情內容 |
+| 預約詳情的直接開啟／重新整理 | D | 缺少 `GET reservation by id` |
+| 狀態歷程 | D | 缺少事件／審計資料 |
+| 確認預約 | A | 使用既有 `updateReservationStatus(id, { action: 'confirm' })` |
+| 駁回待確認預約 | D | 現有 API 無明確 reject transition 或 reason |
+| 商家取消預約、無理由 | A | 現有 action 可運作，但目前 action contract 不夠明確 |
+| 商家取消原因 | D | 缺少欄位與明確 mutation contract |
+| 處理取消申請 | A | `approveCancel`、`rejectCancel` 已存在 |
+| 關鍵字搜尋 | A | 現有搜尋為顧客名稱／帳號與備註；不可宣稱搜尋電話或服務名稱 |
+| 服務篩選 | A | `service` 已支援 |
+| 狀態篩選 | A | `status` 支援 comma-separated 狀態 |
+| 日期區間篩選 | A | `startDate`、`endDate` 已支援 |
+| 排序 | A | 限既有可排序欄位 |
+| 桌面分頁 | A | 使用既有 page／size contract |
+| 行動版載入更多 | B | 將既有 page contract 改成 append presentation |
+| 儀表板待處理摘要 | A | `dashboard.pendingCount` 已存在 |
+| 下一筆服務 | B | 以今日 query 加 `startTime` 排序衍生 |
+| 今日排程 | B | 以今日商家 query 組合；不可只依舊 calendar API |
+| 營運警示 | B | 由待處理、取消申請、通知未讀、LINE 健康組合 |
+| 週摘要 | B | 先以既有預約資料計算可驗證的數量；不可顯示虛構 KPI |
+| 人員／資源指派 | D | 無資源資料、指派欄位或 mutation |
+| 資源篩選 | D | 無 resource dimension |
+| 資源可用性／鎖定時段 | D | 無 availability 或 block contract |
+| 批次選取模式 UI | C：Feature flag + Disabled preview | 僅在 capability flag 開啟時顯示，不執行 mutation |
+| 批次 mutation | D／E | 無後端原子操作；初始交付延後 |
+| 匯出入口 | C：Disabled preview | 可作為次要操作入口，清楚標示尚未啟用 |
+| 實際匯出 | D／E | 需要授權、非同步工作與下載契約；初始交付延後 |
+| 報表入口 | C：Static UI shell | 僅呈現「營運摘要即將提供」，不使用假數字 |
+| 報表資料與分析頁 | D／E | 缺少聚合資料；初始交付延後 |
+| 訊息中心入口 | C：Disabled preview | 與既有通知分開，不混用為聊天或訊息資料 |
+| 完整訊息中心 | D／E | 無對話、收件匣、權限與傳送 API |
+| LINE 整合健康摘要 | B | 使用現有 `lineIntegrationStatus()` |
+| 通知摘要 | B | 使用 unread count、通知列表與 reservationId |
+| 通知直達預約詳情 | D | 現有通知缺少可靠 destination／詳情 API |
+| 桌面批次管理、完整報表、完整訊息中心 | E | 超出初始核心流程，且依賴尚不存在的後端能力 |
+
+## 5. 核准設計欄位對應
+
+| 設計欄位 | 現有來源 | 對應 |
+|---|---|---|
+| 預約編號 | `ReservationResponse.id` | 現有欄位；前端格式化為 `#R-{id}` 屬衍生格式 |
+| 顧客姓名 | `username` | 現有欄位 |
+| 顧客電話 | 無 | 不可假設；需未來 detail API 顯式回傳 |
+| 服務 | `title` | 現有欄位 |
+| 日期 | `reservationDate` | 現有欄位 |
+| 開始時間 | `startTime` | 現有欄位 |
+| 結束時間 | `endTime` | 現有欄位 |
+| 時長 | `endTime - startTime` | 前端可衍生，需處理跨日與無效時間 |
+| 狀態 | `status` | 現有欄位；以共享 status label map 顯示 |
+| 客戶備註 | `remark` | 現有欄位 |
+| 建立時間 | `createdAt` | 現有欄位 |
+| 更新時間 | `updatedAt` | 現有欄位 |
+| 取消原因 | `cancelReason` | 現有欄位；目前主要用於取消申請 |
+| 駁回原因 | 無 | 未提供 |
+| 商家／服務名稱 | `businessName`／`title` | 現有欄位 |
+| 商家身分 | `me.business` | 現有登入資料 |
+| 員工／資源 | 無 | 未提供 |
+| 人員頭像 | 無 | 未提供；不可拿顧客資料替代 |
+| 資源利用率 | 無 | 未提供；不可以預約數虛構百分比 |
+| 通知未讀數 | `notificationUnreadCount().count` | 現有欄位 |
+| 預約相關通知 | `NotificationResponse.reservationId` | 現有關聯，但缺少詳情 deep link contract |
+| 通知已讀 | `NotificationResponse.read` | 現有欄位 |
+| 狀態歷程 | 無 | `createdAt`、`updatedAt` 不能當作完整歷程 |
+| 今日待處理數 | `dashboard.pendingCount` | 現有欄位，包含 `PENDING` 與 `CANCEL_REQUESTED` |
+| 今日預約數 | `dashboard.todayCount` | 現有欄位 |
+| 取消申請數 | 預約查詢 `status=CANCEL_REQUESTED` | 前端可衍生 |
+| 下一筆服務 | 今日 query + 時間排序 | 前端衍生；需使用目前時間篩選 |
+| LINE 健康 | `lineIntegrationStatus()` | 現有欄位 |
+| 行事曆資源列 | `CalendarResponse.users` | 不可視為員工／資源；只是現有回應的名稱集合 |
+
+### 明確假設
+
+- `username` 為目前商家 UI 使用的顧客名稱，不代表可取得完整客戶聯絡資料。
+- 現有 `cancel` action 依賴 controller 的 fallback 行為；不能把它視為穩定的未來 contract。
+- 現有 calendar 的 `users` 不是人員排班資料。
+- `createdAt`、`updatedAt` 僅可呈現建立／最後更新，不能生成真實狀態歷程。
+
+## 6. 後端 API 缺口
+
+| 能力 | 建議契約 | 權限、狀態與安全要求 |
+|---|---|---|
+| 預約詳情 | `GET /api/reservations/{id}`；回傳完整 ReservationDetail：客戶、電話、服務、時間、備註、狀態、原因、資源、timestamps | 顧客本人或所屬商家；loading skeleton、404 empty、403 禁止、網路 retry；不得以 IDOR 讀取他人預約 |
+| 狀態歷程 | `GET /api/reservations/{id}/history`；事件含 `type`、`occurredAt`、`actorType`、`actorId`、`reason` | 僅可讀授權範圍；不得洩漏內部操作者 PII；空歷程需呈現建立事件或明確 empty |
+| 明確狀態轉換 | 建議 `POST /api/reservations/{id}/transitions`；body：`action`、`reason?`、`version`、`idempotencyKey` | action 應明確區分 confirm、reject、business cancel、approve/reject cancellation；409 conflict、422 transition invalid、403 ownership；成功回傳更新後預約與事件 |
+| 待確認預約駁回 | 同狀態轉換 API；body 必須支援 `REJECT`、`reason` | 商家擁有權、原因驗證、通知顧客、不可對已完成預約操作 |
+| 商家取消原因 | 同狀態轉換 API；`BUSINESS_CANCEL` + `reason` | 原因欄位長度與內容驗證；記錄 actor、時間與審計 |
+| 可查詢行事曆 | 建議 `POST /api/reservations/business/calendar/query`；`from`、`to`、`statuses[]`、`resourceIds[]?` | 回傳 event id、date、start/end、status、customer、service、resource；loading／empty／range error；限制最大日期區間防止過量查詢 |
+| 資源／人員 | `GET/POST/PATCH /api/businesses/{id}/resources` | 商家管理權限；資源名稱、狀態、可提供服務；empty onboarding、mutation optimistic 禁用、409 duplicate |
+| 資源可用性 | `GET/POST /resources/{id}/availability`、`/blocks` | 時區、重疊檢查、權限、不可暴露其他商家時段；衝突回傳可讀錯誤 |
+| 資源指派 | 預約 transition 或 patch 支援 `resourceId` | 驗證資源屬商家、可提供服務、時段無衝突；回傳 conflict detail |
+| 批次操作 | `POST /api/reservations/business/bulk-transitions`；`ids[]`、`action`、`reason?`、`idempotencyKey` | 原子或明確 partial-result contract；最大筆數、每筆授權、審計、rate limit、409/422 結果列表 |
+| 匯出 | `POST /api/reservations/business/exports`；套用 query/filter；回傳 job id | 非同步 job、權限、下載 URL 短效、資料遮罩、審計、失敗／過期／空結果狀態 |
+| 營運摘要／週報 | 建議 `/api/dashboard/operations` 與報表 range endpoint | 回傳明確統計定義與時區；loading skeleton、empty、資料延遲標示；不得以未授權資料聚合 |
+| 訊息中心 | conversation／thread／message APIs | 商家範圍授權、訊息內容消毒、附件掃描、read state、送出 retry／冪等 |
+| 通知 deep link | 擴充 NotificationResponse：`destinationType`、`destinationId`、`actionState?` | 前端仍須在開啟詳情時重新驗證授權；已刪除目標應有安全 fallback |
+
+## 7. 路由遷移提案
+
+| 現有網址 | 初始行為 | 長期 canonical state |
+|---|---|---|
+| `/reservation/manage` | 保留，改渲染 `ReservationCenterPage` | `/reservation/manage?preset=all&view=list` |
+| `/reservation/today/manage` | 保留 alias，渲染同頁 preset `today` | `/reservation/manage?preset=today&view=list` |
+| `/reservation/pending/manage` | 保留 alias，渲染同頁 preset `pending` | `/reservation/manage?preset=pending&view=list` |
+| 無既有行事曆中心網址 | 新增為中心 view，不取代舊首頁行事曆 | `/reservation/manage?preset=all&view=calendar` |
+| 預約詳情 | 桌面使用 query selected state；行動版使用全頁路由 | `/reservation/manage?reservation={id}`；行動版可採 `/reservation/manage/{id}` |
+| `/` | 保留公開／顧客行為；商家登入時呈現新的營運概覽 | 商家可另提供 `/business/overview`，但 `/` 必須相容 |
+| `/business/line-integration` | 保留 | 從工作區「更多／系統」導向既有頁面 |
+
+路由守則：
+
+- 維持 `RequireAuth`、`PasswordResetGuard`、`BusinessSetupGuard`。
+- 新增商家工作區呈現層 guard 時，必須重用既有 `me.roles`、`me.business`；不變更認證或授權模型。
+- 初期 alias 不做硬 redirect，避免書籤、瀏覽歷史、測試與外部連結改變。
+- query state 必須被驗證並有 fallback：無效 preset 回到 `all`，無效 selected id 關閉詳情。
+
+## 8. 桌面／行動元件架構
+
+```text
+BusinessWorkspaceShell
+├─ DesktopWorkspaceSidebar
+├─ WorkspaceTopBar
+├─ MobileWorkspaceHeader
+├─ MobileBottomNavigation
+└─ BusinessWorkspaceContent
+   ├─ OperationsOverviewPage
+   │  ├─ AttentionQueue
+   │  ├─ NextReservationCard
+   │  ├─ TodayAgendaPreview
+   │  ├─ OperationalAlerts
+   │  ├─ LineHealthSummary
+   │  └─ FutureOperationsSummaryBoundary
+   └─ ReservationCenterPage
+      ├─ ReservationCenterHeader
+      ├─ ReservationViewSwitcher
+      ├─ ReservationPresetController
+      ├─ ReservationToolbar
+      │  ├─ DateRangeControl
+      │  ├─ ReservationSearch
+      │  ├─ FilterSummary
+      │  ├─ DesktopFilterPopover
+      │  ├─ MobileFilterSheet
+      │  └─ FutureActionMenu
+      ├─ ReservationListView
+      │  ├─ DesktopReservationTable
+      │  │  ├─ ReservationTableHeader
+      │  │  ├─ ReservationDesktopRow
+      │  │  └─ ReservationPagination
+      │  └─ MobileReservationCardList
+      │     ├─ ReservationMobileCard
+      │     └─ MobileLoadMore
+      ├─ ReservationCalendarView
+      │  ├─ CalendarRangeNavigation
+      │  ├─ CalendarModeControl
+      │  ├─ ResourceContextSelector
+      │  ├─ DesktopResourceCalendar
+      │  └─ MobileAgenda
+      ├─ ReservationDetailsController
+      │  ├─ DesktopReservationDetailsDrawer
+      │  └─ MobileReservationDetailPage
+      ├─ ReservationActionControls
+      ├─ ReservationStatusBadge
+      ├─ ReservationStatusTimeline
+      ├─ InlineMutationError
+      ├─ ReservationLoadingSkeleton
+      └─ ReservationEmptyState
+```
+
+共用 domain 元件：
+
+- `ReservationStatusBadge`：文字、icon、色彩與 aria label 一致。
+- `ReservationSummary`：統一姓名、服務、日期、時間、時長格式。
+- `ReservationActionControls`：依後端可用 transition 決定可操作項目。
+- `ReservationDetailSections`：現有資料與 future boundary 分離。
+- `ReservationQueryState`：preset、view、date range、filter、sort、page、selected reservation。
+- 桌面 table 與行動 card 共享同一個 `ReservationListItem` view model，不共享 DOM 版型。
+- 行動 detail 為全頁，不縮小桌面 drawer。
+
+## 9. 未來功能隔離策略
+
+```text
+features/business-operations/
+├─ domain/
+│  ├─ reservationModels.ts
+│  ├─ reservationStatus.ts
+│  └─ reservationCapability.ts
+├─ data/
+│  ├─ ReservationCenterDataSource.ts
+│  ├─ ExistingReservationApiAdapter.ts
+│  └─ PlannedCapabilityAdapter.ts
+├─ future/
+│  ├─ featureFlags.ts
+│  ├─ mock/
+│  │  └─ plannedOperationsPreview.ts
+│  └─ boundaries/
+│     ├─ ResourceSchedulingPreview.tsx
+│     ├─ ExportPreview.tsx
+│     ├─ ReportsPreview.tsx
+│     └─ MessageCenterPreview.tsx
+└─ ui/
+```
+
+規則：
+
+- `ExistingReservationApiAdapter` 是唯一可呼叫現有 `api.ts` 預約方法的 Family 3 層。
+- 不修改 `api.ts`，不在其中放 mock response。
+- `PlannedCapabilityAdapter` 回傳 capability state，例如 `unavailable`、`preview`、`disabled`，不偽裝成後端資料。
+- mock 只能位於 `future/mock/`，只能被 preview boundary 匯入，絕不送至 mutation、查詢 API 或 production analytics。
+- feature flag 預設關閉；production 可透過既有前端設定或 build-time config 關閉所有 preview。
+- C 類功能使用「即將提供／尚未啟用」明確標示；不可將 mock staff、報表、匯出結果呈現為真實營運資料。
+- D 類功能在 adapter 以 capability check 阻擋，不建立猜測式 endpoint。
+
+## 10. 實作階段
+
+| 階段 | 修改／新增檔案 | 交付內容 | 後端依賴 | 測試 | 回滾風險 |
+|---|---|---|---|---|---|
+| 1. 工作區殼層與路由相容 | 修改 `App.tsx`、`HomePage.tsx`、`Layout.tsx`、`Navbar.tsx`、`styles.css`；新增 workspace shell | 森林綠桌面 shell、行動 bottom nav、既有路由 alias | 無 | route alias、role/setup guard、桌面／行動導航 | 低；保留舊頁面入口 |
+| 2. 統一資料模型 | 修改 `components/reservations/types.ts`、`useBusinessReservationList.ts`；新增 domain/data adapter | Typed reservation view model、preset/query state、status map | 無 | query parameter、status mapping、duration derivation | 中；不可改變 query contract |
+| 3. 清單與行動卡片 | 改造 `BusinessReservationList.tsx`、桌面 row、mobile card、filters、pagination；新增 center UI | 桌面 table、行動 cards、filter summary、load-more | 無 | 排序、篩選、分頁、行動 append、empty/loading/error | 中；保留 API 分頁語意 |
+| 4. 詳情與操作 | 新增 drawer、mobile detail、action controls、inline error | 由已載入列開啟詳情；確認、取消申請處理 | 只有既有 actions | mutation pending／success／error／retry、鍵盤焦點 | 中；詳情欄位需標示缺口 |
+| 5. 行事曆與 agenda | 重構 `HomePage` calendar 邏輯至 center；新增 agenda/calendar UI | 今日 agenda、既有 confirmed/completed calendar、清單切換 | 無，進階視圖需 D | 日期切換、狀態 label、selected event、空時段 | 中；不能將 calendar users 當資源 |
+| 6. 營運概覽 | 重構商家 Home；新增 overview sections | 待處理、下一筆、今日排程、通知與 LINE 摘要 | 無 | dashboard/query composition、partial failure skeleton、links | 低；保留現有首頁 fallback |
+| 7. 現有 mutation 流程強化 | 修改 action controls、toast／inline error 層 | 按鈕 loading、禁重複提交、可重試、重新取得資料 | 無 | confirm、approveCancel、rejectCancel、cancel failure | 中；現有 cancel fallback 必須明示 |
+| 8. 未來能力 shell | 新增 future boundaries 與 flags | 資源、匯出、報表、訊息入口的 disabled preview | 無 | flags off、mock isolation、無 API request | 低 |
+| 9. 響應式與無障礙 | 修改 Family 3 樣式與所有互動元件 | 44px targets、focus、drawer focus trap、行動固定 action 區 | 無 | keyboard、screen reader labels、390px／1440px visual checks | 中 |
+| 10. 回歸與驗證 | 修改／新增 `frontend/tests/*` | 既有流程與新 UI contract 的回歸驗證 | D 類待後端後追加 contract test | `npm test`、`npm run typecheck`、`npm run build` | 低 |
+
+建議新增檔案：
+
+```text
+frontend/src/features/business-operations/
+├─ BusinessWorkspaceShell.tsx
+├─ OperationsOverviewPage.tsx
+├─ ReservationCenterPage.tsx
+├─ domain/reservationModels.ts
+├─ domain/reservationStatus.ts
+├─ data/ReservationCenterDataSource.ts
+├─ data/ExistingReservationApiAdapter.ts
+├─ ui/ReservationViewSwitcher.tsx
+├─ ui/ReservationFilterSummary.tsx
+├─ ui/ReservationFilterSheet.tsx
+├─ ui/DesktopReservationTable.tsx
+├─ ui/MobileReservationCardList.tsx
+├─ ui/ReservationAgenda.tsx
+├─ ui/ReservationDetailsDrawer.tsx
+├─ ui/MobileReservationDetailPage.tsx
+├─ ui/ReservationStatusTimeline.tsx
+├─ ui/InlineMutationError.tsx
+├─ ui/ReservationLoadingSkeleton.tsx
+├─ future/featureFlags.ts
+└─ future/boundaries/
+```
+
+## 11. 測試策略
+
+| 範圍 | 必測情境 |
+|---|---|
+| 路由 | 三個 legacy 預約網址皆映射至正確 preset；無效 query fallback；登入、商家設定、非商家行為不回歸 |
+| Query adapter | date range、service、status comma list、keyword、sort、page、size 對應既有 API |
+| Status mapping | 五種既有 status 均有文字、icon、非色彩辨識與正確 action |
+| Mutation | confirm、approve cancel、reject cancel、現有 cancel；loading、禁重複送出、inline failure、retry |
+| 清單 | 桌面 sort、pagination；行動 load-more 不重複、順序正確、filter reset |
+| 詳情 | 選列／選事件開啟；Esc／關閉鍵；行動 back；缺少欄位不顯示假資料 |
+| 行事曆 | confirmed／completed 現有資料；空時段；今日指示；不得以客戶清單當資源 |
+| 儀表板 | pending、取消申請、下一筆、通知與 LINE 局部 API 失敗時仍可用 |
+| 未來功能 | flags 關閉時無 UI 或顯示 disabled；mock 不觸發任何 network mutation |
+| 無障礙 | keyboard、focus order、drawer focus、44px controls、對比、狀態文字 |
+| CSS 回歸 | 更新 `reservation-list-layout.test.mjs`，保留「行動不巢狀捲動」要求，移除依賴舊 Bootstrap 卡片結構的斷言 |
+| 建置 | `npm test`、`npm run typecheck`、`npm run build` |
+| 後端新增後 | transition、detail、history、calendar、resource、bulk/export 的授權、403、404、409、422、冪等與 contract tests |
+
+## 12. 主要風險與回滾
+
+| 風險 | 控制措施 | 回滾方式 |
+|---|---|---|
+| 新 UI 改變既有書籤 | 保留三個 legacy alias 路由 | alias 暫時 render 舊頁或舊 preset wrapper |
+| 狀態操作語意不安全 | 不將待確認「駁回」連到現有 fallback cancel action | 未有明確 API 前只顯示既有可用 actions |
+| 行事曆資料不完整 | 對跨狀態／資源 calendar 使用 capability boundary | 回退既有 today/week/month calendar |
+| 詳情欄位被假資料污染 | 欄位 mapping 明確區分 current、derived、unavailable | 隱藏 unavailable section，保留列內既有資料 |
+| query 重構造成篩選錯誤 | 以 adapter 保留原 request parameter 名稱與分頁語意 | 回退至既有 `useBusinessReservationList` |
+| CSS 全域污染 | Family 3 樣式使用命名空間，逐步移除舊漸層 | 保留舊樣式區塊與頁面 wrapper |
+| 未來功能誤送 mock 資料 | mock 僅在 preview boundary，flag 預設關閉 | 關閉 capability flag 即完全移除 |
+| 商家資料越權 | 前端只做呈現 guard，後端 ownership 驗證維持權威 | 所有 mutation 保留既有 API 與 CSRF 行為 |
