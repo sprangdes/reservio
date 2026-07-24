@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { getReservationRouteForPreset } from './reservations/routePresets';
 
 export type ReservationCenterPreset = 'all' | 'today' | 'pending';
 
 const presetMeta: Record<ReservationCenterPreset, { label: string; description: string; href: string }> = {
-  today: { label: '今天', description: '查看今天需要處理的預約。', href: '/reservation/today/manage' },
-  pending: { label: '待處理', description: '查看等待確認或取消申請中的預約。', href: '/reservation/pending/manage' },
-  all: { label: '全部', description: '集中查看並追蹤所有預約。', href: '/reservation/manage' }
+  today: { label: '今天', description: '查看今天需要處理的預約。', href: getReservationRouteForPreset('today') },
+  pending: { label: '待處理', description: '查看等待確認或取消申請中的預約。', href: getReservationRouteForPreset('pending') },
+  all: { label: '全部', description: '集中查看並追蹤所有預約。', href: getReservationRouteForPreset('all') }
 };
 
 export default function ReservationCenterPage({ preset, legacyContent }: Readonly<{ preset: ReservationCenterPreset; legacyContent: ReactNode }>) {
