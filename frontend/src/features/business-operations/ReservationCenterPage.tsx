@@ -47,12 +47,13 @@ function LegacyReservationPage({ content }: Readonly<{ content: ReactNode }>) {
 export default function ReservationCenterPage({ preset, legacyContent }: Readonly<{ preset: ReservationCenterPreset; legacyContent: ReactNode }>) {
   const { search } = useLocation();
   const legacyMode = new URLSearchParams(search).get('legacy') === '1';
+  const calendarFromUrl = new URLSearchParams(search).get('view') === 'calendar';
   const services = useBusinessServices();
   const controller = useReservationCenter({ preset });
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [confirmationAction, setConfirmationAction] = useState<ReservationMutationAction | null>(null);
   const meta = presetMeta[preset];
-  useEffect(() => { setCalendarOpen(false); }, [preset]);
+  useEffect(() => { setCalendarOpen(calendarFromUrl); }, [calendarFromUrl, preset]);
   if (legacyMode) return <LegacyReservationPage content={legacyContent} />;
 
   const applyFilter = (filter: ReservationFilter) => controller.setQuery({ filter });
