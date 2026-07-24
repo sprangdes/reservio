@@ -7,5 +7,5 @@ export function selectReservation(item: ReservationCenterItem | undefined): Rese
 export function reconcileReservationSelection(selection: ReservationDetailsSelection | null, items: ReservationCenterItem[]): ReservationDetailsSelection | null {
   if (!selection) return null;
   const updated = items.find((item) => String(item.id) === String(selection.id));
-  return updated ? selectReservation(updated) : selection;
+  return updated ? selectReservation(updated) : null;
 }
