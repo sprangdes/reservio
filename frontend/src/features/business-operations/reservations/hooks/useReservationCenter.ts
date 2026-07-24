@@ -110,13 +110,14 @@ export function useReservationCenter({ preset = 'all', adapter = reservationCent
       await adapter.mutate(item.id, action);
       setMutationState(reservationMutationSuccess(item.id, action));
       await refresh();
+      if (calendarRef.current.result) await loadCalendar('refresh');
       setMutationState((current) => reservationMutationStale(current));
     } catch (error) {
       const resolved = error instanceof Error ? error : new Error('更新預約失敗');
       setMutationState(reservationMutationError(item.id, action, resolved));
       throw resolved;
     }
-  }, [adapter, refresh]);
+  }, [adapter, loadCalendar, refresh]);
 
   return { query, result, items: result?.items || [], pagination: result ? getReservationPaginationState(result) : null, loadState, mobilePages, selection, mutationState, calendar, setCalendarDate, setCalendarMode, loadCalendar, setQuery: applyQuery, refresh, retry, loadMore, select, clearSelection, mutate };
 }

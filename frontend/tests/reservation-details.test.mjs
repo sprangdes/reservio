@@ -26,6 +26,7 @@ const confirmation = source('ui/ReservationActionConfirmation.tsx');
 const content = source('ui/ReservationDetailsContent.tsx');
 const experience = source('ui/ReservationDetailsExperience.tsx');
 const actions = source('ui/ReservationDetailsActions.tsx');
+const focusTrap = source('ui/useModalFocusTrap.ts');
 
 test('details timeline is explicitly compact and only derives supported current-state information', () => {
   const item = mappers.mapReservationItem({ id: 7, status: 'CANCEL_REQUESTED', createdAt: '2026-07-24T09:00:00', updatedAt: '2026-07-24T10:00:00' });
@@ -40,7 +41,8 @@ test('details timeline is explicitly compact and only derives supported current-
 test('details UI separates desktop drawer, mobile detail page, and partial-data notice without low-level API calls', () => {
   assert.match(drawer, /role="dialog"/);
   assert.match(drawer, /event.key === 'Escape'/);
-  assert.match(drawer, /openerRef\.current\?\.focus/);
+  assert.match(drawer, /useModalFocusTrap/);
+  assert.match(focusTrap, /openerRef\.current\?\.focus/);
   assert.match(mobile, /reservation-details-page/);
   assert.match(mobile, /返回預約中心/);
   assert.match(content, /目前僅提供清單資料摘要/);
