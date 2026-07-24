@@ -4,6 +4,7 @@ export type OperationsCapability =
   | 'reports'
   | 'messageCenter'
   | 'resourceScheduling'
+  | 'advancedSearch'
   | 'bulkActions'
   | 'export';
 
@@ -15,6 +16,7 @@ export const businessOperationsCapabilities: Readonly<Record<OperationsCapabilit
   reports: previewState,
   messageCenter: previewState,
   resourceScheduling: 'unavailable',
+  advancedSearch: 'unavailable',
   bulkActions: 'unavailable',
   export: 'unavailable'
 };
