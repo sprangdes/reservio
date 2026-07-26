@@ -6,11 +6,12 @@ export type DirtyRegistration = { dirty: boolean; pending: boolean; discard: () 
 export class SettingsDirtyRegistry {
   private forms = new Map<SettingsFormKey, DirtyRegistration>();
   private listeners = new Set<() => void>();
-  private emit() { this.listeners.forEach((listener) => listener()); }
+  private currentSnapshot = { dirty: false, pending: false, count: 0 };
+  private emit() { this.currentSnapshot = { dirty: [...this.forms.values()].some((form) => form.dirty), pending: [...this.forms.values()].some((form) => form.pending), count: this.forms.size }; this.listeners.forEach((listener) => listener()); }
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => this.listeners.delete(listener); };
   register(key: SettingsFormKey, registration: DirtyRegistration) { this.forms.set(key, registration); this.emit(); return () => { if (this.forms.delete(key)) this.emit(); }; }
   update(key: SettingsFormKey, registration: DirtyRegistration) { if (!this.forms.has(key)) return; this.forms.set(key, registration); this.emit(); }
-  snapshot = () => ({ dirty: [...this.forms.values()].some((form) => form.dirty), pending: [...this.forms.values()].some((form) => form.pending), count: this.forms.size });
+  snapshot = () => this.currentSnapshot;
   discardAll() { this.forms.forEach((form) => form.discard()); this.emit(); }
   reset() { this.forms.clear(); this.emit(); }
 }

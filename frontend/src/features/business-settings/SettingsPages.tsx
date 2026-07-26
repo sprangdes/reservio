@@ -4,6 +4,10 @@ import SettingsLayout from './SettingsLayout';
 import { settingsRouteConfig, type SettingsRouteConfig } from './settingsRouteConfig';
 import SettingsInfrastructure from './SettingsInfrastructure';
 import SettingsPageHeader from './components/SettingsPageHeader';
+import { useAuth } from '../../state/AuthContext';
+import { useSettingsOverview } from './hooks/useSettingsOverview';
+import { businessSummary, hoursSummary, lineSummary, notificationSummary, serviceSummary } from './overview';
+import { SettingsSectionError } from './components/SettingsStates';
 
 const copy: Record<'landing' | 'profile' | 'booking' | 'hours' | 'notifications' | 'line' | 'account' | 'serviceNew' | 'serviceEdit', { title: string; description: string }> = {
   landing: { title: '商家設定', description: '管理商家資料、營運設定與整合服務，讓系統符合您的營運需求。' },
@@ -20,8 +24,9 @@ const copy: Record<'landing' | 'profile' | 'booking' | 'hours' | 'notifications'
 function PageHeader({ title, description }: Readonly<{ title: string; description: string }>) { return <SettingsPageHeader title={title} description={description} />; }
 
 export function SettingsLandingPage() {
-  const entries = [settingsRouteConfig.profile, settingsRouteConfig.booking, settingsRouteConfig.hours, settingsRouteConfig.notifications, settingsRouteConfig.line, settingsRouteConfig.account];
-  return <SettingsLayout><PageHeader {...copy.landing} /><section className="business-settings__landing-list" aria-label="設定分類">{entries.map((entry) => <Link key={entry.path} to={entry.path}><i className={`bi ${entry.icon}`} aria-hidden="true" /><span><strong>{entry.label}</strong><small>設定內容將於後續階段接入</small></span><i className="bi bi-chevron-right" aria-hidden="true" /></Link>)}<Link to="/service/manage"><i className="bi bi-scissors" aria-hidden="true" /><span><strong>服務管理</strong><small>目前功能仍可從既有頁面使用</small></span><i className="bi bi-chevron-right" aria-hidden="true" /></Link></section></SettingsLayout>;
+  const { me } = useAuth(); const { data, errors, retry } = useSettingsOverview(me?.business?.id); const business=businessSummary(me?.business); const hours=hoursSummary(data.slots?.defaultWeekSlots); const services=serviceSummary(data.services); const notification=notificationSummary(data.notifications); const line=lineSummary(data.lineSettings,data.lineStatus); const rows:any[]=[[settingsRouteConfig.profile,business],[settingsRouteConfig.booking,{status:'neutral',text:data.slots?.defaultInterval != null?`預約間隔 ${data.slots.defaultInterval} 分鐘`:'預約間隔暫時無法取得'}],[settingsRouteConfig.hours,hours],[settingsRouteConfig.notifications,notification],[settingsRouteConfig.line,line],[settingsRouteConfig.account,{status:(me as any)?.mustChangePassword?'attention':'neutral',text:(me as any)?.mustChangePassword?'需要完成強制密碼變更':'帳號與安全目前僅顯示系統已支援的資訊'}]];
+  const attention: any = notification.status==='attention' ? [settingsRouteConfig.notifications,notification] : line.status==='attention' ? [settingsRouteConfig.line,line] : null;
+  return <SettingsLayout><PageHeader {...copy.landing} />{attention?<Link className="business-settings__attention" to={attention[0].path}><strong>需要處理</strong><span>{attention[1].text}</span></Link>:null}<section className="business-settings__landing-list" aria-label="設定分類">{rows.map(([entry,summary])=><div key={entry.path}>{errors[entry===settingsRouteConfig.hours?'slots':entry===settingsRouteConfig.notifications?'notifications':entry===settingsRouteConfig.line?'lineSettings':'']?<SettingsSectionError message={errors[entry===settingsRouteConfig.hours?'slots':entry===settingsRouteConfig.notifications?'notifications':'lineSettings']} onRetry={()=>void retry(entry===settingsRouteConfig.hours?'slots':entry===settingsRouteConfig.notifications?'notifications':'lineSettings')}/>:<Link to={entry.path}><i className={`bi ${entry.icon}`} aria-hidden="true"/><span><strong>{entry.label}</strong><small>{summary.text}</small></span><i className="bi bi-chevron-right" aria-hidden="true"/></Link>}</div>)}<Link to="/service/manage"><i className="bi bi-scissors" aria-hidden="true"/><span><strong>服務管理</strong><small>{errors.services?'服務資訊暫時無法取得':services.text}</small></span><i className="bi bi-chevron-right" aria-hidden="true"/></Link></section><section className="business-settings__unavailable"><h2>帳號與安全</h2><p>一般密碼變更、登入裝置管理、Session 管理與帳號刪除尚未提供。</p></section></SettingsLayout>;
 }
 
 export function SettingsScaffoldPage({ page }: Readonly<{ page: keyof typeof copy }>) {
