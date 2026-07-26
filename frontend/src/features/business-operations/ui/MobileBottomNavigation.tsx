@@ -5,7 +5,7 @@ const items = [
   { label: '預約', icon: 'bi-calendar2-check', to: '/reservation/manage', matches: ['/reservation/manage', '/reservation/today/manage', '/reservation/pending/manage'], calendar: false },
   { label: '行事曆', icon: 'bi-calendar3', to: '/reservation/today/manage?view=calendar', matches: ['/reservation/manage', '/reservation/today/manage', '/reservation/pending/manage'], calendar: true },
   { label: '通知', icon: 'bi-bell', to: '/notifications', matches: ['/notifications', '/notifications/settings'] },
-  { label: '更多', icon: 'bi-list', to: '/business/info', matches: ['/business/info', '/business/line-integration', '/profile', '/service/manage'] }
+  { label: '更多', icon: 'bi-list', to: '/business/settings', matches: ['/business/settings', '/business/info', '/business/line-integration', '/profile', '/service/manage'] }
 ];
 
 export default function MobileBottomNavigation() {

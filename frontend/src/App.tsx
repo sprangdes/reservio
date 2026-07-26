@@ -18,7 +18,6 @@ import PreferredBusinessesPage from './pages/PreferredBusinessesPage';
 import BusinessSetupPage from './pages/BusinessSetupPage';
 import NotificationsPage from './pages/NotificationsPage';
 import NotificationSettingsPage from './pages/NotificationSettingsPage';
-import LineIntegrationPage from './pages/LineIntegrationPage';
 import LineAccountLinkPage from './pages/LineAccountLinkPage';
 import LineAccountLinksPage from './pages/LineAccountLinksPage';
 import ProfilePage from './pages/ProfilePage';
@@ -28,6 +27,7 @@ import ReservationCenterPage, { type ReservationCenterPreset } from './features/
 import { useAuth } from './state/AuthContext';
 import {JSX} from "react";
 import SessionTimeoutManager from './components/SessionTimeoutManager';
+import { ServiceEditorScaffold, SettingsLandingPage, SettingsScaffoldPage } from './features/business-settings/SettingsPages';
 
 function RequireAuth({ children }: Readonly<{ children: JSX.Element }>) {
   const { me, loading } = useAuth();
@@ -83,6 +83,28 @@ function BusinessAwareHome() {
 
 function ReservationCenterRoute({ preset, legacyContent }: Readonly<{ preset: ReservationCenterPreset; legacyContent: JSX.Element }>) {
   return <BusinessWorkspaceShell><ReservationCenterPage preset={preset} legacyContent={legacyContent} /></BusinessWorkspaceShell>;
+}
+
+function RequireBusiness({ children }: Readonly<{ children: JSX.Element }>) {
+  const { me, loading } = useAuth();
+  if (loading) return null;
+  if (me?.role !== 'ROLE_BUSINESS' || !me.business) return <Navigate to="/" replace />;
+  return children;
+}
+
+function SettingsRoute({ page }: Readonly<{ page: 'landing' | 'profile' | 'booking' | 'hours' | 'notifications' | 'line' | 'account' }>) {
+  const focused = page !== 'landing';
+  return <RequireBusiness><BusinessWorkspaceShell focused={focused}>{page === 'landing' ? <SettingsLandingPage /> : <SettingsScaffoldPage page={page} />}</BusinessWorkspaceShell></RequireBusiness>;
+}
+
+function NotificationSettingsCompatibility() {
+  const { me } = useAuth();
+  if (me?.role === 'ROLE_BUSINESS' && me.business) return <BusinessWorkspaceShell focused><SettingsScaffoldPage page="notifications" /></BusinessWorkspaceShell>;
+  return <Layout><NotificationSettingsPage /></Layout>;
+}
+
+function LineIntegrationCompatibility() {
+  return <RequireBusiness><BusinessWorkspaceShell focused><SettingsScaffoldPage page="line" /></BusinessWorkspaceShell></RequireBusiness>;
 }
 
 export default function App() {
@@ -197,20 +219,18 @@ export default function App() {
       <Route
         path="/service/manage"
         element={
-          <Layout>
-            <RequireAuth>
-              <ServiceManagementPage />
-            </RequireAuth>
-          </Layout>
+          <RequireAuth><RequireBusiness><BusinessWorkspaceShell><ServiceManagementPage /></BusinessWorkspaceShell></RequireBusiness></RequireAuth>
         }
       />
+      <Route path="/service/new" element={<RequireAuth><RequireBusiness><BusinessWorkspaceShell focused><ServiceEditorScaffold editing={false} /></BusinessWorkspaceShell></RequireBusiness></RequireAuth>} />
+      <Route path="/service/:id/edit" element={<RequireAuth><RequireBusiness><BusinessWorkspaceShell focused><ServiceEditorScaffold editing /></BusinessWorkspaceShell></RequireBusiness></RequireAuth>} />
       <Route
         path="/notifications"
         element={<Layout><RequireAuth><NotificationsPage /></RequireAuth></Layout>}
       />
       <Route
         path="/notifications/settings"
-        element={<Layout><RequireAuth><NotificationSettingsPage /></RequireAuth></Layout>}
+        element={<RequireAuth><NotificationSettingsCompatibility /></RequireAuth>}
       />
       <Route
         path="/business/setup"
@@ -232,6 +252,13 @@ export default function App() {
           </Layout>
         }
       />
+      <Route path="/business/settings" element={<RequireAuth><SettingsRoute page="landing" /></RequireAuth>} />
+      <Route path="/business/settings/profile" element={<RequireAuth><SettingsRoute page="profile" /></RequireAuth>} />
+      <Route path="/business/settings/booking" element={<RequireAuth><SettingsRoute page="booking" /></RequireAuth>} />
+      <Route path="/business/settings/hours" element={<RequireAuth><SettingsRoute page="hours" /></RequireAuth>} />
+      <Route path="/business/settings/notifications" element={<RequireAuth><SettingsRoute page="notifications" /></RequireAuth>} />
+      <Route path="/business/settings/integrations/line" element={<RequireAuth><SettingsRoute page="line" /></RequireAuth>} />
+      <Route path="/business/settings/account" element={<RequireAuth><SettingsRoute page="account" /></RequireAuth>} />
       <Route
         path="/line/account-link"
         element={<Layout><LineAccountLinkPage /></Layout>}
@@ -259,11 +286,7 @@ export default function App() {
       <Route
         path="/business/line-integration"
         element={
-          <Layout>
-            <RequireAuth>
-              <LineIntegrationPage />
-            </RequireAuth>
-          </Layout>
+          <RequireAuth><LineIntegrationCompatibility /></RequireAuth>
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />

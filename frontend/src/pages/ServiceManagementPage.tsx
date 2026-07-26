@@ -52,14 +52,14 @@ export default function ServiceManagementPage() {
 
   if (!me?.business) {
     return (
-      <main className="container list-page">
+      <section className="container list-page">
         <div className="alert alert-warning">非商家帳號無法管理服務。</div>
-      </main>
+      </section>
     );
   }
 
   return (
-    <main className="container list-page">
+    <section className="container list-page">
       <div className="row g-4">
         <div className="col-md-4">
           <div className="card shadow-sm border-0 rounded-3">
@@ -299,6 +299,6 @@ export default function ServiceManagementPage() {
           <i className="bi bi-arrow-left me-1"></i> 返回儀表板
         </Link>
       </div>
-    </main>
+    </section>
   );
 }

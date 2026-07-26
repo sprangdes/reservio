@@ -13,7 +13,7 @@ const primaryItems: NavigationItem[] = [
   { label: '營運概覽', icon: 'bi-bar-chart-line', to: '/', activePaths: ['/'] },
   { label: '預約中心', icon: 'bi-calendar2-check', to: '/reservation/manage', activePaths: ['/reservation/manage', '/reservation/today/manage', '/reservation/pending/manage'] },
   { label: '顧客', icon: 'bi-people' },
-  { label: '服務', icon: 'bi-scissors', to: '/service/manage', activePaths: ['/service/manage'] }
+  { label: '服務', icon: 'bi-scissors', to: '/service/manage', activePaths: ['/service/manage', '/service/new'] }
 ];
 
 const managementItems: NavigationItem[] = [
@@ -22,7 +22,7 @@ const managementItems: NavigationItem[] = [
 ];
 
 const systemItems: NavigationItem[] = [
-  { label: '商家設定', icon: 'bi-gear', to: '/business/info', activePaths: ['/business/info'] },
+  { label: '商家設定', icon: 'bi-gear', to: '/business/settings', activePaths: ['/business/settings', '/business/settings/profile', '/business/settings/booking', '/business/settings/hours', '/business/settings/notifications', '/business/settings/integrations/line', '/business/settings/account'] },
   { label: '通知', icon: 'bi-bell', to: '/notifications', activePaths: ['/notifications', '/notifications/settings'] },
   { label: 'LINE 整合', icon: 'bi-line', to: '/business/line-integration', activePaths: ['/business/line-integration'] },
   { label: '帳號', icon: 'bi-person', to: '/profile', activePaths: ['/profile'] }
