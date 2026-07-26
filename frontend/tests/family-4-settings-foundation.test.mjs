@@ -42,6 +42,14 @@ test('dirty registry tracks multiple independent forms, pending mutations, disca
   registry.reset(); assert.deepEqual(registry.snapshot(), { dirty: false, pending: false, count: 0 });
 });
 
+test('dirty registry returns a stable snapshot until registry metadata changes', () => {
+  const registry = new registryModule.SettingsDirtyRegistry(); const initial = registry.snapshot();
+  assert.equal(initial, registry.snapshot());
+  registry.register('profile', { dirty: true, pending: false, discard: () => {} });
+  assert.notEqual(initial, registry.snapshot());
+  assert.equal(registry.snapshot(), registry.snapshot());
+});
+
 test('validation utilities preserve field order and safe local-time rules', () => {
   assert.equal(validation.requiredString(''), '此欄位為必填'); assert.equal(validation.trimmedRequiredString('  '), '此欄位為必填'); assert.equal(validation.positiveInteger(3), undefined); assert.equal(validation.positiveInteger(0), '請輸入正整數'); assert.equal(validation.allowedValue('a', ['a', 'b']), undefined); assert.equal(validation.sixDigitOtp('123456'), undefined); assert.equal(validation.sixDigitOtp('12345'), '請輸入六位數驗證碼');
   assert.deepEqual(validation.validateTimeRange('09:00', '18:00'), { fieldErrors: {} }); assert.deepEqual(validation.validateTimeRange('09:00', '09:00').fieldErrors, { end: '結束時間必須晚於開始時間' }); assert.deepEqual(validation.validateTimeRange('18:00', '09:00').fieldErrors, { end: '結束時間必須晚於開始時間' }); assert.deepEqual(validation.validateTimeRange('9:00', '18:00').fieldErrors, { start: '請輸入開始時間' }); assert.deepEqual(validation.validateTimeRange(null, '18:00').fieldErrors, { start: '請輸入開始時間' }); assert.deepEqual(validation.validateTimeRange('09:00', null).fieldErrors, { end: '請輸入結束時間' }); assert.deepEqual(validation.validateTimeRange(null, null, true), { fieldErrors: {} });
@@ -50,6 +58,13 @@ test('validation utilities preserve field order and safe local-time rules', () =
 
 test('navigation decision blocks pending mutations, confirms dirty forms, and otherwise proceeds', () => {
   assert.equal(guard.navigationDecision({ dirty: false, pending: false }), 'proceed'); assert.equal(guard.navigationDecision({ dirty: true, pending: false }), 'confirm'); assert.equal(guard.navigationDecision({ dirty: true, pending: true }), 'block');
+});
+
+test('settings guard remains compatible with the existing BrowserRouter shell', () => {
+  const guardSource = source('hooks/useUnsavedChangesGuard.tsx');
+  assert.doesNotMatch(guardSource, /useBlocker/);
+  assert.match(guardSource, /document\.addEventListener\('click', onClick, true\)/);
+  assert.match(guardSource, /beforeunload/);
 });
 
 test('shared settings UI exposes accessible error, dialog, unavailable, and sticky-save semantics', () => {
