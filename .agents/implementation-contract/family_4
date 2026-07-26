@@ -1,0 +1,717 @@
+## 1. Current Family 4 implementation summary
+
+目前尚未有 Family 4 的統一設定架構。
+
+- 商家資料、預約間隔、每週時段、指定日期調整、服務管理集中在 `BusinessInfoPage.tsx`。
+- 服務管理另有 `/service/manage`，與商家資訊頁重複。
+- 通知設定在 `/notifications/settings`，為所有帳號共用頁面。
+- LINE 整合在 `/business/line-integration`。
+- 強制改密碼在 `/force-change-password`，由全域 guard 控制。
+- Family 3 `BusinessWorkspaceShell` 已有桌面側欄、頂欄、手機底部導覽、焦點樣式與 reduced-motion 規則；但目前只包覆營運與預約頁。
+- 無共用 dirty-state、Router 離頁攔截、`beforeunload` 保護、統一 sticky save bar 或共用設定 secondary navigation。
+- 目前以 `api.ts` 直接呼叫 API；無 feature-scoped adapter。
+
+依據實作確認的限制：
+
+- 每週每日僅一組開始／結束時間。
+- 指定日期僅支援單日覆寫或單日公休。
+- 時段 API 未在後端驗證「結束時間晚於開始時間」。
+- 服務修改與刪除都可能因待確認／已確認預約被後端拒絕。
+- 通知偏好為帳號層級，不是商家專屬 API。
+- Email OTP API 不回傳重寄倒數或到期時間。
+- LINE 狀態為最近一次檢查結果，不是即時健康監控。
+- 商家帳號沒有一般密碼變更、裝置、Session、刪除帳號等 API。
+
+---
+
+## 2. Current route map
+
+| Current route | Component / layout | Guard / role | API dependency | Current behavior | Recommended route | Migration treatment | Phase |
+|---|---|---|---|---|---|---|---|
+| `/` | `BusinessAwareHome` → `BusinessWorkspaceShell` | Auth; business receives workspace | Operations APIs | 商家營運概覽 | Remain | Remain unchanged | 1 |
+| `/reservation/today/manage` | Legacy reservation page + workspace shell | Auth | Reservation APIs | 今日預約 | Remain | Remain unchanged | — |
+| `/reservation/manage` | Legacy reservation page + workspace shell | Auth | Reservation APIs | 預約中心 | Remain | Remain unchanged | — |
+| `/reservation/pending/manage` | Legacy reservation page + workspace shell | Auth | Reservation APIs | 待處理預約 | Remain | Remain unchanged | — |
+| `/business/setup` | `BusinessSetupPage` + `Layout` | Auth + `BusinessSetupGuard`; business only in page | `setupBusiness`, categories | 初次建立商家 | `/business/setup` | Remain unchanged | 1, 4 |
+| `/business/info` | `BusinessInfoPage` + `Layout` | Auth; page assumes business | Business, slots, dates, services APIs | 巨型混合設定頁 | `/business/settings/profile` 等 | Compatibility wrapper | 1–6 |
+| `/service/manage` | `ServiceManagementPage` + `Layout` | Auth; page assumes business | Service APIs | 重複服務管理 | `/service/manage` | Canonical route | 1, 6 |
+| — | — | — | — | 無新增／編輯服務路由 | `/service/new` | Canonical route | 6 |
+| — | — | — | — | 無獨立編輯服務路由 | `/service/:id/edit` | Canonical route | 6 |
+| `/notifications` | `NotificationsPage` + `Layout` | Auth | Notifications inbox APIs | 通知中心 | Remain | Remain unchanged | 1 |
+| `/notifications/settings` | `NotificationSettingsPage` + `Layout` | Auth | Preferences, Email OTP APIs | 共用通知偏好 | `/business/settings/notifications`（商家） | Compatibility wrapper | 1, 7 |
+| `/business/line-integration` | `LineIntegrationPage` + `Layout` | Auth; page checks business | LINE APIs | LINE 設定 | `/business/settings/integrations/line` | Compatibility wrapper | 1, 8 |
+| — | — | — | — | 無設定總覽 | `/business/settings` | Canonical route | 3 |
+| — | — | — | — | 無預約時段頁 | `/business/settings/booking` | Canonical route | 4 |
+| — | — | — | — | 無營業時間頁 | `/business/settings/hours` | Canonical route | 5 |
+| — | — | — | — | 無帳號安全頁 | `/business/settings/account` | Canonical route | 9 |
+| `/force-change-password` | `ForceChangePasswordPage` + `Layout` | `PasswordResetGuard` | `forceChangePassword` | 強制改密碼 | Remain | Remain unchanged | 9 |
+| `/profile` | `ProfilePage` + `Layout` | Auth; 後端限一般使用者 | `updateProfile` | 一般使用者個人資料 | Remain | Remain unchanged | 9 |
+| `/line/account-link` | Existing callback page | Public callback flow | LINE account-link APIs | LINE 帳號連結 callback | Remain | Remain unchanged | — |
+| `/settings/line-accounts` | Existing page | Auth | LINE account-link APIs | 顧客 LINE 帳號管理 | Remain | Remain unchanged | — |
+
+相容性原則：舊路由不可先以硬 redirect 取代。Compatibility wrapper 必須先渲染同一份新頁面，保留既有 pathname、guard、書籤與 browser history；dirty form 必須先經離頁確認。
+
+---
+
+## 3. Current API and data map
+
+| Area | Existing API | Request | Response / current fields | Verified limitation |
+|---|---|---|---|---|
+| 商家建立 | `POST /api/businesses/setup` | `businessName`, `category`, `phone`, `address` | Business data | 四欄均需非空白；初始 `slotInterval=30` |
+| 商家資料 | `POST /api/businesses/info/update` | `name`, `category`, `phone`, `address`, `slotInterval` | Business data | 後端以非空字串／正整數更新，不能清空欄位 |
+| 商家類別 | `GET /api/businesses/category` | — | Category list | Public GET |
+| 預設時段 | `GET /api/businesses/slot/default` | — | `defaultInterval`, `defaultWeekSlots` | 一日一筆；無跨欄時間驗證 |
+| 儲存預設時段 | `POST /api/businesses/slot/default` | `defaultInterval`, `defaultWeekSlots[{dayOfWeek,startTime,endTime}]` | Default slots | `startTime/endTime` 同時存在即營業 |
+| 指定日期讀取 | `GET /api/businesses/slot/date?date=` | date | Date slot | 未明示是否繼承；可由 override list 推導 |
+| 指定日期清單 | `GET /api/businesses/slot/adjusted` | — | Explicit future overrides | 僅明確覆寫、僅未來日期 |
+| 儲存日期覆寫 | `POST /api/businesses/slot/date/adjust` | `date`, `open`, `startTime`, `endTime` | Date slot | 無日期範圍、無時間先後驗證 |
+| 刪除日期覆寫 | `POST /api/businesses/slot/date/delete` | `date` | — | 找不到覆寫時 404 |
+| 服務清單 | `GET /api/businesses/:id/services` | — | `id`, `name`, `duration`, `active` | 無單筆讀取 API |
+| 新增服務 | `POST /api/businesses/services` | `name`, `duration` | Service item | 後端未見 Bean Validation |
+| 修改服務 | `POST /api/businesses/services/:id/modify` | `name`, `duration` | Service item | 待確認／已確認預約時拒絕 |
+| 啟用／停用服務 | `POST /api/businesses/services/:id/on|off` | — | Service item | 有 owner check |
+| 刪除服務 | `POST /api/businesses/services/:id/delete` | — | — | 待確認／已確認預約時拒絕 |
+| 通知偏好 | `GET/PUT /api/notifications/preferences` | 三個 boolean | `email`, `emailVerified`, 三個偏好 | 帳號層級；未驗證時不能啟用任一偏好 |
+| 寄送 OTP | `POST /api/email-verification/request` | `email` | — | 不回傳冷卻／到期 metadata |
+| 驗證 OTP | `POST /api/email-verification/verify` | `otp` | — | 失敗為泛用錯誤，不回傳原因細節 |
+| LINE 設定 | `GET/PUT /api/integrations/line/settings` | `channelId`, `channelSecret`, `accessToken`, `enabled` | `configured`, `enabled`, masked values, `webhookUrl` | 已設定時 Secret／Token 留白保留；Channel ID 不可留白 |
+| LINE 停用 | `POST /api/integrations/line/settings/disable` | — | LINE settings | 不刪除憑證 |
+| Webhook 金鑰 | `POST /api/integrations/line/settings/rotate-webhook-key` | — | New settings / URL | 立即換 key，舊 URL 失效 |
+| LINE 狀態 | `GET /api/integrations/line/status` | — | `webhookReady`, `tokenValid`, `richMenuReady`, messages, `checkedAt` | 最近一次狀態，不是監控 |
+| LINE 測試 | `POST /api/integrations/line/test-connection` | — | LINE status | 對 LINE API 執行實際檢查 |
+| Rich Menu | `POST /api/integrations/line/rich-menu` | — | LINE status | 建立或更新 Rich Menu |
+| 強制改密碼 | `POST /api/auth/force-change-password` | `newPassword` | Session/user update | 全域 password guard 不可改變 |
+
+所有 mutation 透過 `api.ts` 自動取得 CSRF token、帶 credential，並在 401 時觸發既有 session-expired 行為；Family 4 adapter 不得繞過此流程。
+
+---
+
+## 4. Existing form and mutation behavior
+
+| Area | Current behavior | Family 4 consequence |
+|---|---|---|
+| 商家 setup | HTML `required`、submit pending、成功後 refresh session | 保持 setup flow；不可直接併入一般設定頁 |
+| 商家資訊 | 單一大表單、局部 `savingInfo`、無 client validation、無 dirty | 拆成商家資料與預約時段；加入明確儲存 |
+| 預設時段 | 七天一次 submit；無時間先後驗證 | 改為 weekly form，client cross-field validation |
+| 指定日期 | 即時單筆儲存／刪除；無刪除確認 | 獨立 date override editor、確認 dialog |
+| 服務 | create/edit/delete/toggle 皆直呼 API；刪除使用 `globalThis.confirm` | 移除 browser confirm；保留後端拒絕訊息與 reload |
+| 通知 | 頁面初始化後才顯示；未驗證時 controls disabled；無 dirty | Merchant wrapper 與 customer shared logic；OTP / preferences 分離 |
+| LINE | 顯式儲存；無 dirty；旋轉 key 使用 `globalThis.confirm`；停用無確認 | 統一 sticky save、high-impact dialog、保留 secret/token blank-preserve |
+| 強制改密碼 | 密碼確認只做本機比對；成功後更新 session | 維持獨立 flow，不納入一般帳號設定 |
+| Loading / errors | 多數只用 toast；部分頁面 loading 時回傳 `null` | Family 4 需結構化 skeleton、section error、retry |
+| 離頁保護 | 無 `useBlocker`、無 `beforeunload`、無共用 dirty | 必須新增共享架構 |
+
+---
+
+## 5. Capability-classification matrix
+
+| Capability | Classification | Current route / API | Missing behavior | Approved treatment | Priority |
+|---|---|---|---|---|---|
+| 設定總覽 | B | 無單一 API；可組合既有 API | 聚合、狀態映射 | 設定狀態索引 | P1 |
+| 商家名稱／類別／電話／地址 | B | `/business/info` | 頁面拆分、validation、dirty | 顯式頁面儲存 | P1 |
+| 預約間隔 | B | `/business/info`, slots APIs | 獨立 editor、可選值治理 | 顯式頁面儲存 | P1 |
+| 每週單一時段 | B | `/business/info`, default slot API | 可讀性、時間驗證 | Weekly editor | P1 |
+| 日期單日覆寫／公休 | C | `/business/info`, date APIs | 無 inherited flag、無範圍 | 單日 override editor | P2 |
+| 服務清單／建立 | B | `/business/info`, `/service/manage` | 重複 UI、路由化 | `/service/manage` canonical | P2 |
+| 服務修改 | C | Inline edit API | 無單筆讀取；有預約時禁止修改 | Editor 顯示限制 | P2 |
+| 服務啟用／停用 | B | Service APIs | Pending/rollback UI | Immediate mutation | P2 |
+| 服務刪除 | C | Service delete API | 無預先 restriction data | Confirm + server restriction | P2 |
+| Email 驗證 | C | Notification settings | 無 OTP 到期／冷卻 metadata | Separate action flow | P2 |
+| 三項 Email 偏好 | B | Notification settings | Merchant route / shared role handling | 驗證後顯式儲存 | P2 |
+| LINE credentials | B | LINE page | Shell、dirty、dialog | 顯式儲存 | P3 |
+| LINE status / test | B | LINE page | Recent-check wording、state hierarchy | Separate action flow | P3 |
+| Webhook key rotation | B | LINE page | Accessible confirmation / terminology | Destructive confirmation | P3 |
+| Rich Menu | B | LINE page | UI consolidation | Separate action flow | P3 |
+| LINE disable | B | LINE page | Confirmation | Destructive confirmation | P3 |
+| 強制改密碼 | A | `/force-change-password` | 無 | 保持原 flow | P3 |
+| 帳號安全摘要 | C | Auth session / password state | 無 merchant account API | Read-only boundary | P3 |
+| Dirty / unsaved guard | D | 無 | 前端基礎設施 | Shared reusable system | P1 |
+| 公開商家檔案／描述／Logo／品牌 | E | 無 | 新資料模型與授權 | Capability-unavailable summary | Deferred |
+| Booking page customization | E | 無 | New backend contract | Hidden | Deferred |
+| 確認、提前、取消規則 | E | 無 | New booking policy contract | Capability-unavailable summary | Deferred |
+| 多時段／跨夜／日期範圍 | E | 無 | New interval model | Hidden | Deferred |
+| 員工／資源 | E | 無 | New domain model | Hidden | Deferred |
+| 價格／分類／排序／服務可用性 | E | 無 | New service model | Hidden | Deferred |
+| 自訂提醒／模板／訊息分析 | E | 無 | New notification model | Hidden | Deferred |
+| LINE live health | E | 無 | Monitoring backend | Hidden | Deferred |
+| 商家個人資料、一般改密碼、Session、裝置、刪帳號 | E | 無 | Account/security APIs | Capability-unavailable summary | P3 |
+| Audit history | F | 無 | — | Hidden | Deferred |
+
+---
+
+## 6. Approved-design field mapping
+
+| UI label | Current field / type | Request → response | Target route | Save model | Support |
+|---|---|---|---|---|---|
+| 商家名稱 | `BusinessResponse.name: string` | `name` → `name` | `/business/settings/profile` | Explicit page save | Supported |
+| 商家類別 | `BusinessResponse.category: string` | `category` → `category` | Profile | Explicit page save | Supported |
+| 聯絡電話 | `BusinessResponse.phone: string` | `phone` → `phone` | Profile | Explicit page save | Supported |
+| 商家地址 | `BusinessResponse.address: string` | `address` → `address` | Profile | Explicit page save | Supported |
+| 預約間隔 | `slotInterval: number` / `defaultInterval` | `slotInterval` or `defaultInterval` → corresponding value | `/business/settings/booking` | Explicit page save | Supported; source of truth must be selected |
+| 星期 | `DayOfWeek` | `dayOfWeek` → `defaultWeekSlots[]` | `/business/settings/hours` | Explicit section save | Supported |
+| 營業／休息 | Derived from start/end both present | `startTime/endTime` nullable | Hours | Explicit section save | Supported |
+| 開始時間 | `LocalTime` string | `startTime` → `startTime` | Hours | Explicit section save | Supported |
+| 結束時間 | `LocalTime` string | `endTime` → `endTime` | Hours | Explicit section save | Supported |
+| 指定日期 | `LocalDate` string | `date` → date slot | Hours | Separate action flow | Supported |
+| 指定日期營業 | `open: boolean` | `open` → explicit override | Hours | Separate action flow | Supported |
+| 指定日期開始／結束 | nullable time strings | `startTime/endTime` | Hours | Separate action flow | Supported |
+| 服務 ID | `ServiceItemResponse.id: number` | Path ID | `/service/:id/edit` | Route state/list resolver | Supported |
+| 服務名稱 | `name: string` | `name` → `name` | New/edit service | Explicit page save | Supported with restrictions |
+| 服務時長 | `duration: number` | `duration` → `duration` | New/edit service | Explicit page save | Supported |
+| 服務啟用 | `active: boolean` | on/off endpoint → active | Service editor/list | Immediate mutation | Supported |
+| Merchant Email | `NotificationPreferenceResponse.email` | Email request only → session/preferences | Notifications | Separate action flow | Supported |
+| Email 已驗證 | `emailVerified: boolean` | verify action → refreshed prefs | Notifications | Read-only status | Supported |
+| 新預約偏好 | `emailNewReservation` | boolean → boolean | Notifications | Explicit section save | Supported |
+| 預約狀態變更 | `emailStatusChanged` | boolean → boolean | Notifications | Explicit section save | Supported |
+| 預約前兩小時提醒 | `emailUpcomingReminder` | boolean → boolean | Notifications | Explicit section save | Supported |
+| OTP | local string | `otp` → no payload | Notifications | Separate action flow | Supported |
+| Channel ID | `channelId` | `channelId` → `channelId` | LINE | Explicit page save | Supported |
+| Channel Secret | local clear input; response masked | `channelSecret` → masked | LINE | Explicit page save | Supported |
+| Access Token | local clear input; response masked | `accessToken` → masked | LINE | Explicit page save | Supported |
+| LINE enabled | `enabled` | `enabled` → `enabled` | LINE | Explicit page save / disable action | Supported |
+| Webhook URL | `webhookUrl` | response only | LINE | Read-only + copy | Supported |
+| Webhook status | `webhookReady`, `webhookMessage` | status response | LINE | Read-only | Supported |
+| Token status | `tokenValid`, `tokenMessage` | status response | LINE | Read-only | Supported |
+| Rich Menu status | `richMenuReady`, `richMenuMessage` | status response | LINE | Read-only | Supported |
+| 最近檢查時間 | `checkedAt` | status response | LINE | Read-only | Supported |
+| 帳號識別 | `AuthContext.me.username` | session/me → user | Account | Read-only | Supported assumption: username is stable identifier |
+| 角色 | `AuthContext.me.role` | session/me → role | Account | Read-only | Supported |
+| 商家身分 | `me.business.name` | session/me → business | Account | Read-only | Supported |
+| 強制改密碼狀態 | `me.mustChangePassword` | session/me | Account | Read-only | Partial; response contract must be confirmed |
+
+不得加入 Logo、描述、公開 Email、價格、分類、排序、資源、模板、可調提醒時間、Session、裝置或帳號刪除欄位。
+
+---
+
+## 7. Canonical route and compatibility strategy
+
+| Canonical route | Legacy handling | Requirement |
+|---|---|---|
+| `/business/settings` | New | 商家 workspace shell、設定總覽 |
+| `/business/settings/profile` | `/business/info` compatibility wrapper | 共用 Profile page；舊 URL 不直接 hard redirect |
+| `/business/settings/booking` | New | 獨立 reservation interval |
+| `/business/settings/hours` | `/business/info` compatibility wrapper entry | 保留舊頁既有 URL 可達性 |
+| `/business/settings/notifications` | `/notifications/settings` role-aware wrapper | 商家使用 Family 4；一般使用者維持既有 presentation |
+| `/business/settings/integrations/line` | `/business/line-integration` compatibility wrapper | 保留 LINE 書籤與 callbacks 不受影響 |
+| `/business/settings/account` | New | Read-only capability boundary |
+| `/service/manage` | Existing canonical | 改由 workspace shell 包覆 |
+| `/service/new` | New | 建立服務 focused editor |
+| `/service/:id/edit` | New | 編輯服務 focused editor |
+| `/business/setup` | Remain unchanged | 完成後可導向 canonical profile；guard 不變 |
+| `/force-change-password` | Remain unchanged | Password guard 不變 |
+| `/profile` | Remain unchanged | 僅一般使用者；商家不可使用為帳號編輯頁 |
+
+相容 wrapper 必須：
+
+- 共享新 page component 與 adapter。
+- 在 form dirty 時阻止離開。
+- 保留舊 route 的角色檢查與 setup/password guards。
+- 不改變 `/line/account-link` 或 webhook backend path。
+- 不將 `/business/info` 的服務區重複保留為可寫入管理介面。
+
+---
+
+## 8. Desktop settings architecture
+
+```text
+BusinessWorkspaceShell
+├── PrimaryWorkspaceSidebar
+│   ├── 營運概覽
+│   ├── 預約中心
+│   ├── 顧客
+│   ├── 服務
+│   ├── 商家設定
+│   ├── 通知
+│   ├── LINE 整合
+│   └── 帳號
+├── WorkspaceTopBar
+└── SettingsLayout
+    ├── SettingsSecondaryNavigation
+    │   ├── 設定總覽
+    │   ├── 商家資料
+    │   ├── 預約與時段
+    │   ├── 營業時間
+    │   ├── 通知與溝通
+    │   ├── 整合
+    │   └── 帳號與安全
+    └── SettingsContent
+        ├── SettingsPageHeader
+        ├── constrained content region
+        └── StickySaveBar when dirty
+```
+
+- 沿用 `BusinessWorkspaceShell` 的 16.1rem primary sidebar、頂欄日期、通知與帳號區。
+- `SettingsSecondaryNavigation` 為次層，不能成為第三個競爭性 workspace sidebar。
+- `/service/manage` 不顯示 settings secondary navigation。
+- 內容最大寬度以現有 Family 3 workspace 的閱讀密度為基準；長表單採受限雙欄或單欄，不滿版拉伸 input。
+- sticky save region 為 settings content 的 local action bar，不是全站 footer。
+- Primary active：設定頁為「商家設定」；服務頁為「服務」。
+
+---
+
+## 9. Mobile settings architecture
+
+| Page type | Shell | Bottom navigation | Interaction |
+|---|---|---|---|
+| 商家設定總覽 | `BusinessWorkspaceShell` mobile header | 顯示；「更多」active | Summary rows drill-down |
+| 服務管理 | `BusinessWorkspaceShell` mobile header | 顯示；「更多」active | Card/row list |
+| 商家資料 | Focused editor header | 隱藏 | Back + dirty protection |
+| 預約與時段 | Focused editor header | 隱藏 | Single-task selector |
+| 營業時間 | Focused editor header | 隱藏 | Collapsed weekdays + one expanded editor |
+| 服務新增／編輯 | Focused editor header | 隱藏 | Full-screen form |
+| 通知與溝通 | Focused editor header | 隱藏 | Email verification then preferences |
+| LINE 整合 | Focused editor header | 隱藏 | Progressive disclosure |
+
+Focused header 固定結構：
+
+- 左：返回與父層「商家設定」或「服務管理」。
+- 中：目前頁名。
+- 右：僅 dirty 時顯示文字與圖示。
+- 不再重複顯示 desktop secondary navigation。
+- sticky save bar 高度、按鈕順序與 safe-area padding 全頁一致。
+
+---
+
+## 10. Save-model contract
+
+| Area | Save model | Exact behavior |
+|---|---|---|
+| 商家資料 | Explicit page save | 一次送出 `name/category/phone/address`；成功後以 server data reset baseline |
+| 預約間隔 | Explicit page save | 僅送出已確認的 interval source field；不可混入無關商家欄位 |
+| 每週營業時間 | Explicit section save | 送全週 `defaultWeekSlots` 與已選定 interval source |
+| 日期覆寫 | Separate action flow | 新增／修改／刪除各自 mutation；刪除必須確認 |
+| 建立服務 | Explicit page save | 成功後回 `/service/manage` 並 reload list |
+| 編輯服務 | Explicit page save | 後端 restriction 失敗後保留 dirty input |
+| 啟用／停用服務 | Immediate mutation | 該列 pending；成功 reload，失敗 restore previous UI |
+| 刪除服務 | Destructive confirmation | 確認後 mutation；restriction 顯示於受影響服務 |
+| Email 寄送／驗證 | Separate action flow | OTP request 與 verify 不使用 settings save bar |
+| 通知偏好 | Explicit section save | Email verified 才可變更與儲存 |
+| LINE credentials | Explicit page save | Channel ID 必填；既有 Secret/Token 留白保留 |
+| 測試連線 | Separate action flow | 僅 action pending；刷新 status |
+| Webhook key rotation | Destructive confirmation | 旋轉後更新 URL、顯示同步 LINE Console 提示 |
+| Rich Menu | Separate action flow | 建立／更新後刷新 status |
+| LINE 停用 | Destructive confirmation | 呼叫 disable；不刪除 credentials |
+| 強制改密碼 | Separate action flow | 保持現有 global flow |
+
+禁止 autosave。
+
+---
+
+## 11. Dirty-state and unsaved-change architecture
+
+新增但不引入 state-management library：
+
+```text
+SettingsDirtyRegistry
+├── useDirtyForm<T>()
+├── useUnsavedChangesGuard()
+├── UnsavedChangesDialog
+├── StickySaveBar
+└── SettingsSaveState
+```
+
+`useDirtyForm<T>`：
+
+- 保存 server-derived baseline 與目前 values。
+- 使用穩定 deep equality 判斷 dirty。
+- 提供 `setValue`、`reset(nextBaseline)`、`discard()`、`markSubmitting()`、`markServerFailure()`。
+- 成功 save 後，以 API response 或重新載入資料建立新 baseline。
+- server failure 不清除 dirty，也不覆寫使用者輸入。
+- refresh / route re-entry 時，只在 non-dirty 或已確認 discard 後替換 baseline。
+
+`SettingsDirtyRegistry`：
+
+- 以 route／section key 註冊獨立 forms。
+- 支援商家資料、weekly hours、date override editor、LINE credentials、service editor。
+- 只要任一 registered form dirty，即阻止 navigation。
+- mutation pending 時禁止重複 navigation 與重複 mutation。
+
+`useUnsavedChangesGuard`：
+
+- React Router navigation 使用目前版本可用的 blocker API。
+- 瀏覽器關閉／重新整理使用 `beforeunload` 作最後防線。
+- 手機返回、browser back、primary sidebar、secondary navigation、bottom navigation、程式化 navigate 均進入同一 dialog。
+- dialog：
+  - 標題：`尚未儲存變更`
+  - 主要：`繼續編輯`
+  - 次要破壞性：`捨棄變更`
+- `proceed` 前先 discard registry state；取消則保留 focus 與原頁。
+- 沿用 `useModalFocusTrap` 的 focus trap、focus restoration、Esc 行為。
+
+---
+
+## 12. Validation architecture
+
+| Area | Client validation | Server handling |
+|---|---|---|
+| 商家名稱 | Trim 後 required | 保留 server message |
+| 類別 | Required；值須存在於 categories response | 保留 server message |
+| 電話 | Required；僅採現有安全格式檢查，不假設國碼規則 | Server error 映射 field/form error |
+| 地址 | Required、trim non-empty | 「完整地址」語意規則目前無後端契約；不可偽稱可驗證，需產品規則或 server error |
+| 預約間隔 | 正整數；UI values 必須由產品確認 | 現 API 非 enum；保留既有非標準值顯示，不能靜默改值 |
+| 每週營業 | 開啟時開始／結束皆 required；`end > start` | 後端目前未驗證，前端為必要保護 |
+| 公休日 | 強制送 nullable start/end | 後端仍需保護不一致 payload |
+| 日期覆寫 | date required；開啟時 `end > start` | 404/validation error 留在 editor |
+| 服務名稱 | Trim 後 required | 400 restriction 顯示 form-level error |
+| 服務時長 | 數字、正值、現有選項／規則 | 後端未見完整驗證，需保留 server error |
+| OTP | `/^\d{6}$/` | 泛用失敗訊息顯示 inline；不推測到期原因 |
+| LINE Channel ID | Required | First configuration server additionally requires Secret/Token |
+| LINE Secret/Token | First configuration required；既有設定可留白 | 留白只表示 preserve，不送 masked value |
+| Webhook rotation | Confirmation required | 顯示既有 URL 立即失效影響 |
+| Server errors | `SettingsSectionError` / field map | `api.ts` 現僅保留 message；無 field error 結構時顯示 section-level |
+
+每次 invalid submit：
+
+1. 顯示 error summary。
+2. 移動 focus 至第一個 invalid field。
+3. `aria-describedby` 連結 help/error。
+4. sticky save bar 顯示不可儲存原因。
+5. 不清除使用者輸入。
+
+---
+
+## 13. Shared settings component architecture
+
+```text
+src/features/business-settings/
+├── SettingsLayout
+├── SettingsSecondaryNavigation
+├── SettingsLandingPage
+├── SettingsPageHeader
+├── SettingsSection
+├── SettingsField
+├── SettingsErrorSummary
+├── SettingsSectionError
+├── StickySaveBar
+├── UnsavedChangesDialog
+├── CapabilityUnavailable
+├── SettingsStatusRow
+├── SettingsLoadingState
+├── SettingsErrorState
+├── hooks/useDirtyForm
+├── hooks/useUnsavedChangesGuard
+└── state/SettingsDirtyRegistry
+```
+
+Responsibilities:
+
+- `SettingsLayout`: desktop secondary navigation、route outlet、registry scope。
+- `SettingsSecondaryNavigation`: canonical labels、active state、accessible nav。
+- `SettingsPageHeader`: one h1、description、dirty status。
+- `SettingsSection`: semantic section heading、API error region、loading state。
+- `SettingsField`: label、required text、help、error association。
+- `StickySaveBar`: dirty icon、message、discard、primary action、safe-area support。
+- `CapabilityUnavailable`: 非互動、lock icon、`尚未提供`／`需要系統支援`。
+- `SettingsStatusRow`: icon + text status；不可只靠顏色。
+
+---
+
+## 14. Domain-specific component architecture
+
+| Domain | Components |
+|---|---|
+| 商家資料 | `BusinessIdentitySection`, `BusinessContactSection`, `BusinessAddressSection` |
+| 預約間隔 | `BookingIntervalEditor`, `BookingIntervalOption`, `BookingRulesUnavailable` |
+| 營業時間 | `WeeklyHoursEditor`, `WeekdayHoursRow`, `MobileWeekdayEditor`, `DateOverrideList`, `DateOverrideEditor`, `DateOverrideDeleteDialog` |
+| 服務 | `ServiceManagementPage`, `ServiceDesktopList`, `ServiceMobileList`, `ServiceEditor`, `ServiceStatusControl`, `ServiceDeleteDialog`, `ServiceRestrictionError` |
+| 通知 | `EmailVerificationPanel`, `OtpVerificationForm`, `NotificationPreferencesForm`, `NotificationPreferenceRow` |
+| LINE | `LineConnectionSummary`, `LineCredentialsForm`, `LineWebhookPanel`, `LineStatusSummary`, `LineTestConnectionAction`, `LineRichMenuAction`, `LineDisableDialog`, `WebhookRotationDialog` |
+| 帳號安全 | `AccountSecuritySummary`, `ForcedPasswordStatus`, `CapabilityUnavailableList` |
+
+每個 component 只負責單一 domain mutation，不得再建立與 `/business/info` 相同的複合寫入表單。
+
+---
+
+## 15. API adapter strategy
+
+建立 feature-scoped adapter，保留 `api.ts` 為唯一 HTTP／CSRF／401 transport：
+
+```text
+src/features/business-settings/
+├── data/businessSettingsAdapter.ts
+├── data/businessHoursAdapter.ts
+├── data/serviceManagementAdapter.ts
+├── data/notificationSettingsAdapter.ts
+├── data/lineIntegrationAdapter.ts
+├── types.ts
+└── capabilities.ts
+```
+
+規則：
+
+- Adapter 只呼叫既有 `api.ts` functions。
+- 不新增 endpoint、不把 mock data 寫入 `api.ts`。
+- 將 `unknown` response 正規化為 Family 4 view models。
+- 集中處理 nullable times、masked credentials、service restriction error、LINE status text。
+- 同一 mount cycle 共用載入結果，避免 overview 與頁面重複 request。
+- 只送後端支援欄位。
+- Date override inherited 狀態僅可由 explicit override list 與 weekly schedule 推導，必須標記為 frontend-derived。
+- Channel Secret／Access Token 絕不可從 masked response 回送。
+
+---
+
+## 16. Service-management migration strategy
+
+- `/service/manage` 為唯一 canonical management destination。
+- 既有 `ServiceManagementPage` 的 service hooks 與 API 呼叫可保留，但拆出 reusable adapter。
+- `/business/info` 移除新增、修改、啟停、刪除服務的可寫入區；改為「管理服務」捷徑。
+- 新增 `/service/new` 與 `/service/:id/edit` focused editor。
+- 因無單筆讀取 API：
+  - 編輯頁先從 canonical list resolver 取得 item。
+  - 直接開啟深連結且 list 無法解析時，先載入 business services 再找 ID。
+  - 找不到時顯示 404 state；不可 invent `GET /services/:id`。
+- 啟用／停用為列級 immediate mutation；該 service 的 edit/menu 在 pending 時 disabled。
+- 失敗時重新載入 list；不得假設 optimistic rollback 一定正確。
+- 刪除確認後才呼叫 API；400 restriction 顯示：
+  `仍有待確認或已確認的預約，無法刪除。建議先停用。`
+- 修改被 restriction 拒絕時，保留 editor values，顯示 section-level error。
+- 後端以服務名稱與 reservation status 判定限制；前端不得聲稱已有更精準的 service-ID reservation 關聯。
+
+---
+
+## 17. Notification route strategy
+
+- 建立 shared `NotificationPreferencesForm`，保留帳號層級 API。
+- `/business/settings/notifications`：僅商家 Family 4 wrapper，使用 workspace shell 與 focused mobile editor。
+- `/notifications/settings`：
+  - `ROLE_BUSINESS`：Compatibility wrapper，使用同一 merchant component。
+  - 非商家：維持現有 customer layout／presentation，使用同一 shared form logic。
+- 不複製 preference state。
+- Email 未驗證時：
+  - 三個偏好均不可修改。
+  - UI 顯示 `需先驗證 Email`，不得顯示為真實 off 值。
+  - 仍保留 API 現有安全限制。
+- OTP request/verify 為獨立 action，不進 sticky preference save flow。
+- 不在此頁加入 LINE、SMS、Push、模板、提醒時間。
+
+---
+
+## 18. LINE route strategy
+
+- Canonical：`/business/settings/integrations/line`。
+- `/business/line-integration`：同頁 compatibility wrapper，不硬 redirect。
+- 沿用現有：
+  - `GET/PUT /api/integrations/line/settings`
+  - `POST .../disable`
+  - `POST .../rotate-webhook-key`
+  - `GET .../status`
+  - `POST .../test-connection`
+  - `POST .../rich-menu`
+- Webhook URL 只使用後端 response 的：
+  `/api/integrations/line/webhook/{webhookKey}`。
+- 不得將 React route 或 `localhost:5173` 顯示為 LINE Webhook endpoint。
+- UI 固定文案：
+  - `LINE Developers Console 的 Webhook URL`
+  - `複製 Webhook URL`
+  - `更新 Webhook 金鑰`
+  - `以下狀態為最近一次檢查結果，並非持續即時監控。`
+- rotation dialog 必須說明：更新後舊 URL 立即失效，需同步更新 LINE Developers Console。
+- 停用整合需明確確認；不得稱為刪除或解除 LINE 帳號。
+- 既有 Secret／Token 留白保留；Channel ID 留白不得表示保留。
+- Rich Menu 僅呈現已支援 action，不保留假的 menu preview。
+
+---
+
+## 19. Account-and-security boundary
+
+可安全顯示：
+
+- `me.username` 作帳號識別。
+- `me.role` 作商家角色。
+- `me.business.name` 作商家身分。
+- `me.mustChangePassword` 或等效 session response 的強制改密碼狀態；此欄位需以實際 session payload 再確認。
+
+可操作：
+
+- 登出，使用現有 logout flow。
+- 強制改密碼只經 `/force-change-password` 與既有 global guard。
+
+顯示但不可操作：
+
+- 一般密碼變更：`尚未提供`。
+- 登入裝置管理：`尚未提供`。
+- Session 管理：`尚未提供`。
+- 帳號刪除：`尚未提供`。
+
+不得：
+
+- 重用 `/profile` 作商家個人資料頁。
+- 顯示假 Session／裝置紀錄。
+- 顯示假密碼表單。
+- 修改 `PasswordResetGuard` 的允許路徑或 redirect 邏輯。
+
+---
+
+## 20. Future-capability isolation strategy
+
+擴充既有 `businessOperationsCapabilities` 模式：
+
+```ts
+type CapabilityState = 'unavailable' | 'preview' | 'enabled';
+```
+
+| Capability key | Production | Development | UI treatment | Mutation | Backend prerequisite |
+|---|---|---|---|---|---|
+| `publicBusinessProfile` | unavailable | preview only if explicit flag | Hidden / explicit preview | No | Public profile model |
+| `branding` | unavailable | preview | Capability unavailable | No | Asset/branding API |
+| `bookingRules` | unavailable | preview | Capability unavailable | No | Rules model |
+| `multipleHoursIntervals` | unavailable | unavailable | Hidden | No | Interval collection model |
+| `temporaryClosureRanges` | unavailable | unavailable | Hidden | No | Date-range model |
+| `servicePrice` | unavailable | preview | Hidden in production | No | Price contract |
+| `serviceCategories` | unavailable | preview | Hidden in production | No | Category model |
+| `serviceOrdering` | unavailable | preview | Hidden in production | No | Ordering API |
+| `staff` / `resources` | unavailable | preview | Hidden | No | Staff/resource model |
+| `messageTemplates` | unavailable | preview | Hidden | No | Template contract |
+| `lineLiveHealth` | unavailable | unavailable | Hidden | No | Monitoring service |
+| `merchantProfileEditing` | unavailable | unavailable | Capability unavailable | No | Merchant profile API |
+| `voluntaryPasswordChange` | unavailable | unavailable | Capability unavailable | No | Password API |
+| `sessionManagement` | unavailable | unavailable | Capability unavailable | No | Session API |
+| `deviceManagement` | unavailable | unavailable | Capability unavailable | No | Device API |
+| `accountDeletion` | unavailable | unavailable | Capability unavailable | No | Delete workflow |
+| `auditHistory` | unavailable | unavailable | Hidden | No | Audit API |
+
+Preview 必須：
+
+- 僅在明確 development flag 下出現。
+- 永不呼叫 production API。
+- 永不持久化 mock values。
+- 清楚標記 preview。
+- production 預設 unavailable。
+
+---
+
+## 21. Required UI states
+
+| Area | Required states |
+|---|---|
+| 全設定頁 | Loading、loaded、dirty、validation error、section server error、submission pending、success toast、retry、stale data、permission denied、unsaved dialog、capability unavailable |
+| 商家資料 | Initial load、dirty、invalid address、server retry、save success |
+| 預約間隔 | Existing value、changed value、unsupported existing value、save pending、save failure |
+| 營業時間 | Open、closed、invalid range、weekly save pending、inherited date、special hours、special closure、date delete confirm |
+| 服務 | List loading、active、inactive、enabling、disabling、mutation failure、deletion restricted、delete confirmation、empty list |
+| 通知 | Email verified、unverified、OTP sent、OTP invalid、resend unavailable、preferences locked、preference save pending |
+| LINE | Unconfigured、configured disabled、enabled、status unavailable、token failure、test pending、test failed、Rich Menu unavailable、dirty credentials、rotation confirm、disable confirm |
+| 帳號安全 | Read-only context、forced password completed／required、unavailable capability |
+| Routes | Setup guard redirect、password guard redirect、business-only denial、legacy wrapper active |
+
+---
+
+## 22. Responsive implementation contract
+
+| Width | Layout |
+|---|---|
+| 390px | Focused editor full width; no settings secondary sidebar; no desktop table; 44px minimum controls; sticky save above `env(safe-area-inset-bottom)`; workspace bottom nav only overview/service pages |
+| 768px | Workspace shell switches from desktop sidebar to mobile shell at existing breakpoint; focused forms retain single-column; hours rows use collapsible editor; service list cards |
+| 1024px | Desktop shell restored; secondary nav visible; forms use constrained one/two-column layout; hours table may remain structured rows |
+| 1440px | Existing Family 3 16.1rem sidebar + topbar; subordinate settings rail; content constrained; weekly hours table and service table/list permitted |
+
+具體規則：
+
+- 不在 mobile 壓縮 desktop seven-column table。
+- mobile hours 使用 weekday summary rows 與單一 expanded editor。
+- mobile service 使用 card/list，不使用 desktop table。
+- sticky bar 預留 content bottom padding，不能遮住最後欄位。
+- keyboard 打開時 focused editor 需可捲動至 active input。
+- 既有 `.business-workspace` 768px breakpoint、safe-area padding、reduced-motion 規則為基礎。
+
+---
+
+## 23. Accessibility contract
+
+- 一個 page-level h1；每個 setting group 使用邏輯 h2/h3。
+- Primary、secondary、mobile settings navigation 均使用語意 nav 與可辨識 active state。
+- 每個 input 有 visible label、required/optional 文字、help/error `aria-describedby`。
+- error summary 使用可 announce region，submit 後 focus 至第一個 invalid field。
+- 不以顏色單獨表示成功、警告、失敗、locked、pending。
+- Switch、radio、time input、overflow menu、segmented control 全部 keyboard 可操作。
+- 日期覆寫、刪除服務、LINE 停用、Webhook rotation、unsaved dialog 使用 focus trap 與 focus restoration。
+- 對話框提供 Escape、取消與明確破壞性 action。
+- Loading、save success、server failure 以適當 `aria-live` 宣告；不能只 toast。
+- Disabled control 附文字原因，不只 `disabled`。
+- mobile tap target 最少 44px。
+- sticky bar 不能遮蔽焦點元素或最後一個欄位。
+- 依既有 `.business-workspace` reduced-motion 規則，避免依賴動畫傳達狀態。
+
+---
+
+## 24. Test strategy
+
+| Scope | Required tests |
+|---|---|
+| Routes / shell | Canonical settings shell、secondary nav、mobile landing、legacy wrappers、setup guard、password guard、business role isolation、customer `/notifications/settings` 不回歸 |
+| Dirty state | Field change、discard、save reset、server failure preserves dirty、router block、browser back、mobile back、dialog focus、multiple forms |
+| 商家資料 | Load、required validation、address server error、payload mapping、retry、setup handoff |
+| 預約間隔 | Existing value、supported selection、arbitrary existing legacy value、dirty、save payload、invalid value |
+| 營業時間 | Seven days、closed null times、`end > start`、date overrides、delete confirmation、API mapping |
+| 服務 | List、create、edit、enable、disable、pending disable、delete confirmation、restriction error、mobile routes、deep-link lookup |
+| 通知 | Merchant canonical route、customer compatibility route、unverified lock、OTP six-digit validation、generic OTP failure、preference save |
+| LINE | Load、first config validation、blank-preserve behavior、status text、test failure、rotation dialog、Rich Menu、disable dialog、backend webhook URL only |
+| Capability isolation | Production unavailable、preview flag、no unsupported API call、no mock persistence |
+| Regression | Family 3 workspace shell、reservation route behavior、CSRF/401 behavior、`/profile`、force-password flow |
+
+現有 frontend 使用 `node --test`，後端使用 JUnit／Mockito。初始測試應優先覆蓋 pure adapter、validation、route mapping、feature flags 與既有 backend service/controller contracts；互動測試工具若目前未安裝，需先獨立決策，不在 Family 4 初始實作中隱性新增依賴。
+
+---
+
+## 25. Detailed implementation phases
+
+| Phase | Objective | Routes / files | APIs | Tests / risks | Deferred scope |
+|---|---|---|---|---|---|
+| 1 | Settings routing 與 workspace integration | `App.tsx`, `BusinessWorkspaceShell`, route wrappers | Existing only | Guards、legacy URLs、customer isolation | UI forms |
+| 2 | Shared form / dirty / validation foundation | New `features/business-settings` shared files, toast/dialog reuse | None | Router block、focus、beforeunload | Domain pages |
+| 3 | Settings overview / mobile landing | New settings landing, sidebar/bottom-nav targets | Business, slots, services, prefs, LINE status | Aggregate load and partial failures | New backend summary API |
+| 4 | 商家資料與預約時段 | Replace split portions of `BusinessInfoPage` | Business update, default slots | Field mapping, setup handoff, interval authority | Address semantic validation |
+| 5 | 每週營業時間與日期覆寫 | Hours adapters/components | Default/date slot APIs | Time validation, date deletion | Multiple intervals/ranges |
+| 6 | 服務管理 canonicalization | Service pages/hooks/routes | Service APIs | Restriction, pending, deep link | Price/categories/order |
+| 7 | Merchant notifications / Email verification | Shared notification form, route wrapper | Preferences, OTP APIs | Customer preservation, OTP states | Templates/SMS/Push |
+| 8 | LINE integration | LINE adapter/components | Existing LINE APIs | Blank-preserve, status, rotation, disable | Monitoring/analytics |
+| 9 | Account boundary / capabilities | Account page, capability map | Session/auth only | Password guard regression, unavailable controls | Account-management APIs |
+| 10 | Integration / accessibility / regression | Responsive CSS, tests, removal of duplicated business-info service UI | Existing only | 390/768/1024/1440, a11y, rollback | All deferred capabilities |
+
+每 phase：
+
+- 不改 backend contract。
+- 不新增 state library。
+- 每個 route migration 都保留 compatibility wrapper。
+- 每個 mutation 都保留既有 CSRF／401 flow。
+- 可獨立 rollback 到 wrapper 與既有頁面，不刪除 legacy route。
+
+---
+
+## 26. Main risks and rollback strategy
+
+| Risk | Mitigation | Rollback |
+|---|---|---|
+| `/business/info` 混合頁拆分破壞 setup / bookmarks | Shared compatibility wrapper，保留 pathname | 恢復 wrapper 指向舊 combined page |
+| 商家與 customer notification 共用 API | Role-aware wrapper、共用表單不可複製 state | 保留 `/notifications/settings` customer presentation |
+| 設定 route 破壞 password/setup guards | 不修改 global guard；新增 routes 套用原有 guard composition | 移除新 route entries，保留舊 path |
+| 時段前端驗證與後端不一致 | Client validation + backend gap | 停用 stricter UI rule，保留 server payload |
+| 服務 restriction 導致 editor false expectation | Server error 保留輸入、明示限制 | 回退 inline editor，但不改 API |
+| LINE secret/token 被誤覆寫 | Adapter 永不回送 masked string；首設與既設分支 | 停止新 form，保留原 LINE page |
+| Dirty guard 阻擋合法 navigation | 只在 dirty 且非 pending 時 block；route-level tests | Feature-level disable guard，保留 data |
+| Mobile sticky bar 遮蔽內容 | Safe-area bottom padding、viewport tests | 回退 sticky style，不改 form data |
+| Unsupported preview 誤送 production request | Capability adapter deny-by-default | 移除 preview flag，所有 capability unavailable |
+
+---
+
+## 27. Backend gap list
+
+| Capability | Current limitation | Required clarification / proposed contract | Frontend can proceed | Family 4 treatment |
+|---|---|---|---|---|
+| 地址完整性 | 後端僅要求 nonblank | 定義地址驗證規則、field error format；提案：`addressValidation` error code，不是既有 API | 部分可 | Required/nonblank；不要宣稱精準完整驗證 |
+| 預約間隔 enum | API 接受正整數，無明確 allowed values | 確認是否限 15/30/45/60；提案：`allowedIntervals` response | 部分可 | 保留既有值，不靜默改寫 |
+| 時段交叉驗證 | 後端未驗證 end > start | 後端應拒絕不合法 weekly/date range；提案：422 field errors | 可先做 client validation | Client guard + backend prerequisite |
+| 日期覆寫來源 | 單日讀取不明示 inherited/explicit | 提案：`isOverride`, `source` | 可前端推導部分 | 清楚標記 derived 狀態 |
+| 日期範圍 | 無 range API | 提案：date range request、衝突規則、權限 | 否 | Hidden / deferred |
+| 服務修改限制 | 以名稱與 reservation status 判斷，無 preflight/count | 明確回傳 restriction code、reservation count、service identity policy | 可 | Server error treatment |
+| 單筆服務讀取 | 無 `GET service/:id` | 提案：owned-service read endpoint | 可用 list resolver | C capability |
+| 服務欄位驗證 | create/modify DTO 未見完整 validation | name/duration constraints、structured errors | 可 | Client validation + preserve server error |
+| OTP metadata | 不回傳 expiry、attempts、resend cooldown | 提案：`expiresAt`, `resendAvailableAt`, `remainingAttempts`，避免洩漏安全資訊 | 可 | 不顯示真實倒數，除非契約新增 |
+| OTP error detail | 所有 verify failure 泛用 | 提案：安全的 error code (`expired`, `invalid`, `locked`) | 可 | 顯示泛用 inline error |
+| 通知偏好 scope | API 為 account-level | 確認 merchant/customer 共用資料治理與 role policy | 可 | Shared logic、role-specific UI |
+| LINE status freshness | 僅 `checkedAt` | 確認 null / stale semantics；提案：`statusAvailable`, `lastCheckedAt` | 可 | 最近一次檢查，不稱 live health |
+| LINE disable effect | 現行不刪憑證 | 明確確認停用後 webhook、Rich Menu、重啟行為 | 可 | Confirmed disable action |
+| Merchant account summary | Session payload 的 `mustChangePassword` 型別未明確化 | 確認 `/api/me` response fields | 部分可 | Read-only，缺值顯示 unavailable |
+| 一般密碼／Session／裝置／刪帳號 | 無 API | 分別定義授權、驗證、re-auth、audit、安全錯誤 | 否 | Capability unavailable |
+| 公開檔案／品牌／booking rules | 無資料模型或 API | 新 domain contract、權限、validation、migration | 否 | Hidden / deferred |
+| LINE live health / audit | 無 monitoring/audit API | 新後端監測與 retention/security contract | 否 | Hidden / deferred |
