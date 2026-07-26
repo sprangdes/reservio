@@ -1,0 +1,2 @@
+import type { ReactNode } from 'react';
+export default function SettingsPageHeader({ title, description, status, actions }: Readonly<{ title: string; description: string; status?: ReactNode; actions?: ReactNode }>) { return <header className="business-settings__page-header"><div><h1>{title}</h1><p>{description}</p>{status ? <span className="business-settings__page-status">{status}</span> : null}</div>{actions ? <div className="business-settings__page-actions">{actions}</div> : null}</header>; }
