@@ -32,6 +32,12 @@ test('form validation, discard, stale, and save state transitions remain explici
   assert.equal(form.saveStateFor({ ...discarded, stale: true }, false), 'stale');
 });
 
+test('editing a corrected field removes its error key instead of retaining an undefined invalid marker', () => {
+  const snapshot = form.applyValidation(form.createSettingsFormSnapshot({ enabled: true }), { fieldErrors: { enabled: '請修正' } });
+  const correctedErrors = { ...snapshot.fieldErrors }; delete correctedErrors.enabled;
+  assert.equal(form.saveStateFor({ ...snapshot, fieldErrors: correctedErrors }, true), 'dirty');
+});
+
 test('dirty registry tracks multiple independent forms, pending mutations, discard and unregistration', () => {
   const registry = new registryModule.SettingsDirtyRegistry(); let discarded = 0;
   const removeOne = registry.register('profile', { dirty: true, pending: false, discard: () => { discarded += 1; } });
@@ -70,4 +76,9 @@ test('settings guard remains compatible with the existing BrowserRouter shell', 
 test('shared settings UI exposes accessible error, dialog, unavailable, and sticky-save semantics', () => {
   const components = source('components/UnsavedChangesDialog.tsx'); const saveBar = source('components/StickySaveBar.tsx'); const field = source('components/SettingsField.tsx'); const states = source('components/SettingsStates.tsx');
   assert.match(components, /role="alertdialog"/); assert.match(components, /useModalFocusTrap/); assert.match(components, /尚未儲存變更/); assert.match(saveBar, /請修正錯誤欄位後即可儲存/); assert.match(field, /aria-describedby/); assert.match(states, /尚未提供/); assert.match(states, /role={stale \? 'status' : 'alert'}/);
+});
+
+test('sticky save UI stays hidden until the form has an unsaved or actionable state', () => {
+  const saveBar = source('components/StickySaveBar.tsx');
+  assert.match(saveBar, /if \(state === 'idle'\) return null/);
 });
