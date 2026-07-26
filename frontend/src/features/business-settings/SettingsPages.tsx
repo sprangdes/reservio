@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import FocusedSettingsHeader from './FocusedSettingsHeader';
 import SettingsLayout from './SettingsLayout';
 import { settingsRouteConfig, type SettingsRouteConfig } from './settingsRouteConfig';
+import SettingsInfrastructure from './SettingsInfrastructure';
+import SettingsPageHeader from './components/SettingsPageHeader';
 
 const copy: Record<'landing' | 'profile' | 'booking' | 'hours' | 'notifications' | 'line' | 'account' | 'serviceNew' | 'serviceEdit', { title: string; description: string }> = {
   landing: { title: '商家設定', description: '管理商家資料、營運設定與整合服務，讓系統符合您的營運需求。' },
@@ -15,7 +17,7 @@ const copy: Record<'landing' | 'profile' | 'booking' | 'hours' | 'notifications'
   serviceEdit: { title: '編輯服務', description: '服務編輯將於服務管理階段提供；此頁不會載入或建立資料。' }
 };
 
-function PageHeader({ title, description }: Readonly<{ title: string; description: string }>) { return <header className="business-settings__page-header"><h1>{title}</h1><p>{description}</p></header>; }
+function PageHeader({ title, description }: Readonly<{ title: string; description: string }>) { return <SettingsPageHeader title={title} description={description} />; }
 
 export function SettingsLandingPage() {
   const entries = [settingsRouteConfig.profile, settingsRouteConfig.booking, settingsRouteConfig.hours, settingsRouteConfig.notifications, settingsRouteConfig.line, settingsRouteConfig.account];
@@ -27,7 +29,7 @@ export function SettingsScaffoldPage({ page }: Readonly<{ page: keyof typeof cop
   const isFocused = route.mobileShell === 'focused';
   const parentLabel = route.parentDestination === '/service/manage' ? '服務管理' : '商家設定';
   const body = <><PageHeader {...copy[page]} /><section className="business-settings__scaffold" aria-labelledby="settings-scaffold-heading"><h2 id="settings-scaffold-heading">{isFocused ? '設定準備中' : '設定內容'}</h2><p>{copy[page].description}</p>{page === 'profile' || page === 'booking' || page === 'hours' ? <Link to="/business/info">前往既有商家資訊頁</Link> : null}{page === 'notifications' ? <Link to="/notifications/settings">前往既有通知設定頁</Link> : null}{page === 'line' ? <Link to="/business/line-integration">前往既有 LINE 整合頁</Link> : null}</section></>;
-  const content = route.desktopSecondaryNavigation ? <SettingsLayout>{body}</SettingsLayout> : <div className="business-settings business-settings--editor"><div className="business-settings__content">{body}</div></div>;
+  const content = route.desktopSecondaryNavigation ? <SettingsLayout>{body}</SettingsLayout> : <SettingsInfrastructure><div className="business-settings business-settings--editor"><div className="business-settings__content">{body}</div></div></SettingsInfrastructure>;
   return <>{isFocused ? <FocusedSettingsHeader parentDestination={route.parentDestination} parentLabel={parentLabel} title={copy[page].title} /> : null}{content}</>;
 }
 
