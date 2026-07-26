@@ -10,7 +10,7 @@ import ManageTodayPage from './pages/ManageTodayPage';
 import ManageAllPage from './pages/ManageAllPage';
 import ManagePendingPage from './pages/ManagePendingPage';
 import ServiceManagementPage from './pages/ServiceManagementPage';
-import BusinessInfoPage from './pages/BusinessInfoPage';
+import BusinessInfoPage from './features/business-settings/LegacyBusinessInfoCompatibility';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ForgotPasswordVerifyPage from './pages/ForgotPasswordVerifyPage';
 import ForceChangePasswordPage from './pages/ForceChangePasswordPage';
@@ -247,7 +247,7 @@ export default function App() {
         element={
           <Layout>
             <RequireAuth>
-              <BusinessInfoPage />
+              <RequireBusiness><BusinessInfoPage /></RequireBusiness>
             </RequireAuth>
           </Layout>
         }

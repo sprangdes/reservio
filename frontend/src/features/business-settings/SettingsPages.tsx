@@ -9,6 +9,7 @@ import { useSettingsOverview } from './hooks/useSettingsOverview';
 import { businessSummary, hoursSummary, lineSummary, notificationSummary, serviceSummary } from './overview';
 import { SettingsSectionError } from './components/SettingsStates';
 import { BusinessProfileEditor, BookingIntervalEditor } from './Phase4Editors';
+import BusinessHoursEditor from './business-hours/BusinessHoursEditor';
 
 const copy: Record<'landing' | 'profile' | 'booking' | 'hours' | 'notifications' | 'line' | 'account' | 'serviceNew' | 'serviceEdit', { title: string; description: string }> = {
   landing: { title: '商家設定', description: '管理商家資料、營運設定與整合服務，讓系統符合您的營運需求。' },
@@ -34,7 +35,7 @@ export function SettingsScaffoldPage({ page }: Readonly<{ page: keyof typeof cop
   const route = settingsRouteConfig[page] as SettingsRouteConfig;
   const isFocused = route.mobileShell === 'focused';
   const parentLabel = route.parentDestination === '/service/manage' ? '服務管理' : '商家設定';
-  const body = page==='profile'?<BusinessProfileEditor/>:page==='booking'?<BookingIntervalEditor/>:<><PageHeader {...copy[page]} /><section className="business-settings__scaffold" aria-labelledby="settings-scaffold-heading"><h2 id="settings-scaffold-heading">{isFocused ? '設定準備中' : '設定內容'}</h2><p>{copy[page].description}</p></section></>;
+  const body = page==='profile'?<BusinessProfileEditor/>:page==='booking'?<BookingIntervalEditor/>:page==='hours'?<BusinessHoursEditor/>:<><PageHeader {...copy[page]} /><section className="business-settings__scaffold" aria-labelledby="settings-scaffold-heading"><h2 id="settings-scaffold-heading">{isFocused ? '設定準備中' : '設定內容'}</h2><p>{copy[page].description}</p></section></>;
   const content = route.desktopSecondaryNavigation ? <SettingsLayout>{body}</SettingsLayout> : <SettingsInfrastructure><div className="business-settings business-settings--editor"><div className="business-settings__content">{body}</div></div></SettingsInfrastructure>;
   return <>{isFocused ? <FocusedSettingsHeader parentDestination={route.parentDestination} parentLabel={parentLabel} title={copy[page].title} /> : null}{content}</>;
 }
