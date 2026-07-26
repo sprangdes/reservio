@@ -9,7 +9,7 @@ export function useDirtyForm<T extends Record<string, SupportedSettingsValues>>(
   const isDirty = !settingsValuesEqual(snapshot.baseline, snapshot.values);
   const discard = useCallback(() => setSnapshot((current) => ({ ...current, values: cloneSettingsValue(current.baseline), fieldErrors: {}, formError: undefined, stale: false, isSubmitting: false, saveState: 'idle' })), []);
   useRegisterDirtyForm(key, isDirty, snapshot.isSubmitting, discard);
-  const setField = useCallback(<K extends keyof T>(field: K, value: T[K]) => setSnapshot((current) => ({ ...current, values: { ...current.values, [field]: value }, fieldErrors: { ...current.fieldErrors, [field]: undefined }, formError: undefined, saveState: 'dirty' })), []);
+  const setField = useCallback(<K extends keyof T>(field: K, value: T[K]) => setSnapshot((current) => { const fieldErrors = { ...current.fieldErrors }; delete (fieldErrors as any)[field]; return { ...current, values: { ...current.values, [field]: value }, fieldErrors, formError: undefined, saveState: 'dirty' }; }), []);
   const replaceValues = useCallback((values: T) => setSnapshot((current) => ({ ...current, values: cloneSettingsValue(values), saveState: 'dirty' })), []);
   const reset = useCallback((nextBaseline: T) => setSnapshot(createSettingsFormSnapshot(nextBaseline)), []);
   const completeSuccess = useCallback((serverValues: T) => setSnapshot(createSettingsFormSnapshot(serverValues)), []);
