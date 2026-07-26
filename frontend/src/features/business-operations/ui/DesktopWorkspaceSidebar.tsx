@@ -13,7 +13,7 @@ const primaryItems: NavigationItem[] = [
   { label: '營運概覽', icon: 'bi-bar-chart-line', to: '/', activePaths: ['/'] },
   { label: '預約中心', icon: 'bi-calendar2-check', to: '/reservation/manage', activePaths: ['/reservation/manage', '/reservation/today/manage', '/reservation/pending/manage'] },
   { label: '顧客', icon: 'bi-people' },
-  { label: '服務', icon: 'bi-scissors', to: '/service/manage', activePaths: ['/service/manage', '/service/new'] }
+  { label: '服務', icon: 'bi-scissors', to: '/service/manage', activePaths: ['/service/manage', '/service/new', '/service/:id/edit'] }
 ];
 
 const managementItems: NavigationItem[] = [
@@ -30,7 +30,7 @@ const systemItems: NavigationItem[] = [
 
 function SidebarItem({ item }: Readonly<{ item: NavigationItem }>) {
   const { pathname } = useLocation();
-  const active = item.activePaths?.includes(pathname) ?? false;
+  const active = item.activePaths?.some((path) => path === pathname || (path.includes(':') && new RegExp(`^${path.replace(':id', '[^/]+')}$`).test(pathname))) ?? false;
   const content = <><i className={`bi ${item.icon}`} aria-hidden="true" /><span>{item.label}</span>{item.preview ? <small>即將提供</small> : null}</>;
 
   if (!item.to) {

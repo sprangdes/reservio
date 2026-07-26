@@ -10,6 +10,7 @@ import { businessSummary, hoursSummary, lineSummary, notificationSummary, servic
 import { SettingsSectionError } from './components/SettingsStates';
 import { BusinessProfileEditor, BookingIntervalEditor } from './Phase4Editors';
 import BusinessHoursEditor from './business-hours/BusinessHoursEditor';
+import ServiceEditorPage from '../service-management/ServiceEditorPage';
 
 const copy: Record<'landing' | 'profile' | 'booking' | 'hours' | 'notifications' | 'line' | 'account' | 'serviceNew' | 'serviceEdit', { title: string; description: string }> = {
   landing: { title: '商家設定', description: '管理商家資料、營運設定與整合服務，讓系統符合您的營運需求。' },
@@ -40,4 +41,4 @@ export function SettingsScaffoldPage({ page }: Readonly<{ page: keyof typeof cop
   return <>{isFocused ? <FocusedSettingsHeader parentDestination={route.parentDestination} parentLabel={parentLabel} title={copy[page].title} /> : null}{content}</>;
 }
 
-export function ServiceEditorScaffold({ editing }: Readonly<{ editing: boolean }>) { return <SettingsScaffoldPage page={editing ? 'serviceEdit' : 'serviceNew'} />; }
+export function ServiceEditorScaffold({ editing }: Readonly<{ editing: boolean }>) { return <><FocusedSettingsHeader parentDestination="/service/manage" parentLabel="服務管理" title={editing ? '編輯服務' : '新增服務'} /><SettingsInfrastructure><ServiceEditorPage editing={editing} /></SettingsInfrastructure></>; }
