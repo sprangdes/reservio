@@ -245,11 +245,7 @@ export default function App() {
       <Route
         path="/business/info"
         element={
-          <Layout>
-            <RequireAuth>
-              <RequireBusiness><BusinessInfoPage /></RequireBusiness>
-            </RequireAuth>
-          </Layout>
+          <RequireAuth><RequireBusiness><BusinessWorkspaceShell><BusinessInfoPage /></BusinessWorkspaceShell></RequireBusiness></RequireAuth>
         }
       />
       <Route path="/business/settings" element={<RequireAuth><SettingsRoute page="landing" /></RequireAuth>} />
