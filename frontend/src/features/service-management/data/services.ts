@@ -4,9 +4,9 @@ export type ServiceListResult = { services: ServiceViewModel[]; malformed: numbe
 
 export function normalizeService(value: unknown): ServiceViewModel | undefined {
   const item = value as Record<string, unknown> | null;
-  const id = item?.id; const name = item?.name; const duration = item?.duration;
-  if ((typeof id !== 'string' && typeof id !== 'number') || String(id).trim() === '' || typeof name !== 'string' || !name.trim() || !Number.isInteger(Number(duration)) || Number(duration) <= 0 || typeof item?.active !== 'boolean') return undefined;
-  return { id: String(id), name, duration: Number(duration), active: item.active };
+  const id = item?.id; const name = item?.name; const duration = item?.duration; const active = item?.active;
+  if ((typeof id !== 'string' && typeof id !== 'number') || String(id).trim() === '' || typeof name !== 'string' || !name.trim() || !Number.isInteger(Number(duration)) || Number(duration) <= 0 || (typeof active !== 'boolean' && active !== null)) return undefined;
+  return { id: String(id), name, duration: Number(duration), active: active === true };
 }
 export function normalizeServices(value: unknown): ServiceListResult { const items = Array.isArray(value) ? value : []; const services = items.map(normalizeService).filter((item): item is ServiceViewModel => Boolean(item)); return { services, malformed: items.length - services.length }; }
 export function serviceSummary(services: ServiceViewModel[]) { const active = services.filter((service) => service.active).length; return { total: services.length, active, inactive: services.length - active }; }

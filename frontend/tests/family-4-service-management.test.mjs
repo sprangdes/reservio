@@ -12,7 +12,7 @@ test('service normalization keeps valid server records, isolates malformed recor
   const sourceItems = [{ id: 2, name: '剪髮', duration: 30, active: true }, { id: 3, name: ' ', duration: 45, active: false }, { id: 4, name: '染髮', duration: 60, active: false }];
   const result = services.normalizeServices(sourceItems);
   assert.deepEqual(result.services, [{ id: '2', name: '剪髮', duration: 30, active: true }, { id: '4', name: '染髮', duration: 60, active: false }]); assert.equal(result.malformed, 1); assert.equal(sourceItems[0].id, 2);
-  assert.equal(services.normalizeService({ id: '', name: '服務', duration: 30, active: true }), undefined); assert.equal(services.normalizeService({ id: 1, name: '服務', duration: 0, active: true }), undefined); assert.equal(services.normalizeService({ id: 1, name: '服務', duration: 30, active: 'true' }), undefined);
+  assert.deepEqual(services.normalizeService({ id: 5, name: '洗髮', duration: 20, active: null }), { id: '5', name: '洗髮', duration: 20, active: false }); assert.equal(services.normalizeService({ id: '', name: '服務', duration: 30, active: true }), undefined); assert.equal(services.normalizeService({ id: 1, name: '服務', duration: 0, active: true }), undefined); assert.equal(services.normalizeService({ id: 1, name: '服務', duration: 30, active: 'true' }), undefined);
 });
 
 test('service derivation and supported payload mapping do not invent fields', () => {
