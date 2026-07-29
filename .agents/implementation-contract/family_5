@@ -1,0 +1,554 @@
+## 1. Executive summary
+
+Family 5 will add a customer-only `/notifications/settings` editor while reusing the existing account-level notification API, verification APIs, dirty-form infrastructure, and Family 4 merchant implementation. Customer UI exposes only `emailStatusChanged` and `emailUpcomingReminder`; `emailNewReservation` remains preserved in the complete PUT payload.
+
+## 2. Repository findings
+
+Inspected:
+
+- `frontend/src/App.tsx`
+- `frontend/src/pages/NotificationSettingsPage.tsx`
+- `frontend/src/pages/ProfilePage.tsx`
+- `frontend/src/components/{Layout,Navbar}.tsx`
+- `frontend/src/api.ts`
+- `frontend/src/features/business-settings/**`
+- `frontend/tests/family-4-*.test.mjs`
+- Backend notification and Email-verification controllers, DTOs, services, entities, and tests.
+
+Current customer notification UI exists but is legacy: route page plus Navbar-opened modal. Family 4 merchant notification editor, domain helpers, verification dialog, dirty registry, route shells, and tests already exist.
+
+## 3. Confirmed backend contracts
+
+| Endpoint | Request | Response |
+|---|---|---|
+| `GET /api/notifications/preferences` | none | `ApiResponse<NotificationPreferenceResponse>` |
+| `PUT /api/notifications/preferences` | three booleans | authoritative `ApiResponse<NotificationPreferenceResponse>` |
+| `POST /api/email-verification/request` | `{ email: string }` | `ApiResponse<Void>` |
+| `POST /api/email-verification/verify` | `{ otp: string }` | `ApiResponse<Void>` |
+
+Exact GET/PUT `data`:
+
+```ts
+{
+  email: string;
+  emailVerified: boolean;
+  emailNewReservation: boolean;
+  emailStatusChanged: boolean;
+  emailUpcomingReminder: boolean;
+}
+```
+
+Exact PUT payload:
+
+```ts
+{
+  emailNewReservation: boolean;
+  emailStatusChanged: boolean;
+  emailUpcomingReminder: boolean;
+}
+```
+
+## 4. Confirmed frontend architecture
+
+- Customer shared shell: `Layout`, `Navbar`, `Footer`, `ToastContainer`.
+- Merchant shell: `BusinessWorkspaceShell`, `SettingsScaffoldPage`, `SettingsLayout`.
+- Merchant dirty protection: `SettingsInfrastructure`, `SettingsDirtyRegistry`, `useUnsavedChangesGuard`.
+- Family 4 reusable domain: `notificationPreferences.ts`.
+- Existing OTP dialog uses modal focus trap, `inputMode="numeric"`, `autocomplete="one-time-code"`, `maxLength={6}`, digit filtering, and sensitive OTP clearing.
+
+## 5. Approved design interpretation
+
+Implement the proven direction without new navigation:
+
+- Warm off-white customer canvas.
+- Desktop focused content column, roughly 640–760px.
+- Mobile focused page with customer header and safe-area-aware local save bar.
+- White restrained surfaces, fine neutral borders, deep forest-green actions.
+- Muted orange for unverified/dirty attention; low-saturation red for errors.
+- One visible `h1`, no customer dashboard, no merchant shell.
+
+## 6. Route and role architecture
+
+| Route | Customer | Merchant |
+|---|---|---|
+| `/notifications/settings` | Canonical Family 5 customer page in `Layout` | Compatibility route to existing Family 4 canonical merchant page |
+| `/business/settings/notifications` | Existing authorization denial/redirect behavior | Canonical Family 4 page in merchant workspace/settings shell |
+| `/profile` | Editable profile Email destination | Existing role restriction remains |
+
+Final compatibility behavior:
+
+- Unauthenticated: `RequireAuth` redirects to `/login?returnTo=…`.
+- Customer opening `/notifications/settings`: mount `CustomerNotificationSettingsPage`.
+- Merchant opening `/notifications/settings`: use the role-aware compatibility wrapper to navigate/render the Family 4 canonical experience; never mount a customer form.
+- Customer opening `/business/settings/notifications`: retain `RequireBusiness` behavior; do not expose merchant settings.
+- Compatibility transitions must pass through dirty-state navigation protection; never silently discard mounted dirty forms.
+- Avoid redirect loops by making only the customer route role-aware; merchant canonical route remains guarded.
+
+## 7. Customer desktop implementation contract
+
+- Render inside current customer `Layout`.
+- Back action links to `/profile`.
+- One `h1`: `通知設定`.
+- Description: `管理目前帳號接收預約相關 Email 通知的方式。`
+- Account notice: `這些設定套用至目前帳號，不會依商家而變。`
+- Sections: `Email 通知`, `預約通知`.
+- Preference rows only for status changes and upcoming reminders.
+- Dirty save bar is local to the focused column, not full browser width.
+
+## 8. Customer mobile implementation contract
+
+- Focused page, not a Navbar modal.
+- Customer top bar: back to `個人資料`, centered page context.
+- Single scrolling content column with 16px-style gutters.
+- Sticky save area respects `env(safe-area-inset-bottom)` and reserves matching content bottom padding.
+- No new customer bottom navigation.
+- Verification uses the approved mobile bottom-sheet pattern, not a separate page.
+
+## 9. Merchant compatibility boundary
+
+Shared data and API mechanisms are allowed. Complete UI composition is not shared.
+
+- Keep Family 4 merchant editor as merchant-specific.
+- Keep merchant shell, settings secondary navigation, merchant labels, and settings overview refresh merchant-specific.
+- Do not add customer-only copy or hidden-field behavior to merchant UI.
+- Do not make one page component branch into both full merchant and customer designs.
+
+## 10. Domain models
+
+```ts
+type NotificationPreferencesDomain = {
+  email: string | null;
+  emailVerified: boolean;
+  emailNewReservation: boolean;
+  emailStatusChanged: boolean;
+  emailUpcomingReminder: boolean;
+};
+
+type CustomerNotificationFormValue = {
+  emailStatusChanged: boolean;
+  emailUpcomingReminder: boolean;
+  preservedEmailNewReservation: boolean;
+};
+
+type EmailVerificationState =
+  | 'closed'
+  | 'request'
+  | 'requestPending'
+  | 'otp'
+  | 'verifyPending'
+  | 'error';
+```
+
+Keep raw DTO validation outside page components.
+
+## 11. Shared versus role-specific architecture
+
+| Shared with Family 4 | Customer-specific | Merchant-specific |
+|---|---|---|
+| API transport | Customer page composition | Workspace shell |
+| DTO normalizer foundation | Customer labels/descriptions | Secondary settings navigation |
+| PUT mapper primitives | Hidden `emailNewReservation` preservation | Three visible preference rows |
+| OTP validation/error mapping | `/profile` back/action target | Merchant overview refresh |
+| Focus trap/dialog primitives | Mobile bottom-sheet composition | Merchant settings editor |
+| Dirty registry/guards | Customer form key | Merchant form key |
+| Error/stale primitives | Customer sticky-save copy | Merchant summary wording |
+
+## 12. Notification normalization
+
+Normalize only a complete valid response:
+
+- `email`: valid non-empty email string.
+- `emailVerified`: boolean.
+- All three preference fields: booleans.
+- Clone normalized values; never return or mutate source response.
+- Unknown/missing/malformed fields produce a malformed-data state, not an unverified state.
+- Never default a missing boolean to enabled.
+- Preserve loaded `emailNewReservation` verbatim in domain state.
+
+Current Family 4 normalizer rejects malformed/missing fields. Family 5 should retain that safety policy while allowing the page state to distinguish malformed response from normal load failure.
+
+## 13. Customer preference semantics
+
+Visible controls:
+
+| Backend field | Customer label | Description |
+|---|---|---|
+| `emailStatusChanged` | 預約狀態異動 | 商家更新預約狀態時，以 Email 通知你。 |
+| `emailUpcomingReminder` | 即將到來的預約提醒 | 在已確認的預約即將開始前，以 Email 提醒你。 |
+
+Not visible:
+
+- `emailNewReservation`
+
+Backend behavior is account-level and identical by role: one `NotificationPreference` is associated one-to-one with `UserData`; no role-specific notification API fields exist. Labels and visible semantics differ by product role.
+
+## 14. Validation rules
+
+- A verified Email is required before customer-visible preferences may be enabled.
+- Unverified with both visible fields `false` may submit only if a complete preserved hidden field is available.
+- Missing Email disables preference controls and verification request.
+- Missing Email may link to `/profile`, because customer profile Email editing exists.
+- All mapped booleans must be explicit.
+- Malformed or absent hidden value blocks save; do not invent a UI default.
+- User-facing messages:
+
+  - `完成 Email 驗證後，才能啟用 Email 通知。`
+  - `需先驗證 Email 才能啟用通知。`
+  - `暫時無法儲存通知設定，請稍後再試。`
+
+## 15. PUT request mapping
+
+Pure mapper input:
+
+```ts
+type CustomerNotificationFormValue = {
+  emailStatusChanged: boolean;
+  emailUpcomingReminder: boolean;
+  preservedEmailNewReservation: boolean;
+};
+```
+
+Pure mapper output:
+
+```ts
+{
+  emailNewReservation: preservedEmailNewReservation,
+  emailStatusChanged,
+  emailUpcomingReminder
+}
+```
+
+Confirmed decisions:
+
+1. All three booleans must be sent. Java primitive booleans deserialize omitted values to `false`; omission would silently overwrite settings.
+2. `email` is not part of PUT.
+3. `emailVerified` is not writable.
+4. `emailNewReservation` must be preserved from successful GET/authoritative PUT response.
+5. No unsupported field is sent.
+6. Unverified enabled customer values reject before transport.
+7. Mapper never mutates its source.
+
+## 16. Preference save behavior
+
+1. Validate complete normalized state and form.
+2. Prevent duplicate save while pending.
+3. Map with the pure mapper.
+4. PUT using current API transport.
+5. Normalize authoritative PUT response.
+6. Replace baseline and clear dirty/error state.
+7. Show one success confirmation.
+8. Refresh account-level notification summary if an applicable customer summary is introduced.
+9. Preserve scroll position and route.
+
+PUT returns authoritative preference data; a GET is not required after successful save. If normalization of the PUT response fails, retain visible submitted values, mark stale/unconfirmed, and do not claim authoritative completion.
+
+## 17. Email verification behavior
+
+Request step:
+
+- Open only with a present normalized Email.
+- Use loaded current account Email as read-only identity.
+- POST `{ email }`.
+- Prevent duplicate request.
+- Inline request error; success advances to OTP sheet.
+- Current endpoint returns no verification data, so it is not authoritative.
+
+OTP:
+
+- Existing frontend contract confirms exactly six numeric digits.
+- Preserve leading zeroes.
+- `inputMode="numeric"`, `autocomplete="one-time-code"`, paste support.
+- Filter non-digits, max six characters.
+- The backend generates a six-digit OTP; backend request DTO itself does not independently enforce length before hash matching.
+
+Verify:
+
+- POST `{ otp }`.
+- Verify response is `Void`, not authoritative.
+- On success clear OTP, then GET preferences and refresh `AuthContext`.
+- Confirm `emailVerified` through normalized GET.
+- Do not auto-enable preferences.
+- Do not auto-save preferences.
+- On failure keep sheet open, retain OTP for correction, show `驗證碼無效或已失效，請確認後再試。`
+
+Resend:
+
+- Supported by reusing current request endpoint with current Email.
+- No distinct resend endpoint or metadata exists.
+- Do not render cooldown, countdown, remaining attempts, or prior-code invalidation behavior.
+
+## 18. Dirty-preference reconciliation
+
+Verification must not reset customer changes.
+
+After verification GET succeeds:
+
+1. Normalize refreshed server preferences.
+2. Update email and `emailVerified`.
+3. If form is clean: reset visible baseline and preserved hidden field from server.
+4. If form is dirty: retain local `emailStatusChanged` and `emailUpcomingReminder`; replace only `preservedEmailNewReservation` with refreshed authoritative value; keep original baseline for visible fields; mark data refreshed without clearing dirty.
+5. Revalidate form against new verified state.
+6. Close sheet only after refresh succeeds.
+7. Verification never writes to the notification dirty registry.
+
+If refresh fails after verify, retain local values, retain sheet success/error context as appropriate, mark notification data stale, and offer retry.
+
+## 19. Dirty-state contract
+
+Use one stable key, for example `customer-notification-preferences`.
+
+Dirty only when:
+
+- `emailStatusChanged` differs from baseline.
+- `emailUpcomingReminder` differs from baseline.
+
+Not dirty when:
+
+- Request/OTP sheet opens or closes.
+- OTP changes.
+- Verification/resend pending state changes.
+- Verification succeeds.
+- Inline messages change.
+- Hidden field refreshes without user modification.
+
+Protect:
+
+- Browser refresh/close.
+- Browser back.
+- Mobile header back.
+- `/profile` action.
+- Customer navigation.
+- Merchant compatibility transition.
+
+Support discard, failed-save preservation, and save-success reset. OTP must never enter dirty registry, route state, storage, logs, or URL.
+
+## 20. Loading/error/stale/retry contract
+
+| State | Behavior |
+|---|---|
+| Initial loading | Structured skeleton for header/title, notice, Email block, two preference rows; no spinner-only/false unverified state |
+| Initial error | Keep header/title/description; panel says `暫時無法取得通知設定，請稍後再試。`; action `重新載入` |
+| Stale | Keep existing normalized values and dirty edits; compact warning says `目前顯示的是先前載入的設定，部分狀態可能尚未同步。`; action `重新載入` |
+| Save failure | Keep values and dirty save bar; adjacent message `儲存通知設定失敗，請稍後再試。`; retain discard/save |
+| Mutation pending | Disable duplicate action only; preserve visible values |
+| Success | One concise confirmation; no replacement of page state with a toast-only signal |
+
+## 21. Missing and malformed data behavior
+
+Missing Email:
+
+- Do not open verification sheet.
+- Disable preferences.
+- Explain unavailable state without treating it as false unverified data.
+- Link to `/profile` only because current customer profile supports Email editing.
+
+Malformed response:
+
+- Do not crash.
+- Do not map absent booleans to UI defaults.
+- Do not permit save.
+- Show safe in-content unavailable/retry state.
+- Retain previously valid stale data, if present.
+
+## 22. Component inventory
+
+| Component | Responsibility | Ownership | Scope |
+|---|---|---|---|
+| `RoleAwareNotificationSettingsRoute` | Select customer or merchant compatibility route | Route/auth state | Shared wrapper |
+| `CustomerNotificationSettingsPage` | Load, orchestration, save, dirty reconciliation | Page | Customer |
+| `NotificationAccountScopeNotice` | Account-scoped message | Stateless | Customer/shared visual |
+| `NotificationEmailStatus` | Read-only Email/status/action | Page props | Customer |
+| `CustomerNotificationPreferenceList` | Two controlled customer rows | Form state | Customer |
+| `CustomerNotificationPreferenceRow` | Label, description, switch, disabled reason | Controlled props | Customer |
+| `CustomerNotificationStickySave` | Local dirty actions and save error | Form state | Customer |
+| `EmailVerificationSheet` | Shared request/OTP flow primitive | Verification state | Shared core, customer composition |
+| `EmailVerificationRequestStep` | Request confirmation | Sheet | Shared core |
+| `EmailVerificationOtpStep` | OTP entry/error/resend | Sheet | Shared core |
+| `NotificationSettingsSkeleton` | Structured initial loading | Stateless | Customer |
+| `NotificationSettingsError` | Initial/error/retry state | Page | Customer |
+| `NotificationSettingsStaleWarning` | Stale warning/retry | Page | Customer |
+
+Desktop: focused column and local sticky bar. Mobile: full-width content, safe-area sticky bar, bottom sheet. All interactive components require visible focus, labels, semantic association, and 44px mobile targets.
+
+## 23. Responsive contract
+
+| Breakpoint | Contract |
+|---|---|
+| 390px | Customer top bar, single column, wrapping Email/action layout, readable disabled reasons, keyboard-safe sheet, no horizontal overflow |
+| 768px | Restrained one-column layout; retain mobile sheet behavior |
+| 1024px | Customer desktop header; 640–760px column; desktop-aligned switch rows and local save region |
+| 1440px | Preserve approved desktop proportions, restrained whitespace, customer header, no merchant navigation |
+
+## 24. Accessibility contract
+
+- Exactly one `h1`; logical `h2` section headings.
+- Switches have visible labels and associated descriptions.
+- Disabled reasons are exposed through text and `aria-describedby`.
+- Status uses icon plus text.
+- Errors use adjacent alert/live semantics.
+- OTP label, `aria-describedby`, numeric input semantics, paste support, and one-time-code autocomplete.
+- Sheet has role dialog, title/description, focus trap, Escape/close, focus restoration.
+- Save/request/verify/error transitions announce status.
+- 44px minimum mobile targets.
+- Brand-aligned visible focus ring.
+- Reduced-motion-compatible sheet and save-bar behavior.
+- Sticky save never covers the last control.
+
+## 25. Security contract
+
+- No OTP logging.
+- No OTP persistence in browser storage.
+- No OTP in route state, URL, analytics, or toast.
+- Clear OTP after successful verify and final sheet close.
+- Preserve existing CSRF token acquisition, credentialed requests, 401/session-expired behavior.
+- Do not expose raw backend/auth claims.
+- Do not include verification code in error copy.
+- Keep preferences account-level; never duplicate per business.
+- Frontend must not expose backend token expiry/attempt information, even though backend internally stores it.
+
+## 26. Settings summary and cache integration
+
+- Existing merchant `refreshSettingsOverviewSection('notifications')` remains merchant-specific.
+- Customer Family 5 must not depend on merchant overview cache.
+- After verified Email refresh, update `AuthContext.refresh()` so customer header/profile state reflects `emailVerified`.
+- If a future customer account summary exists, invalidate only its notification summary; do not introduce a dashboard solely for Family 5.
+
+## 27. Test strategy
+
+Add/extend tests for:
+
+- Customer canonical route; merchant compatibility route; merchant canonical route.
+- Unauthenticated behavior; customer denied merchant route; `/profile` action.
+- Dirty guard for header back, links, browser navigation, and compatibility transition.
+- Normalization: verified, unverified, missing Email, malformed booleans, source immutability.
+- Mapping: all booleans, hidden field preservation, excluded unsupported fields, unverified rejection, source immutability.
+- Dirty: toggle, discard, failed save, success reset, verification no-reset.
+- Verification: request payload, duplicate prevention, six digits, leading zeros, paste, resend reuse, verify payload, success GET reload, `AuthContext` refresh, error retention, sensitive clearing.
+- States: loading, initial error/retry, stale, save failure, malformed data.
+- Accessibility: one `h1`, switch names, disabled reason, sheet title/focus restoration, OTP error association, sticky save semantics.
+- Regression: Family 4 notifications, `/profile`, customer booking/reservation routes, password-change guard, Family 6 LINE routes, API transport behavior.
+
+Current coverage:
+
+- `frontend/tests/family-4-notifications.test.mjs`
+- `frontend/tests/family-4-route-foundation.test.mjs`
+- `frontend/tests/family-4-final-integration.test.mjs`
+- `src/test/java/com/reservio/service/NotificationServiceTest.java`
+
+No dedicated Family 5 customer tests currently exist.
+
+## 28. Regression boundaries
+
+Do not alter:
+
+- Family 4 merchant notification page behavior.
+- Merchant workspace/settings navigation.
+- Customer booking/reservation routes.
+- `/profile` update semantics.
+- `/force-change-password` and setup guards.
+- Family 6 LINE routes.
+- CSRF/session transport.
+- Backend endpoints/DTOs.
+
+## 29. Implementation phases
+
+| Phase | Scope | Dependencies | Deliverables | Exit criteria |
+|---|---|---|---|---|
+| 1 | Role-aware customer route/shell | Existing guards, customer Layout | Canonical customer route; Navbar modal canonicalization; merchant compatibility | Customer/merchant route tests pass |
+| 2 | Shared domain consolidation | Family 4 normalizer/mapper | Customer form model, hidden-field mapper, error/capability helpers | Mapping/normalization tests pass |
+| 3 | Customer settings page | Phase 1–2 | Desktop/mobile page, sections, sticky save, loading/error/stale | Visual/state/accessibility tests pass |
+| 4 | Verification integration | Phase 2–3 | Customer bottom sheet, request/OTP/reload/reconciliation | OTP/dirty/security tests pass |
+| 5 | Integration/regression | All phases | Route, responsive, guard, merchant regression validation | Full validation passes |
+
+Deferred work: backend API changes, new notification channels, customer settings dashboard, Email editing in notification page, Family 6 changes.
+
+## 30. Validation plan
+
+Run from `/Users/machi/IntelliJ/reservio/frontend`:
+
+```sh
+npm run typecheck
+npm test
+npm run build
+```
+
+No lint script exists in `frontend/package.json`.
+
+Manual checks:
+
+- 390px, 768px, 1024px, 1440px.
+- Customer verified/unverified/missing Email.
+- Dirty toggle → verification → reload → save.
+- Failed request, failed verify, failed save, stale retry.
+- Merchant compatibility and canonical merchant route.
+- Keyboard-only navigation, focus restoration, OTP paste, mobile sheet with virtual keyboard.
+
+## 31. Known limitations
+
+- Current customer Navbar still opens legacy `NotificationSettingsPanel` modal; it must be canonicalized in Phase 1.
+- Current customer notification page exposes editable Email, inline OTP, and three preferences; it cannot be reused as the Family 5 UI.
+- Current normalizer rejects null/missing Email; missing-Email UI requires a deliberate normalized unavailable-state boundary.
+- Backend internally has OTP expiry and attempt count, but the approved UI must not disclose them.
+- Backend controller does not make response role-specific; role UI separation is a frontend architecture responsibility.
+- No current customer notification summary/cache exists.
+
+## 32. Open technical decisions
+
+1. Whether merchant compatibility should `Navigate replace` to the canonical merchant URL or render the existing canonical content in place; use established route-test conventions and preserve dirty protection.
+2. Whether reusable verification UI should be generalized from the Family 4 dialog or composed as a customer sheet wrapper around shared verification logic.
+3. Whether customer save success needs only a toast or a page-local live confirmation; retain one non-duplicative confirmation mechanism.
+4. Whether a missing Email can occur in production under the current authenticated user contract; preserve explicit handling despite absent test evidence.
+
+## 33. Final recommended implementation sequence
+
+1. Canonicalize customer notification navigation to `/notifications/settings`.
+2. Install role-aware route selection without touching merchant Family 4 composition.
+3. Extract/reuse strict notification domain helpers.
+4. Build customer-only form model with preserved hidden new-reservation value.
+5. Build proven desktop/mobile customer surfaces and local save behavior.
+6. Add customer verification bottom sheet using existing APIs/focus/OTP rules.
+7. Implement verification dirty reconciliation and `AuthContext` refresh.
+8. Add state, guard, security, accessibility, and regression tests.
+9. Validate responsive behavior and all required commands.
+
+1. Repository areas inspected
+   Routing, guards, customer shell/navigation, legacy customer notification modal/page, Family 4 merchant settings, dirty infrastructure, API transport, backend DTOs/services/entities, profile editing, tests.
+
+2. Confirmed API semantics
+   GET/PUT use complete account-level preference DTOs; PUT requires all three booleans in practice; Email and `emailVerified` are not PUT fields; request/verify return `Void`; PUT response is authoritative; verification requires GET reload.
+
+3. Final route behavior
+   `/notifications/settings` is the customer canonical page; merchant access is role-aware compatibility to Family 4; `/business/settings/notifications` remains merchant canonical and guarded.
+
+4. Desktop contract summary
+   Customer `Layout`, focused 640–760px column, back to `/profile`, account notice, read-only Email, two preferences, local sticky save.
+
+5. Mobile contract summary
+   Customer top bar, one-column page, safe-area local save bar, keyboard-safe verification bottom sheet, no new bottom navigation.
+
+6. Hidden `emailNewReservation` preservation decision
+   Preserve loaded authoritative value and submit it unchanged in every customer PUT; never expose it.
+
+7. Shared/role-specific architecture decision
+   Share transport/domain/OTP/dirty primitives; keep customer and merchant complete page compositions separate.
+
+8. Email verification reuse decision
+   Reuse existing request/verify APIs, OTP validation, focus trap, error mapping, and sensitive-clearing rules; use customer bottom-sheet composition.
+
+9. Dirty-state reconciliation decision
+   Verification never resets dirty visible preference edits; refresh verification state and preserved hidden field, then revalidate.
+
+10. Proposed implementation phases
+    Route/shell → shared domain → customer page → verification → integration/regression.
+
+11. Open technical decisions
+    Merchant compatibility navigation method, dialog-core/sheet wrapper boundary, success-announcement placement, and production missing-Email reachability.
+
+12. Known limitations
+    Legacy customer page/modal conflicts with approved Family 5 direction; no dedicated customer tests/cache; backend internal OTP metadata must remain hidden.
+
+13. No files were modified.
+
+14. No code was implemented.
+
+15. No images were generated.
