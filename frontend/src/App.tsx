@@ -28,6 +28,7 @@ import { useAuth } from './state/AuthContext';
 import {JSX} from "react";
 import SessionTimeoutManager from './components/SessionTimeoutManager';
 import { ServiceEditorScaffold, SettingsLandingPage, SettingsScaffoldPage } from './features/business-settings/SettingsPages';
+import { resolveNotificationSettingsRoute } from './features/customer-notifications/customerNotificationSettingsRoute';
 
 function RequireAuth({ children }: Readonly<{ children: JSX.Element }>) {
   const { me, loading } = useAuth();
@@ -97,10 +98,16 @@ function SettingsRoute({ page }: Readonly<{ page: 'landing' | 'profile' | 'booki
   return <RequireBusiness><BusinessWorkspaceShell focused={focused}>{page === 'landing' ? <SettingsLandingPage /> : <SettingsScaffoldPage page={page} />}</BusinessWorkspaceShell></RequireBusiness>;
 }
 
-function NotificationSettingsCompatibility() {
+function RoleAwareNotificationSettingsRoute() {
   const { me } = useAuth();
-  if (me?.role === 'ROLE_BUSINESS' && me.business) return <BusinessWorkspaceShell focused><SettingsScaffoldPage page="notifications" /></BusinessWorkspaceShell>;
+  if (resolveNotificationSettingsRoute(me?.role, Boolean(me?.business)) === 'merchant-compatibility') {
+    return <BusinessWorkspaceShell focused><SettingsScaffoldPage page="notifications" /></BusinessWorkspaceShell>;
+  }
   return <Layout><NotificationSettingsPage /></Layout>;
+}
+
+function NotificationSettingsCompatibility() {
+  return <RoleAwareNotificationSettingsRoute />;
 }
 
 function LineIntegrationCompatibility() {
