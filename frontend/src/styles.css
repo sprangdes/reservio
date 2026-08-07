@@ -638,6 +638,109 @@ main {
     background: rgba(255, 255, 255, 0.95);
 }
 
+/* Family 5 customer notification route: a focused account surface within the shared customer shell. */
+.customer-settings-navbar {
+    border-bottom-color: #e7e2da;
+    background: rgba(255, 254, 252, .98) !important;
+    box-shadow: 0 .2rem .9rem rgba(37, 46, 41, .05) !important;
+}
+.customer-settings-navbar .navbar-brand,
+.customer-settings-navbar .nav-link,
+.customer-settings-navbar .notification-menu__toggle,
+.customer-settings-navbar .user-menu__toggle {
+    color: #004c37 !important;
+    text-shadow: none;
+}
+.customer-settings-navbar .brand-highlight { font-family: Georgia, "Times New Roman", serif; font-weight: 700; letter-spacing: 0; }
+.customer-settings-navbar .brand-accent { color: inherit; text-shadow: none; }
+.customer-settings-navbar .notification-menu__toggle:hover,
+.customer-settings-navbar .notification-menu__toggle:focus,
+.customer-settings-navbar .user-menu__toggle:hover,
+.customer-settings-navbar .user-menu__toggle:focus { background: #edf4ef; color: #003626 !important; }
+.customer-settings-navbar__mobile-topbar { display: none; }
+
+.customer-notification-settings {
+    min-height: calc(100dvh - var(--navbar-height));
+    padding: clamp(2.8rem, 6vw, 4.6rem) 1.5rem 4.5rem;
+    background: #faf8f4;
+    color: #18231f;
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+}
+.customer-notification-settings *,
+.customer-notification-settings *::before,
+.customer-notification-settings *::after { box-sizing: border-box; }
+.customer-notification-settings__content { width: min(100%, 45rem); margin: 0 auto; }
+.customer-notification-settings__back {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: .45rem;
+    margin: -.45rem 0 1.45rem;
+    color: #00513a;
+    font-size: .96rem;
+    font-weight: 800;
+    text-decoration: none;
+}
+.customer-notification-settings__back:hover { color: #003626; text-decoration: underline; }
+.customer-notification-settings__back:focus-visible,
+.customer-settings-navbar__mobile-topbar a:focus-visible {
+    outline: 3px solid rgba(0, 81, 58, .48);
+    outline-offset: 3px;
+    border-radius: .35rem;
+}
+.customer-notification-settings__header { margin-bottom: 1.55rem; }
+.customer-notification-settings__header h1 {
+    margin: 0;
+    color: #004c37;
+    font-size: clamp(2.35rem, 4vw, 3rem);
+    font-weight: 850;
+    letter-spacing: -.06em;
+    line-height: 1.12;
+    text-wrap: balance;
+}
+.customer-notification-settings__header p {
+    max-width: 39rem;
+    margin: .8rem 0 0;
+    color: #4e5b56;
+    font-size: 1.03rem;
+    line-height: 1.7;
+}
+.customer-notification-settings__scope {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: .85rem;
+    margin-bottom: 2.35rem;
+    padding: 1.05rem 1.2rem;
+    border: 1px solid #bfd6c9;
+    border-radius: .68rem;
+    background: linear-gradient(110deg, #f3f7f2, #edf3ef);
+}
+.customer-notification-settings__scope i { color: #00513a; font-size: 1.55rem; }
+.customer-notification-settings__scope p { margin: 0; color: #1f3b31; font-size: 1rem; font-weight: 650; line-height: 1.6; }
+.customer-notification-settings__scaffold { padding-top: .2rem; }
+.customer-notification-settings__scaffold header { margin-bottom: .9rem; }
+.customer-notification-settings__scaffold h2 { margin: 0; color: #18231f; font-size: 1.22rem; font-weight: 800; }
+.customer-notification-settings__scaffold header p { margin: .35rem 0 0; color: #65706b; font-size: .92rem; line-height: 1.6; }
+.customer-notification-settings__skeleton { display: grid; gap: 1.35rem; }
+.customer-notification-settings__skeleton-card { display: grid; gap: .85rem; min-height: 7rem; padding: 1.3rem 1.45rem; border: 1px solid #e1ddd5; border-radius: .7rem; background: rgba(255, 254, 252, .82); }
+.customer-notification-settings__skeleton-card--rows { gap: 0; min-height: 10.2rem; padding-block: .25rem; }
+.customer-notification-settings__skeleton-label,
+.customer-notification-settings__skeleton-value,
+.customer-notification-settings__skeleton-row {
+    display: block;
+    border-radius: .25rem;
+    background: linear-gradient(90deg, #ede9e2 20%, #f7f4ef 45%, #ede9e2 70%);
+    background-size: 220% 100%;
+    animation: customer-notification-settings-skeleton 1.6s ease-in-out infinite;
+}
+.customer-notification-settings__skeleton-label { width: 22%; height: .78rem; }
+.customer-notification-settings__skeleton-value { width: 47%; height: 1.15rem; }
+.customer-notification-settings__skeleton-row { width: 100%; height: 4.85rem; border-bottom: 1px solid #e9e4dd; border-radius: 0; }
+.customer-notification-settings__skeleton-row:last-child { width: 78%; border-bottom: 0; }
+@keyframes customer-notification-settings-skeleton { from { background-position: 100% 0; } to { background-position: -120% 0; } }
+@media (prefers-reduced-motion: reduce) { .customer-notification-settings__skeleton-label, .customer-notification-settings__skeleton-value, .customer-notification-settings__skeleton-row { animation: none; } }
+
 /* Flatpickr 與商家設定介面的色彩、密度一致。 */
 .business-hours__date-input { padding-right: 2.6rem !important; background-image: linear-gradient(45deg, transparent 50%, var(--workspace-green) 50%), linear-gradient(135deg, var(--workspace-green) 50%, transparent 50%); background-position: calc(100% - 1rem) 1.13rem, calc(100% - .72rem) 1.13rem; background-size: .3rem .3rem, .3rem .3rem; background-repeat: no-repeat; cursor: pointer; }
 .business-hours__date-picker.flatpickr-calendar { width: 20.5rem; padding: .45rem; border: 1px solid var(--workspace-line); border-radius: .7rem; background: #fffefd; box-shadow: 0 .85rem 2rem rgba(27, 67, 50, .16); font-family: inherit; }
@@ -1260,6 +1363,70 @@ main {
     .calendar-month-grid--simple {
         gap: 0;
     }
+}
+
+@media (max-width: 768px) {
+    .customer-settings-navbar { display: none; }
+    .customer-settings-navbar__mobile-topbar {
+        position: fixed;
+        z-index: 1030;
+        top: 0;
+        right: 0;
+        left: 0;
+        display: grid;
+        min-height: 4.6rem;
+        grid-template-columns: minmax(6.8rem, 1fr) minmax(0, 1.25fr) minmax(6.8rem, 1fr);
+        align-items: center;
+        padding: max(.5rem, env(safe-area-inset-top)) 1rem .5rem;
+        border-bottom: 1px solid #e7e2da;
+        background: rgba(255, 254, 252, .98);
+    }
+    .customer-settings-navbar__mobile-topbar a {
+        display: inline-flex;
+        min-width: 2.75rem;
+        min-height: 2.75rem;
+        align-items: center;
+        gap: .35rem;
+        color: #00513a;
+        font-size: .95rem;
+        font-weight: 800;
+        text-decoration: none;
+    }
+    .customer-settings-navbar__mobile-topbar strong {
+        overflow: hidden;
+        color: #17231f;
+        font-size: 1.05rem;
+        font-weight: 850;
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .customer-notification-settings {
+        min-height: calc(100dvh - 4.6rem);
+        padding: 2.25rem 1.25rem calc(2.75rem + env(safe-area-inset-bottom));
+    }
+    .customer-notification-settings__content { width: 100%; }
+    .customer-notification-settings__back { display: none; }
+    .customer-notification-settings__header { margin-bottom: 1.35rem; }
+    .customer-notification-settings__header h1 { font-size: 2.2rem; }
+    .customer-notification-settings__header p { margin-top: .72rem; font-size: 1rem; line-height: 1.7; }
+    .customer-notification-settings__scope { align-items: start; gap: .75rem; margin-bottom: 2.15rem; padding: 1rem; border-radius: .65rem; }
+    .customer-notification-settings__scope i { margin-top: .08rem; font-size: 1.5rem; }
+    .customer-notification-settings__scope p { font-size: .98rem; line-height: 1.62; }
+    .customer-notification-settings__scaffold h2 { font-size: 1.18rem; }
+    .customer-notification-settings__skeleton { gap: 1rem; }
+    .customer-notification-settings__skeleton-card { min-height: 6.5rem; padding: 1.15rem; }
+    .customer-notification-settings__skeleton-card--rows { min-height: 9.7rem; }
+}
+
+@media (min-width: 769px) {
+    .customer-settings-navbar__mobile-topbar { display: none; }
+}
+
+@media (max-width: 390px) {
+    .customer-settings-navbar__mobile-topbar { grid-template-columns: minmax(6.1rem, 1fr) minmax(0, 1.2fr) minmax(6.1rem, 1fr); padding-inline: .85rem; }
+    .customer-settings-navbar__mobile-topbar a { font-size: .9rem; }
+    .customer-notification-settings { padding-inline: 1rem; }
 }
 
 @media (max-width: 768px) {
