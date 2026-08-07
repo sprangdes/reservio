@@ -1,8 +1,13 @@
+import {
+  normalizeNotificationPreferencesDomain,
+  notificationPreferenceErrorMessage,
+  type NotificationPreferenceErrorFlow
+} from '../../notification-preferences/notificationPreferencesDomain';
+
 export type NotificationPreferencesValue = { email: string; emailVerified: boolean; emailNewReservation: boolean; emailStatusChanged: boolean; emailUpcomingReminder: boolean };
 export type PreferenceFormValue = Pick<NotificationPreferencesValue, 'emailNewReservation' | 'emailStatusChanged' | 'emailUpcomingReminder'>;
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-export function normalizeNotificationPreferences(value: any): NotificationPreferencesValue | undefined { if (!value || typeof value.email !== 'string' || !emailPattern.test(value.email) || typeof value.emailVerified !== 'boolean' || typeof value.emailNewReservation !== 'boolean' || typeof value.emailStatusChanged !== 'boolean' || typeof value.emailUpcomingReminder !== 'boolean') return undefined; return { email: value.email, emailVerified: value.emailVerified, emailNewReservation: value.emailNewReservation, emailStatusChanged: value.emailStatusChanged, emailUpcomingReminder: value.emailUpcomingReminder }; }
+export function normalizeNotificationPreferences(value: unknown): NotificationPreferencesValue | undefined { const normalized = normalizeNotificationPreferencesDomain(value); if (normalized.kind !== 'valid') return undefined; return { email: normalized.value.email, emailVerified: normalized.value.emailVerified, emailNewReservation: normalized.value.emailNewReservation, emailStatusChanged: normalized.value.emailStatusChanged, emailUpcomingReminder: normalized.value.emailUpcomingReminder }; }
 export function preferenceForm(value: NotificationPreferencesValue): PreferenceFormValue { return { emailNewReservation: value.emailNewReservation, emailStatusChanged: value.emailStatusChanged, emailUpcomingReminder: value.emailUpcomingReminder }; }
 export function preferencePayload(value: PreferenceFormValue, verified: boolean): PreferenceFormValue { if (!verified && Object.values(value).some(Boolean)) throw new Error('完成 Email 驗證後，才能啟用 Email 通知。'); return { emailNewReservation: Boolean(value.emailNewReservation), emailStatusChanged: Boolean(value.emailStatusChanged), emailUpcomingReminder: Boolean(value.emailUpcomingReminder) }; }
 export function validateOtp(value: string): string | undefined { return /^\d{6}$/.test(value) ? undefined : '請輸入六位數驗證碼'; }
-export function notificationErrorMessage(error: unknown, flow: 'load' | 'save' | 'request' | 'verify' = 'load') { const message = error instanceof Error ? error.message : ''; if (/請先驗證 Email/i.test(message)) return '完成 Email 驗證後，才能啟用 Email 通知。'; if (/unauthorized|forbidden|權限/i.test(message)) return '目前帳號沒有管理通知設定的權限。'; if (/頻繁|rate/i.test(message)) return '操作過於頻繁，請稍後再試。'; if (/network|failed to fetch/i.test(message)) return '網路連線失敗，請確認連線後重試。'; if (flow === 'verify') return '驗證碼無效或已失效，請確認後再試。'; return ({ load: '暫時無法取得通知設定，請稍後再試。', save: '儲存通知設定失敗，請稍後再試。', request: '寄送驗證碼失敗，請稍後再試。', verify: 'Email 驗證失敗，請稍後再試。' }[flow]); }
+export function notificationErrorMessage(error: unknown, flow: NotificationPreferenceErrorFlow = 'load') { return notificationPreferenceErrorMessage(error, flow); }
