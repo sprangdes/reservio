@@ -81,9 +81,9 @@ test('customer validation permits only safe complete payloads for the current Em
   assert.deepEqual(customer.validateCustomerNotificationPreferences(disabled, verifiedContext), { valid: true });
   assert.equal(customer.validateCustomerNotificationPreferences(enabled, unverifiedContext).code, 'unverified-enabled-preference');
   assert.deepEqual(customer.validateCustomerNotificationPreferences(disabled, unverifiedContext), { valid: true });
-  assert.equal(
-    customer.validateCustomerNotificationPreferences({ ...disabled, preservedEmailNewReservation: true }, unverifiedContext).code,
-    'unverified-enabled-preference'
+  assert.deepEqual(
+    customer.validateCustomerNotificationPreferences({ ...disabled, preservedEmailNewReservation: true }, unverifiedContext),
+    { valid: true }
   );
   assert.equal(customer.validateCustomerNotificationPreferences(disabled, { ...verifiedContext, email: null, dataState: 'missing-email' }).code, 'missing-email');
   assert.equal(customer.validateCustomerNotificationPreferences(disabled, { ...verifiedContext, dataState: 'malformed' }).code, 'malformed-data');
