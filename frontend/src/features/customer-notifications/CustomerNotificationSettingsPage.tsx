@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../../api';
 import SettingsInfrastructure from '../business-settings/SettingsInfrastructure';
 import { useToast } from '../../state/ToastContext';
+import { useAuth } from '../../state/AuthContext';
 import {
   createCustomerNotificationForm,
   customerNotificationAvailability,
@@ -21,6 +22,7 @@ import {
   customerNotificationSettingsRoute
 } from './customerNotificationSettingsRoute';
 import { useCustomerNotificationForm } from './useCustomerNotificationForm';
+import CustomerEmailVerificationFlow from './CustomerEmailVerificationFlow';
 
 const emptyForm: CustomerNotificationFormValue = {
   emailStatusChanged: false,
@@ -49,6 +51,7 @@ function loadableResult(result: NotificationPreferencesNormalizationResult): res
 
 function CustomerNotificationSettingsContent() {
   const { setSuccessMessage } = useToast();
+  const { refresh: refreshAuth } = useAuth();
   const form = useCustomerNotificationForm(emptyForm);
   const [loaded, setLoaded] = useState<LoadedState | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -56,6 +59,7 @@ function CustomerNotificationSettingsContent() {
   const [initialError, setInitialError] = useState('');
   const [staleError, setStaleError] = useState('');
   const [saveAnnouncement, setSaveAnnouncement] = useState('');
+  const [verificationOpen, setVerificationOpen] = useState(false);
   const mounted = useRef(true);
   const requestNumber = useRef(0);
 
@@ -142,6 +146,26 @@ function CustomerNotificationSettingsContent() {
 
   const retry = () => void load(Boolean(loaded));
 
+  const refreshAfterVerification = async () => {
+    try {
+      const response: any = await api.notificationPreferences();
+      const normalized = normalizeNotificationPreferencesDomain(response?.data);
+      if (normalized.kind !== 'valid' || !normalized.value.emailVerified) {
+        throw new Error('Email 驗證狀態尚未同步。');
+      }
+      setLoaded(normalized);
+      form.reconcileAuthoritative(createCustomerNotificationForm(normalized.value));
+      setStaleError('');
+      await refreshAuth();
+      setSaveAnnouncement('Email 驗證成功。');
+      setSuccessMessage('Email 驗證成功。');
+    } catch (reason) {
+      form.markStale();
+      setStaleError('目前顯示的是先前載入的設定，部分狀態可能尚未同步。');
+      throw reason;
+    }
+  };
+
   if (initialLoading && !loaded && !initialError) {
     return <CustomerNotificationPageFrame><NotificationSettingsSkeleton /></CustomerNotificationPageFrame>;
   }
@@ -167,6 +191,7 @@ function CustomerNotificationSettingsContent() {
         unverified={isUnverified}
         missingEmail={isMissingEmail}
         verificationMessage={availability.message}
+        onStartVerification={availability.canRequestEmailVerification ? () => setVerificationOpen(true) : undefined}
       />
     </section>
 
@@ -199,6 +224,11 @@ function CustomerNotificationSettingsContent() {
       onSave={() => void save()}
     />
     <p className="customer-notification-settings__live-region" role="status" aria-live="polite">{saveAnnouncement}</p>
+    {verificationOpen && domain.email ? <CustomerEmailVerificationFlow
+      email={domain.email}
+      onClose={() => setVerificationOpen(false)}
+      onVerified={refreshAfterVerification}
+    /> : null}
   </CustomerNotificationPageFrame>;
 }
 
@@ -222,11 +252,12 @@ function CustomerNotificationPageFrame({ children }: Readonly<{ children: React.
   </main>;
 }
 
-function NotificationEmailStatus({ domain, unverified, missingEmail, verificationMessage }: Readonly<{
+function NotificationEmailStatus({ domain, unverified, missingEmail, verificationMessage, onStartVerification }: Readonly<{
   domain: NotificationPreferencesDomain;
   unverified: boolean;
   missingEmail: boolean;
   verificationMessage?: string;
+  onStartVerification?: () => void;
 }>) {
   if (missingEmail) {
     return <div className="customer-notification-settings__email-card customer-notification-settings__email-card--missing">
@@ -242,7 +273,7 @@ function NotificationEmailStatus({ domain, unverified, missingEmail, verificatio
       <span>{unverified ? '尚未驗證' : '已驗證'}</span>
     </div>
     {unverified
-      ? <button className="customer-notification-settings__verify-button" type="button" aria-describedby="customer-notification-verification-note" onClick={() => undefined}>驗證 Email</button>
+      ? <button className="customer-notification-settings__verify-button" type="button" aria-describedby="customer-notification-verification-note" onClick={onStartVerification}>驗證 Email</button>
       : <Link className="customer-notification-settings__profile-link" to={CUSTOMER_NOTIFICATION_SETTINGS_BACK_TARGET}>變更 Email<i className="bi bi-chevron-right" aria-hidden="true" /></Link>}
     {unverified ? <p id="customer-notification-verification-note">{verificationMessage || '完成 Email 驗證後，才能啟用 Email 通知。'}</p> : null}
   </div>;

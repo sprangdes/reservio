@@ -80,7 +80,10 @@ export function useCustomerNotificationForm(initialValue: CustomerNotificationFo
     setSnapshot((current) => {
       const keepVisibleEdits = !sameVisibleFields(current.baseline, visibleFields(current.values));
       return {
-        baseline: visibleFields(value),
+        // A verification refresh must not redefine the baseline underneath a
+        // dirty customer edit. This keeps the dirty registry and discard action
+        // anchored to the original preference values.
+        baseline: keepVisibleEdits ? current.baseline : visibleFields(value),
         values: keepVisibleEdits
           ? {
             emailStatusChanged: current.values.emailStatusChanged,

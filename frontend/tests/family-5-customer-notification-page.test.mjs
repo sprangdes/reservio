@@ -16,7 +16,8 @@ test('Family 5 customer page loads and saves only through the Phase 2 domain bou
   assert.match(page, /validateCustomerNotificationPreferences\(form\.values, context\)/);
   assert.match(page, /notificationPreferenceErrorMessage\(reason, 'load'\)/);
   assert.match(page, /notificationPreferenceErrorMessage\(reason, 'save'\)/);
-  assert.doesNotMatch(page, /requestEmailVerification|verifyEmail|EmailVerificationDialog|驗證碼|OTP/);
+  assert.match(page, /CustomerEmailVerificationFlow/);
+  assert.match(page, /onStartVerification/);
 });
 
 test('customer page renders exactly the two approved preferences and never exposes the hidden backend field', () => {
