@@ -1,1 +1,1 @@
-export { default } from '../features/customer-notifications/CustomerNotificationSettingsScaffold';
+export { default } from '../features/customer-notifications/CustomerNotificationSettingsPage';
