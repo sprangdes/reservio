@@ -6,7 +6,7 @@ const source = (path) => readFileSync(new URL(`../src/${path}`, import.meta.url)
 const app = source('App.tsx');
 const navbar = source('components/Navbar.tsx');
 const route = source('features/customer-notifications/customerNotificationSettingsRoute.ts');
-const scaffold = source('features/customer-notifications/CustomerNotificationSettingsScaffold.tsx');
+const page = source('features/customer-notifications/CustomerNotificationSettingsPage.tsx');
 const styles = source('styles.css');
 
 test('Family 5 resolves the canonical customer notification route by authenticated role', () => {
@@ -35,16 +35,15 @@ test('Family 5 route metadata keeps customer and merchant canonical destinations
   assert.match(route, /role === 'ROLE_BUSINESS' \? MERCHANT_NOTIFICATION_SETTINGS_ROUTE : CUSTOMER_NOTIFICATION_SETTINGS_ROUTE/);
 });
 
-test('customer scaffold is a non-writable Family 5 shell with one page heading and profile back target', () => {
-  assert.match(scaffold, /<main className="customer-notification-settings"/);
-  assert.match(scaffold, /<h1 id="customer-notification-settings-title">/);
-  assert.match(scaffold, /通知設定/);
-  assert.match(scaffold, /管理目前帳號接收預約相關 Email 通知的方式。/);
-  assert.match(scaffold, /這些設定套用至目前帳號，不會依商家而變。/);
-  assert.match(scaffold, /to=\{CUSTOMER_NOTIFICATION_SETTINGS_BACK_TARGET\}/);
-  assert.match(scaffold, /aria-label="返回個人資料"/);
-  assert.match(scaffold, /aria-busy="true"/);
-  assert.doesNotMatch(scaffold, /<input|<button|emailNewReservation|驗證碼|儲存設定|api\./);
+test('customer route keeps the Family 5 shell, one heading, and profile back target', () => {
+  assert.match(page, /<main className="customer-notification-settings"/);
+  assert.match(page, /<h1 id="customer-notification-settings-title">/);
+  assert.match(page, /通知設定/);
+  assert.match(page, /管理目前帳號接收預約相關 Email 通知的方式。/);
+  assert.match(page, /這些設定套用至目前帳號，不會依商家而變。/);
+  assert.match(page, /to=\{CUSTOMER_NOTIFICATION_SETTINGS_BACK_TARGET\}/);
+  assert.match(page, /aria-label="返回個人資料"/);
+  assert.match(page, /<SettingsInfrastructure>/);
 });
 
 test('navbar canonicalizes notification actions and retires the legacy customer notification modal', () => {
@@ -66,5 +65,5 @@ test('customer desktop and mobile shell styles remain focused, accessible, and f
   assert.match(styles, /env\(safe-area-inset-bottom\)/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(styles, /outline: 3px solid rgba\(0, 81, 58, \.48\)/);
-  assert.doesNotMatch(scaffold, /business-workspace|business-settings__secondary-nav|MobileBottomNavigation/);
+  assert.doesNotMatch(page, /business-workspace|business-settings__secondary-nav|MobileBottomNavigation/);
 });
