@@ -71,6 +71,9 @@ test('settings guard remains compatible with the existing BrowserRouter shell', 
   assert.doesNotMatch(guardSource, /useBlocker/);
   assert.match(guardSource, /document\.addEventListener\('click', onClick, true\)/);
   assert.match(guardSource, /beforeunload/);
+  assert.match(guardSource, /popstate/);
+  assert.match(guardSource, /window\.history\.go\(reversal\)/);
+  assert.match(guardSource, /if \(decision === 'confirm'\) setDestination\(target\)/);
 });
 
 test('shared settings UI exposes accessible error, dialog, unavailable, and sticky-save semantics', () => {

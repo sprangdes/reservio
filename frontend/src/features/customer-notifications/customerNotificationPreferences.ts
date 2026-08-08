@@ -112,7 +112,6 @@ export function validateCustomerNotificationPreferences(
   if (!context.emailVerified && (
     value.emailStatusChanged
     || value.emailUpcomingReminder
-    || value.preservedEmailNewReservation
   )) {
     return { valid: false, code: 'unverified-enabled-preference', message: '完成 Email 驗證後，才能啟用 Email 通知。' };
   }
