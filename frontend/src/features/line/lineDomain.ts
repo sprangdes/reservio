@@ -134,6 +134,10 @@ export function validateLineAccountLinkHandoff(source: unknown): string | null {
   } catch { return null; }
 }
 
+export function safeInternalReturnTo(source: unknown, fallback = '/'): string {
+  return typeof source === 'string' && source.startsWith('/') && !source.startsWith('//') ? source : fallback;
+}
+
 export function normalizeLinkedLineBusinesses(source: unknown): LinkedLineBusiness[] | null {
   if (!Array.isArray(source)) return null;
   const rows = source.map((value): LinkedLineBusiness | null => {
