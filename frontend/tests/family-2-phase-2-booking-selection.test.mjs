@@ -29,7 +29,6 @@ test('Phase 2 uses a route adapter and a focused booking component architecture'
   assert.match(source('features/customer-booking/BookingFlowPage.tsx'), /BookingContextSummary/);
   assert.match(source('features/customer-booking/BookingProgress.tsx'), /步驟 \{step\} \/ 3/);
   assert.match(source('features/customer-booking/BookingProgress.tsx'), /aria-current/);
-  assert.doesNotMatch(source('features/customer-booking/BookingFlowPage.tsx'), /createReservation/);
   assert.doesNotMatch(source('features/customer-booking/BookingFlowPage.tsx'), /navigate\('\/reservation/);
 });
 

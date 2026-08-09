@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../api';
-import { emptyBookingDraft, selectBookingBusiness, selectBookingDate, selectBookingService } from './bookingDraft';
+import { emptyBookingDraft, selectBookingBusiness, selectBookingDate, selectBookingService, updateBookingRemark } from './bookingDraft';
 import { addMinutesToTime, isLocalDate } from './bookingDates';
 import type { BookingBusiness, BookingDraft, BookingService, BookingSlot } from './domain';
 import { normalizeBusiness, normalizeDisabledDates, normalizeService, normalizeSlots } from './normalizers';
@@ -121,12 +121,29 @@ export function useBookingFlow() {
     setDraft((current) => ({ ...current, startTime: slot.startTime, estimatedEndTime }));
   }, [draft.service]);
 
+  const updateRemark = useCallback((remark: string) => {
+    setDraft((current) => updateBookingRemark(current, remark));
+  }, []);
+
+  const clearSelectedSlot = useCallback(() => {
+    slotGuard.current.abort();
+    setSlots([]);
+    setSlotState('idle');
+    setDraft((current) => ({ ...current, startTime: null, estimatedEndTime: null }));
+  }, []);
+
+  const refreshSlots = useCallback(async () => {
+    const current = draft;
+    if (!current.business || !current.service || !isLocalDate(current.date)) return;
+    await loadSlots(current);
+  }, [draft, loadSlots]);
+
   return {
     draft, businesses, services, disabledDates, slots, businessState, serviceState, disabledDateState, slotState,
-    selectBusiness, selectService, selectDate, selectSlot,
+    selectBusiness, selectService, selectDate, selectSlot, updateRemark, clearSelectedSlot, refreshSlots,
     retryBusinesses: loadBusinesses,
     retryServices: () => draft.business && loadServices(draft.business.id),
     retryDisabledDates: () => draft.business && loadDisabledDates(draft.business.id),
-    retrySlots: () => loadSlots(draft)
+    retrySlots: refreshSlots
   };
 }

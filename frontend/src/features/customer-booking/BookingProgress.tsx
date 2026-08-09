@@ -1,4 +1,4 @@
-type BookingProgressProps = Readonly<{ step: 1 | 2 }>;
+type BookingProgressProps = Readonly<{ step: 1 | 2 | 3 }>;
 
 const steps = ['選擇服務', '日期與時間', '確認'];
 
