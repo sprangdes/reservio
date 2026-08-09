@@ -191,11 +191,12 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(payload || {})
   }),
-  customerReservations: (params?: QueryParams, condition?: unknown) => request(`/api/reservations/customer/query${buildQuery(params)}`, {
+  customerReservations: (params?: QueryParams, condition?: unknown, options: RequestInit = {}) => request(`/api/reservations/customer/query${buildQuery(params)}`, {
     method: 'POST',
-    body: JSON.stringify(condition || {})
+    body: JSON.stringify(condition || {}),
+    ...options
   }),
-  customerReservedBusinesses: () => request('/api/reservations/customer/reserved-businesses'),
+  customerReservedBusinesses: (options: RequestInit = {}) => request('/api/reservations/customer/reserved-businesses', options),
   businessReservations: (params?: QueryParams, condition?: unknown) => request(`/api/reservations/business/query${buildQuery(params)}`, {
     method: 'POST',
     body: JSON.stringify(condition || {})
