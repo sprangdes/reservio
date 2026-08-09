@@ -182,9 +182,10 @@ export const api = {
   disabledDates: (businessId: string | number, options: RequestInit = {}) => request(`/api/reservations/disabled-dates?businessId=${businessId}`, options),
   slots: (date: string, duration: string | number, businessId: string | number, options: RequestInit = {}) =>
     request(`/api/reservations/slots?date=${date}&duration=${duration}&businessId=${businessId}`, options),
-  createReservation: (payload: unknown) => request('/api/reservations', {
+  createReservation: (payload: unknown, options: RequestInit = {}) => request('/api/reservations', {
     method: 'POST',
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    ...options
   }),
   cancelReservation: (id: string | number, payload?: unknown) => request(`/api/reservations/${id}/cancel`, {
     method: 'POST',
