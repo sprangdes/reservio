@@ -51,8 +51,8 @@ test('LINE request mapping never uses masked values and successful saves clear p
   assert.equal(normalized.channelSecretInput, '');
   assert.equal(normalized.accessTokenInput, '');
   assert.deepEqual(line.lineSettingsPayload({ ...normalized, channelSecretInput: 'secret', accessTokenInput: 'token' }), { channelId: 'channel', channelSecret: 'secret', accessToken: 'token', enabled: true });
-  assert.match(editor, /channelSecretInput: ''/);
-  assert.match(editor, /accessTokenInput: ''/);
+  assert.match(editor, /createLineCredentialForm/);
+  assert.match(editor, /mapLineCredentialUpdate/);
   assert.doesNotMatch(editor, /localStorage|sessionStorage|window\.confirm/);
 });
 
@@ -75,7 +75,7 @@ test('Family 4 source does not introduce unsafe browser dialogs or sensitive log
   ];
   for (const path of paths) {
     const entries = path === 'features/business-settings'
-      ? ['SettingsPages.tsx', 'Phase4Editors.tsx', 'LegacyBusinessInfoCompatibility.tsx', 'business-hours/BusinessHoursEditor.tsx', 'notifications/NotificationSettingsEditor.tsx', 'notifications/EmailVerificationDialog.tsx', 'line/LineIntegrationEditor.tsx', 'account/AccountSettingsPage.tsx']
+      ? ['SettingsPages.tsx', 'Phase4Editors.tsx', 'LegacyBusinessInfoCompatibility.tsx', 'business-hours/BusinessHoursEditor.tsx', 'notifications/NotificationSettingsEditor.tsx', 'notifications/EmailVerificationDialog.tsx', 'line/LineIntegrationEditor.tsx', 'line/LineIntegrationComponents.tsx', 'account/AccountSettingsPage.tsx']
       : ['ServiceManagementPage.tsx', 'ServiceEditorPage.tsx', 'components/ServiceDeleteDialog.tsx'];
     for (const entry of entries) {
       const value = source(`${path}/${entry}`);

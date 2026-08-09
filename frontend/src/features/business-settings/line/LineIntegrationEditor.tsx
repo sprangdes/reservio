@@ -1,28 +1,94 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../../../api';
 import { useToast } from '../../../state/ToastContext';
-import { useModalFocusTrap } from '../../business-operations/reservations/ui/useModalFocusTrap';
-import SettingsErrorSummary from '../components/SettingsErrorSummary';
+import { canProvisionRichMenu, canTestLineConnection, createLineCredentialForm, lineSafeErrorMessage, mapLineCredentialUpdate, normalizeBusinessLineIntegrationHealth, normalizeBusinessLineIntegrationSettings, type BusinessLineIntegrationHealth, type BusinessLineIntegrationSettings, type LineCredentialForm } from '../../line/lineDomain';
 import SettingsPageHeader from '../components/SettingsPageHeader';
+import { SettingsSectionError } from '../components/SettingsStates';
 import StickySaveBar from '../components/StickySaveBar';
-import { SettingsLoadingState, SettingsSectionError } from '../components/SettingsStates';
 import { useDirtyForm } from '../hooks/useDirtyForm';
 import { refreshSettingsOverviewSection } from '../hooks/useSettingsOverview';
-import { lineErrorMessage, lineSettingsPayload, lineSettingsValidation, normalizeLineSettings, normalizeLineStatus, type LineSettingsValue, type LineStatusValue } from './lineIntegration';
+import { BusinessLineConfigurationSummary, LineCredentialEditor, LineHealthList, LineIntegrationDangerZone, LineIntegrationOperations, LineIntegrationSkeleton, LineWebhookSettings } from './LineIntegrationComponents';
 
-const empty: LineSettingsValue = { channelId: '', channelSecretInput: '', accessTokenInput: '', hasStoredChannelSecret: false, hasStoredAccessToken: false, enabled: false, configured: false, webhookUrl: null };
-const fields = ['channelId', 'channelSecretInput', 'accessTokenInput'] as const;
-function ConfirmationDialog({ kind, pending, onCancel, onConfirm }: Readonly<{ kind: 'disable' | 'rotate'; pending: boolean; onCancel: () => void; onConfirm: () => void }>) { const cancel = useRef<HTMLButtonElement>(null); const dialog = useModalFocusTrap<HTMLElement>(cancel); const disable = kind === 'disable'; useEffect(() => { const key = (event: KeyboardEvent) => { if (event.key === 'Escape' && !pending) onCancel(); }; window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key); }, [onCancel, pending]); return <div className="business-settings__dialog-layer" role="presentation"><div className="business-settings__dialog-backdrop" aria-hidden="true"/><section ref={dialog} className="business-settings__dialog" role="alertdialog" aria-modal="true" aria-labelledby="line-confirm-title" aria-describedby="line-confirm-description"><h2 id="line-confirm-title">{disable ? '停用 LINE 整合？' : '重新產生 Webhook 金鑰？'}</h2><p id="line-confirm-description">{disable ? '停用後，LINE 相關通知與功能將停止運作，但目前的憑證設定會保留。' : '更新後，現有 Webhook URL 將立即失效，必須同步更新 LINE Developers Console。'}</p><footer><button ref={cancel} type="button" disabled={pending} onClick={onCancel}>取消</button><button type="button" className={disable ? 'is-destructive' : ''} disabled={pending} onClick={onConfirm}>{pending ? '處理中' : disable ? '停用整合' : '重新產生'}</button></footer></section></div>; }
+type EditorForm = LineCredentialForm & { enabled: boolean };
+const emptyForm: EditorForm = { channelId: '', channelSecret: '', channelAccessToken: '', enabled: false };
 
-export default function LineIntegrationEditor() { const { setSuccessMessage } = useToast(); const form = useDirtyForm<LineSettingsValue>({ key: 'merchant-line-integration', baseline: empty }); const [settings, setSettings] = useState<LineSettingsValue | null>(null); const [status, setStatus] = useState<LineStatusValue | null>(null); const [loading, setLoading] = useState(true); const [settingsError, setSettingsError] = useState(''); const [statusError, setStatusError] = useState(''); const [stale, setStale] = useState(false); const [action, setAction] = useState<'test' | 'rich' | 'disable' | 'rotate' | null>(null); const [confirm, setConfirm] = useState<'disable' | 'rotate' | null>(null); const [reveal, setReveal] = useState({ secret: false, token: false });
-  const apply = (next: LineSettingsValue, preserve = false) => { setSettings(next); if (!preserve || !form.isDirty) form.reset(next); else form.markStale(true); };
-  const loadStatus = async () => { try { const response: any = await api.lineIntegrationStatus(); const next = normalizeLineStatus(response.data); if (!next) throw new Error('invalid'); setStatus(next); setStatusError(''); } catch (reason) { setStatusError(lineErrorMessage(reason, 'test')); } };
-  const load = async (preserve = false) => { setSettingsError(''); try { const response: any = await api.lineIntegrationSettings(); const next = normalizeLineSettings(response.data); if (!next) throw new Error('invalid'); apply(next, preserve); setStale(false); await loadStatus(); return true; } catch (reason) { setSettingsError(lineErrorMessage(reason)); setStale(Boolean(settings)); return false; } finally { setLoading(false); } };
+function unavailableHealth(settings: BusinessLineIntegrationSettings): BusinessLineIntegrationHealth {
+  const unavailable = { kind: 'unavailable' as const, message: '完成並啟用設定後即可檢查。', checkedAt: null };
+  return { configured: settings.configured, enabled: settings.enabled, lastCheckedAt: null, webhook: unavailable, accessToken: unavailable, richMenu: unavailable };
+}
+
+export default function LineIntegrationEditor() {
+  const { setSuccessMessage } = useToast();
+  const form = useDirtyForm<EditorForm>({ key: 'merchant-line-integration', baseline: emptyForm });
+  const [settings, setSettings] = useState<BusinessLineIntegrationSettings | null>(null);
+  const [health, setHealth] = useState<BusinessLineIntegrationHealth | null>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [stale, setStale] = useState(false);
+  const [pending, setPending] = useState<'test' | 'rich' | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const load = async (preserveEdits = false) => {
+    setError('');
+    try {
+      const settingsResponse = await api.lineIntegrationSettings();
+      const nextSettings = normalizeBusinessLineIntegrationSettings(settingsResponse.data);
+      if (!nextSettings) throw new Error('malformed data');
+      const nextHealth = nextSettings.configured
+        ? normalizeBusinessLineIntegrationHealth((await api.lineIntegrationStatus()).data)
+        : unavailableHealth(nextSettings);
+      if (!nextHealth || nextHealth.configured !== nextSettings.configured || nextHealth.enabled !== nextSettings.enabled) throw new Error('malformed data');
+      setSettings(nextSettings);
+      setHealth(nextHealth);
+      if (!preserveEdits || !form.isDirty) form.reset({ ...createLineCredentialForm(nextSettings), enabled: nextSettings.enabled });
+      else form.markStale(true);
+      setStale(false);
+      return true;
+    } catch (reason) {
+      setError(lineSafeErrorMessage(reason));
+      if (settings) { setStale(true); form.markStale(true); }
+      return false;
+    } finally { setInitialLoading(false); }
+  };
+
   useEffect(() => { void load(); }, []);
-  const save = async () => { if (!settings || form.isSubmitting) return; const errors = lineSettingsValidation(form.values); if (Object.keys(errors).length) { form.setValidation({ fieldErrors: errors }); document.getElementById(`line-${Object.keys(errors)[0]}`)?.focus(); return; } try { form.beginSubmitting(); await api.saveLineIntegrationSettings(lineSettingsPayload(form.values)); form.completeSuccess({ ...form.values, channelSecretInput: '', accessTokenInput: '', hasStoredChannelSecret: true, hasStoredAccessToken: true }); const reloaded = await load(false); if (!reloaded) { form.completeFailure('設定已送出，但暫時無法重新取得確認結果。'); return; } setSuccessMessage('LINE 整合設定已儲存'); refreshSettingsOverviewSection('lineSettings'); } catch (reason) { form.completeFailure(lineErrorMessage(reason)); } };
-  const run = async (kind: 'test' | 'rich' | 'disable' | 'rotate') => { if (action) return; try { setAction(kind); if (kind === 'test') { const result: any = await api.testLineIntegrationConnection(); const next = normalizeLineStatus(result.data); if (!next) throw new Error('invalid'); setStatus(next); setSuccessMessage('LINE 連線測試完成'); } else if (kind === 'rich') { const result: any = await api.provisionLineRichMenu(); const next = normalizeLineStatus(result.data); if (!next) throw new Error('invalid'); setStatus(next); setSuccessMessage('LINE 圖文選單已建立或更新'); } else { const result: any = kind === 'disable' ? await api.disableLineIntegration() : await api.rotateLineWebhookKey(); const next = normalizeLineSettings(result.data); if (!next) throw new Error('invalid'); apply(next, true); await loadStatus(); refreshSettingsOverviewSection('lineSettings'); setSuccessMessage(kind === 'disable' ? 'LINE 整合已停用' : 'Webhook URL 已更新'); } setConfirm(null); } catch (reason) { setSettingsError(lineErrorMessage(reason, kind === 'rich' ? 'rich' : kind === 'test' ? 'test' : 'save')); } finally { setAction(null); } };
-  const copyWebhook = async () => { if (!settings?.webhookUrl) return; try { await navigator.clipboard.writeText(settings.webhookUrl); setSuccessMessage('Webhook URL 已複製'); } catch { setSettingsError('無法自動複製，請手動選取 Webhook URL。'); } };
-  if (loading && !settings && !settingsError) return <SettingsLoadingState/>;
-  if (!settings) return <><SettingsPageHeader title="LINE 整合" description="設定與管理 LINE Messaging API 連線資訊與整合功能。"/><SettingsSectionError title="無法載入 LINE 整合設定" message={settingsError || '暫時無法取得資料'} onRetry={() => void load()}/></>;
-  const configured = settings.configured; const operationBlocked = !configured || !settings.enabled; const timestamp = status?.checkedAt ? new Date(status.checkedAt).toLocaleString('zh-TW') : '尚無最近檢查結果';
-  return <div className="line-integration"><SettingsPageHeader title="LINE Messaging API 整合" description="設定與管理 LINE Messaging API 連線資訊與整合功能。"/>{settingsError ? <SettingsSectionError title={stale ? 'LINE 設定可能已過期' : 'LINE 操作未完成'} message={settingsError} stale={stale} onRetry={() => void load(true)}/> : null}<section className="line-integration__status" aria-labelledby="line-status-heading"><h2 id="line-status-heading">連線狀態總覽</h2><div className="line-integration__status-grid"><strong><i className={`bi ${settings.enabled ? 'bi-check-circle-fill' : 'bi-pause-circle'}`} aria-hidden="true"/>{settings.enabled ? '已啟用' : configured ? '已停用' : '尚未設定'}</strong><span><i className="bi bi-clock" aria-hidden="true"/>最近一次檢查：{timestamp}</span><small>以下狀態為最近一次檢查結果，並非持續即時監控。</small></div>{status ? <ul><li className={status.webhookReady ? 'is-ok' : 'is-fail'}>Webhook <span>{status.webhookMessage}</span></li><li className={status.tokenValid ? 'is-ok' : 'is-fail'}>Access Token <span>{status.tokenMessage}</span></li><li className={status.richMenuReady ? 'is-ok' : 'is-pending'}>Rich Menu <span>{status.richMenuMessage}</span></li></ul> : null}</section><section className="line-integration__grid"><section className="business-settings__section line-integration__configuration"><h2>憑證設定</h2><SettingsErrorSummary errors={form.fieldErrors} fieldOrder={fields} onFocus={(field) => document.getElementById(`line-${field}`)?.focus()}/><label>Channel ID<input id="line-channelId" value={form.values.channelId} aria-invalid={Boolean(form.fieldErrors.channelId)} aria-describedby={form.fieldErrors.channelId ? 'line-channelId-error' : undefined} onChange={(event) => form.setField('channelId', event.target.value)}/>{form.fieldErrors.channelId ? <small id="line-channelId-error">{form.fieldErrors.channelId}</small> : null}</label>{(['channelSecretInput', 'accessTokenInput'] as const).map((field) => { const secret = field === 'channelSecretInput'; const stored = secret ? form.values.hasStoredChannelSecret : form.values.hasStoredAccessToken; const visible = secret ? reveal.secret : reveal.token; return <label key={field}>{secret ? 'Channel Secret' : 'Channel Access Token'}<span className="line-integration__secret"><input id={`line-${field}`} type={visible ? 'text' : 'password'} value={form.values[field]} aria-invalid={Boolean(form.fieldErrors[field])} onChange={(event) => form.setField(field, event.target.value)} autoComplete="new-password"/><button type="button" aria-label={`${visible ? '隱藏' : '顯示'}${secret ? ' Channel Secret' : ' Access Token'}`} onClick={() => setReveal((current) => secret ? { ...current, secret: !current.secret } : { ...current, token: !current.token })}><i className={`bi ${visible ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden="true"/></button></span><small>{stored ? '已設定；留空將保留目前設定。' : '尚未設定。'}</small>{form.fieldErrors[field] ? <small className="is-error">{form.fieldErrors[field]}</small> : null}</label>; })}<label className="line-integration__enabled"><input type="checkbox" checked={form.values.enabled} onChange={(event) => form.setField('enabled', event.target.checked)}/><span><strong>啟用 LINE 整合</strong><small>啟用前需完成 Channel ID、Secret 與 Access Token 設定。</small></span></label></section><section className="business-settings__section line-integration__webhook"><h2>Webhook 設定</h2><label>LINE Developers Console 的 Webhook URL<span className="line-integration__webhook-input"><input value={settings.webhookUrl || ''} readOnly aria-label="LINE Developers Console 的 Webhook URL"/><button type="button" disabled={!settings.webhookUrl} onClick={() => void copyWebhook()}>複製</button></span></label><div className="line-integration__danger-note"><strong>更新 Webhook 金鑰</strong><p>更新後，現有 Webhook URL 將立即失效，必須同步更新 LINE Developers Console。</p><button type="button" disabled={!configured || action !== null} onClick={() => setConfirm('rotate')}>重新產生 Webhook 金鑰</button></div></section></section><section className="business-settings__section line-integration__operations"><h2>連線與操作</h2>{statusError ? <SettingsSectionError title="最近連線狀態暫時無法取得" message={statusError} stale={Boolean(status)} onRetry={() => void loadStatus()}/> : null}<div><button type="button" disabled={operationBlocked || action !== null} onClick={() => void run('test')}>{action === 'test' ? '測試中' : '測試連線'}</button><button type="button" disabled={operationBlocked || !status?.tokenValid || action !== null} onClick={() => void run('rich')}>{action === 'rich' ? '建立中' : status?.richMenuReady ? '更新 LINE 圖文選單' : '建立 LINE 圖文選單'}</button></div><small>測試與建立圖文選單使用目前已儲存的設定，不包含尚未儲存的編輯內容。</small></section>{settings.enabled ? <section className="business-settings__section line-integration__disable"><h2>整合操作</h2><p>停用後，LINE 相關通知與功能將停止運作，但目前的憑證設定會保留。</p><button type="button" className="is-destructive" disabled={action !== null} onClick={() => setConfirm('disable')}>停用整合</button></section> : null}<StickySaveBar state={form.saveState} onSave={() => void save()} onDiscard={form.discard} primaryLabel="儲存設定"/>{confirm ? <ConfirmationDialog kind={confirm} pending={action === confirm} onCancel={() => setConfirm(null)} onConfirm={() => void run(confirm)}/> : null}</div>; }
+
+  const save = async () => {
+    if (!settings || form.isSubmitting) return;
+    try {
+      form.beginSubmitting();
+      const request = mapLineCredentialUpdate(form.values, settings, form.values.enabled);
+      const response = await api.saveLineIntegrationSettings(request);
+      const nextSettings = normalizeBusinessLineIntegrationSettings(response.data);
+      if (!nextSettings) throw new Error('malformed data');
+      setSettings(nextSettings);
+      refreshSettingsOverviewSection('lineSettings');
+      if (!await load(false)) { form.markStale(true); return; }
+      setSuccessMessage('LINE 整合設定已儲存');
+    } catch (reason) { form.completeFailure(lineSafeErrorMessage(reason)); }
+  };
+
+  const runOperation = async (kind: 'test' | 'rich') => {
+    if (!settings || pending) return;
+    try {
+      setPending(kind);
+      const response = kind === 'test' ? await api.testLineIntegrationConnection() : await api.provisionLineRichMenu();
+      const nextHealth = normalizeBusinessLineIntegrationHealth(response.data);
+      if (!nextHealth || nextHealth.configured !== settings.configured || nextHealth.enabled !== settings.enabled) throw new Error('malformed data');
+      setHealth(nextHealth);
+      setStale(false);
+      setSuccessMessage(kind === 'test' ? 'LINE 連線測試完成' : 'LINE Rich Menu 已建立或更新');
+    } catch (reason) { setError(lineSafeErrorMessage(reason)); } finally { setPending(null); }
+  };
+
+  const copyWebhook = async () => {
+    if (!settings?.webhookUrl) return;
+    try { await navigator.clipboard.writeText(settings.webhookUrl); setCopied(true); } catch { setError('無法自動複製 Webhook URL，請手動選取。'); }
+  };
+
+  if (initialLoading && !settings) return <LineIntegrationSkeleton />;
+  if (!settings) return <><SettingsPageHeader title="LINE 整合" description="設定商家的 LINE Messaging API，並確認 Webhook、存取權杖與 Rich Menu 是否可正常運作。" /><SettingsSectionError title="暫時無法取得 LINE 整合設定，請稍後再試。" message={error || '暫時無法取得 LINE 整合設定，請稍後再試。'} onRetry={() => void load()} /></>;
+  const currentHealth = health || unavailableHealth(settings);
+  const canTest = canTestLineConnection(settings);
+  return <main className="line-integration"><SettingsPageHeader title="LINE 整合" description="設定商家的 LINE Messaging API，並確認 Webhook、存取權杖與 Rich Menu 是否可正常運作。" />{error ? <SettingsSectionError title={stale ? '目前顯示的是先前載入的狀態' : 'LINE 操作未完成'} message={stale ? '目前顯示的是先前載入的狀態，部分資訊可能尚未同步。' : error} stale={stale} onRetry={() => void load(true)} /> : null}<BusinessLineConfigurationSummary settings={settings} health={currentHealth} /><LineHealthList health={currentHealth} /><LineCredentialEditor form={form.values} settings={settings} errors={form.fieldErrors} onChange={form.setField} /><LineWebhookSettings webhookUrl={settings.webhookUrl} onCopy={() => void copyWebhook()} copied={copied} /><LineIntegrationOperations canTest={canTest} canProvision={canProvisionRichMenu(settings, currentHealth)} pending={pending} onTest={() => void runOperation('test')} onProvision={() => void runOperation('rich')} /><LineIntegrationDangerZone /><StickySaveBar state={form.saveState} onSave={() => void save()} onDiscard={form.discard} primaryLabel="儲存設定" /></main>;
+}
