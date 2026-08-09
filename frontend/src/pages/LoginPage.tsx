@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api, API_BASE } from '../api';
 import { useAuth } from '../state/AuthContext';
 import { useToast } from '../state/ToastContext';
+import { safeInternalReturnTo } from '../features/line/lineDomain';
 
 export default function LoginPage() {
   const { setMe } = useAuth();
@@ -17,7 +18,7 @@ export default function LoginPage() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const requestedReturnTo = params.get('returnTo');
-    if (requestedReturnTo?.startsWith('/') && !requestedReturnTo.startsWith('//')) {
+    if (safeInternalReturnTo(requestedReturnTo, '') !== '') {
       sessionStorage.setItem('reservio.returnTo', requestedReturnTo);
     }
     if (params.get('registered')) {
@@ -78,7 +79,7 @@ export default function LoginPage() {
   const safeReturnTo = () => {
     const returnTo = sessionStorage.getItem('reservio.returnTo');
     sessionStorage.removeItem('reservio.returnTo');
-    return returnTo?.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/';
+    return safeInternalReturnTo(returnTo);
   };
 
   return (
