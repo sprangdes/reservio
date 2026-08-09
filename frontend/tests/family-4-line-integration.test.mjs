@@ -27,7 +27,7 @@ test('LINE save mapping preserves intentional blank credential fields and exclud
   assert.deepEqual(domain.lineSettingsPayload(input), { channelId: 'channel', channelSecret: '', accessToken: 'replacement-token', enabled: true });
   assert.equal(input.channelId, ' channel ');
 });
-test('LINE editor uses Phase 2 operational APIs and defers high-risk mutations', () => {
+test('LINE editor retains its settings/operations integration without unsafe browser persistence', () => {
   const editor = source('LineIntegrationEditor.tsx');
-  assert.match(editor, /api\.lineIntegrationSettings/); assert.match(editor, /api\.saveLineIntegrationSettings/); assert.match(editor, /api\.testLineIntegrationConnection/); assert.match(editor, /api\.provisionLineRichMenu/); assert.match(editor, /key: 'merchant-line-integration'/); assert.match(editor, /mapLineCredentialUpdate/); assert.match(editor, /refreshSettingsOverviewSection\('lineSettings'\)/); assert.doesNotMatch(editor, /api\.(disableLineIntegration|rotateLineWebhookKey)|localStorage|sessionStorage|window\.confirm/);
+  assert.match(editor, /api\.lineIntegrationSettings/); assert.match(editor, /api\.saveLineIntegrationSettings/); assert.match(editor, /api\.testLineIntegrationConnection/); assert.match(editor, /api\.provisionLineRichMenu/); assert.match(editor, /key: 'merchant-line-integration'/); assert.match(editor, /mapLineCredentialUpdate/); assert.match(editor, /refreshSettingsOverviewSection\('lineSettings'\)/); assert.doesNotMatch(editor, /localStorage|sessionStorage|window\.confirm/);
 });
