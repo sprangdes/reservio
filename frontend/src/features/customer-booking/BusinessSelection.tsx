@@ -12,7 +12,7 @@ export function BusinessSelection({ businesses, value, state, onSelect, onRetry 
   return <section className="booking-flow__section" aria-labelledby="booking-business-heading">
     <h2 id="booking-business-heading">選擇店家</h2>
     {state === 'loading' ? <div className="booking-flow__skeleton" aria-label="正在載入預約店家"><span /><span /></div> : null}
-    {state === 'error' ? <div className="booking-flow__state" role="alert"><p>暫時無法載入預約店家，請稍後再試。</p><button type="button" onClick={onRetry}>重新載入</button></div> : null}
+    {state === 'error' ? <div className="booking-flow__state" role="alert"><p>暫時無法載入預約資訊，請稍後再試。</p><button type="button" onClick={onRetry}>重新載入</button></div> : null}
     {state === 'empty' ? <div className="booking-flow__state"><p>目前沒有可用的預約店家。</p></div> : null}
     {state === 'ready' ? <div className="booking-flow__businesses" role="radiogroup" aria-label="預約店家">
       {businesses.map((business) => <label key={business.id} className={value === business.id ? 'is-selected' : ''}>

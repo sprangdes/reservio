@@ -5,7 +5,7 @@ import ReservationFilters from './ReservationFilters';
 import ReservationRow from './ReservationRow';
 import CancelReservationOverlay from './CancelReservationOverlay';
 import type { ReservationSummary } from './domain';
-import { ReservationEmptyState, ReservationErrorState, ReservationListSkeleton, ReservationStaleWarning } from './ReservationWorkspaceStates';
+import { ReservationEmptyState, ReservationErrorState, ReservationFilteredEmptyState, ReservationListSkeleton, ReservationStaleWarning } from './ReservationWorkspaceStates';
 import { useCustomerReservationsWorkspace } from './useCustomerReservationsWorkspace';
 
 function localNow(): Readonly<{ date: string; time: string }> {
@@ -41,7 +41,7 @@ export default function MyReservationsWorkspace() {
         </header>
         {initialLoading ? <ReservationListSkeleton /> : null}
         {initialError ? <ReservationErrorState onRetry={workspace.retry} /> : null}
-        {successfulEmpty ? <ReservationEmptyState /> : null}
+        {successfulEmpty ? (filtered ? <ReservationFilteredEmptyState onClear={workspace.clearFilters} /> : <ReservationEmptyState />) : null}
         {workspace.hasLoadedPage && !successfulEmpty ? (
           <>
             {workspace.cancellationNotice ? <section id="reservation-cancellation-stale" className="customer-reservation-cancellation-notice" tabIndex={-1} role="status" aria-live="polite"><p>{workspace.cancellationNotice}</p></section> : null}

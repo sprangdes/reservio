@@ -1,17 +1,18 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { addLocalMonths, fromFlatpickrDateValue, localDateFromDate, toFlatpickrDateValue } from './bookingDates';
 
 type Props = Readonly<{
   value: string | null;
   disabledDates: string[];
   disabledState: 'idle' | 'loading' | 'ready' | 'empty' | 'error';
-  onChange: (date: string) => void;
+  onChange: (date: string | null) => void;
   onRetryDisabledDates: () => void;
 }>;
 
 export function BookingDatePicker({ value, disabledDates, disabledState, onChange, onRetryDisabledDates }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const onChangeRef = useRef(onChange);
+  const [inputError, setInputError] = useState('');
   onChangeRef.current = onChange;
 
   useEffect(() => {
@@ -25,7 +26,10 @@ export function BookingDatePicker({ value, disabledDates, disabledState, onChang
       defaultDate: toFlatpickrDateValue(value), calendarClass: 'booking-flow__calendar',
       onChange: (_dates: unknown, dateValue: string) => {
         const localDate = fromFlatpickrDateValue(dateValue);
-        if (localDate) onChangeRef.current(localDate);
+        if (localDate) {
+          setInputError('');
+          onChangeRef.current(localDate);
+        }
       }
     });
     return () => picker.destroy();
@@ -36,6 +40,31 @@ export function BookingDatePicker({ value, disabledDates, disabledState, onChang
     {disabledState === 'loading' ? <p className="booking-flow__hint" aria-live="polite">正在更新不可預約日期。</p> : null}
     {disabledState === 'error' ? <div className="booking-flow__state" role="alert"><p>暫時無法取得不可預約日期，請稍後再試。</p><button type="button" onClick={onRetryDisabledDates}>重新載入日期</button></div> : null}
     <label htmlFor="booking-date">預約日期</label>
-    <input id="booking-date" ref={inputRef} className="booking-flow__date-input" defaultValue={toFlatpickrDateValue(value) || ''} placeholder="請選擇日期" inputMode="numeric" disabled={disabledState !== 'ready'} />
+    <input
+      id="booking-date"
+      ref={inputRef}
+      className="booking-flow__date-input"
+      defaultValue={toFlatpickrDateValue(value) || ''}
+      placeholder="請選擇日期"
+      inputMode="numeric"
+      disabled={disabledState !== 'ready'}
+      aria-invalid={Boolean(inputError)}
+      aria-describedby={inputError ? 'booking-date-error' : undefined}
+      onBlur={(event) => {
+        const localDate = fromFlatpickrDateValue(event.target.value);
+        if (!event.target.value) {
+          setInputError('');
+          onChange(null);
+          return;
+        }
+        if (!localDate || disabledDates.includes(localDate)) {
+          setInputError('請選擇有效且可預約的日期。');
+          return;
+        }
+        setInputError('');
+        onChange(localDate);
+      }}
+    />
+    {inputError ? <p id="booking-date-error" className="booking-flow__input-error" role="alert">{inputError}</p> : null}
   </section>;
 }

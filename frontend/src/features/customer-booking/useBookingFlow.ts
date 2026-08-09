@@ -107,7 +107,7 @@ export function useBookingFlow() {
     setDraft((current) => selectBookingService(current, service));
   }, []);
 
-  const selectDate = useCallback((date: string) => {
+  const selectDate = useCallback((date: string | null) => {
     slotGuard.current.abort(); setSlots([]); setSlotState('idle');
     setDraft((current) => selectBookingDate(current, date));
   }, []);

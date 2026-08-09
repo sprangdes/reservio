@@ -15,3 +15,7 @@ export function ReservationStaleWarning({ onRetry }: Readonly<{ onRetry: () => v
 export function ReservationEmptyState() {
   return <section className="customer-reservation-empty"><p>目前還沒有預約。</p><Link to="/reservation/new">建立預約</Link></section>;
 }
+
+export function ReservationFilteredEmptyState({ onClear }: Readonly<{ onClear: () => void }>) {
+  return <section className="customer-reservation-empty"><p>目前沒有符合篩選條件的預約。</p><button type="button" onClick={onClear}>清除篩選</button></section>;
+}
