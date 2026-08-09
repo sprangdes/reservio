@@ -111,7 +111,7 @@ function NotificationSettingsCompatibility() {
 }
 
 function LineIntegrationCompatibility() {
-  return <RequireBusiness><BusinessWorkspaceShell focused><SettingsScaffoldPage page="line" /></BusinessWorkspaceShell></RequireBusiness>;
+  return <RequireBusiness><Navigate to="/business/settings/integrations/line" replace /></RequireBusiness>;
 }
 
 export default function App() {

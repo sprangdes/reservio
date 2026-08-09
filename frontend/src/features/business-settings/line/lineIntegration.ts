@@ -31,6 +31,11 @@ export function lineSettingsValidation(value: LineSettingsValue): Record<string,
   return errors;
 }
 
-export function lineSettingsPayload(value: LineSettingsValue): LineSettingsPayload { return { channelId: value.channelId.trim(), channelSecret: value.channelSecretInput, accessToken: value.accessTokenInput, enabled: value.enabled }; }
+export function lineSettingsPayload(value: LineSettingsValue): LineSettingsPayload {
+  const channelSecret = value.channelSecretInput.trim();
+  const accessToken = value.accessTokenInput.trim();
+  if (/^•{2,}$/.test(channelSecret) || /^•{2,}$/.test(accessToken)) throw new Error('LINE_MASKED_CREDENTIAL_REJECTED');
+  return { channelId: value.channelId.trim(), channelSecret, accessToken, enabled: value.enabled };
+}
 
 export function lineErrorMessage(error: unknown, action = 'save') { const raw = error instanceof Error ? error.message : ''; const lower = raw.toLowerCase(); if (lower.includes('channel id')) return '請確認 Channel ID。'; if (lower.includes('secret') || lower.includes('access token')) return '請確認 LINE 憑證設定。'; if (lower.includes('unauthorized') || lower.includes('forbidden')) return '目前帳號沒有管理 LINE 整合的權限。'; if (lower.includes('network') || lower.includes('fetch')) return '網路連線不穩，請稍後再試。'; if (lower.includes('rate')) return '操作過於頻繁，請稍後再試。'; if (action === 'test') return 'LINE 連線測試失敗，請確認已儲存的整合設定。'; if (action === 'rich') return '無法建立或更新 LINE 圖文選單，請確認已儲存的整合設定。'; return '無法完成 LINE 整合設定，請稍後再試。'; }
