@@ -93,6 +93,13 @@ function RequireBusiness({ children }: Readonly<{ children: JSX.Element }>) {
   return children;
 }
 
+function RequireCustomer({ children }: Readonly<{ children: JSX.Element }>) {
+  const { me, loading } = useAuth();
+  if (loading) return null;
+  if (me?.role !== 'ROLE_USER') return <Navigate to="/" replace />;
+  return children;
+}
+
 function SettingsRoute({ page }: Readonly<{ page: 'landing' | 'profile' | 'booking' | 'hours' | 'notifications' | 'line' | 'account' }>) {
   const focused = page !== 'landing';
   return <RequireBusiness><BusinessWorkspaceShell focused={focused}>{page === 'landing' ? <SettingsLandingPage /> : <SettingsScaffoldPage page={page} />}</BusinessWorkspaceShell></RequireBusiness>;
@@ -180,7 +187,7 @@ export default function App() {
         element={
           <Layout>
             <RequireAuth>
-              <ReservationNewPage />
+              <RequireCustomer><ReservationNewPage /></RequireCustomer>
             </RequireAuth>
           </Layout>
         }
@@ -190,7 +197,7 @@ export default function App() {
         element={
           <Layout>
             <RequireAuth>
-              <MyReservationsPage />
+              <RequireCustomer><MyReservationsPage /></RequireCustomer>
             </RequireAuth>
           </Layout>
         }

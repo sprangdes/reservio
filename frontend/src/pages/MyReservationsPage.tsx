@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { formatTimeHM } from '../utils/time';
 import { useToast } from '../state/ToastContext';
-import { useAuth } from '../state/AuthContext';
 import ReservationStatusBadge from '../components/reservations/ReservationStatusBadge';
 import ReservationSortButton from '../components/reservations/ReservationSortButton';
 import ReservationPaginationFooter from '../components/reservations/ReservationPaginationFooter';
@@ -12,8 +10,6 @@ import type { ReservationItem, ServiceOption } from '../components/reservations/
 
 export default function MyReservationsPage() {
   const { setSuccessMessage, setErrorMessage } = useToast();
-  const { me, loading } = useAuth();
-  const navigate = useNavigate();
   const [data, setData] = useState<{ content: ReservationItem[]; totalPages: number; totalElements: number }>({ content: [], totalPages: 0, totalElements: 0 });
   const [filterDraft, setFilterDraft] = useState({
     dateFrom: '',
@@ -50,12 +46,6 @@ export default function MyReservationsPage() {
   const updateFilterDraft = (patch: Partial<typeof filterDraft>) => {
     setFilterDraft({ ...filterDraftRef.current, ...patch });
   };
-
-  useEffect(() => {
-    if (!loading && me?.role === 'ROLE_BUSINESS') {
-      navigate('/reservation/manage', { replace: true });
-    }
-  }, [loading, me, navigate]);
 
   const load = async () => {
     const condition = {
