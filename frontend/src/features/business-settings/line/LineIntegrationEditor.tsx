@@ -71,7 +71,11 @@ export default function LineIntegrationEditor() {
       if (!nextSettings) throw new Error('malformed data');
       setSettings(nextSettings);
       refreshSettingsOverviewSection('lineSettings');
-      if (!await load(false)) { form.markStale(true); return; }
+      if (!await load(false)) {
+        form.markStale(true);
+        form.completeFailure('設定已送出，但目前無法確認最新 LINE 整合狀態。請重新載入設定。');
+        return;
+      }
       setSuccessMessage('LINE 整合設定已儲存');
     } catch (reason) { form.completeFailure(lineSafeErrorMessage(reason)); }
   };

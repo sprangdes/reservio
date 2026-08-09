@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { api } from '../api';
+import { api, API_BASE } from '../api';
 import { lineSafeErrorMessage, normalizeLineAccountLinkRequest, parseAccountLinkRequestToken, safeInternalReturnTo, validateLineAccountLinkHandoff, type LineAccountLinkRequest } from '../features/line/lineDomain';
 import { useAuth } from '../state/AuthContext';
 
@@ -54,7 +54,10 @@ export default function LineAccountLinkPage() {
   useEffect(() => { void load(); }, [load]);
 
   const currentReturnTo = useMemo(() => safeInternalReturnTo(`${location.pathname}${location.search}`), [location.pathname, location.search]);
-  const loginDestination = `/login?returnTo=${encodeURIComponent(currentReturnTo)}`;
+  const beginLineLogin = () => {
+    sessionStorage.setItem('reservio.returnTo', currentReturnTo);
+    globalThis.location.assign(`${API_BASE}/api/auth/line/user`);
+  };
   const returnToReservio = () => navigate('/');
   const returnToLine = () => {
     if (globalThis.history.length > 1) globalThis.history.back();
@@ -95,5 +98,5 @@ export default function LineAccountLinkPage() {
 
   const customerEligible = me?.role === 'ROLE_USER' && me.lineLoginSession;
   const businessRole = Boolean(me && me.role !== 'ROLE_USER');
-  return shell(<><p className="line-account-link__eyebrow">帳號連結</p><h1 id="line-account-link-title">連結 LINE 帳號</h1><article className="line-account-link__business" aria-label={`商家 ${status.businessName}`}><i className="bi bi-shop" aria-hidden="true" /><span><strong>{status.businessName}</strong><small>商家 LINE 預約關聯</small></span></article><p>完成連結後，這個商家 LINE 對話中的既有預約可關聯到你的 Reservio 帳號。</p><p>此連結只套用於 {status.businessName}，不會影響其他商家的 LINE 關聯。</p><div className="line-account-link__validity"><i className="bi bi-clock" aria-hidden="true" /><span><strong>準備連結</strong><small>有效至 {formatExpiry(status.expiresAt)}</small></span></div>{error ? <div className="line-account-link__state line-account-link__state--error" role="alert"><i className="bi bi-exclamation-circle" aria-hidden="true" /><p>{error}</p></div> : null}{businessRole ? <div className="line-account-link__state line-account-link__state--error" role="alert"><i className="bi bi-person-x" aria-hidden="true" /><p>商家帳號無法完成此 LINE 帳號連結。請使用 Reservio 客戶帳號繼續。</p></div> : customerEligible ? <button type="button" className="line-account-link__primary" disabled={confirming} onClick={() => void confirm()}><i className="bi bi-line" aria-hidden="true" />{confirming ? '正在前往 LINE…' : '前往 LINE 完成連結'}</button> : <button type="button" className="line-account-link__primary" onClick={() => navigate(loginDestination)}><i className="bi bi-line" aria-hidden="true" />使用 LINE 登入並繼續</button>}<p className="line-account-link__handoff"><i className="bi bi-box-arrow-up-right" aria-hidden="true" />將離開 Reservio，前往 LINE 完成確認。</p><p className="line-account-link__security"><i className="bi bi-shield-check" aria-hidden="true" />不會顯示或公開你的 LINE 帳號識別資料。</p><button type="button" className="line-account-link__back" onClick={returnToReservio}><i className="bi bi-arrow-left" aria-hidden="true" />返回</button></>);
+  return shell(<><p className="line-account-link__eyebrow">帳號連結</p><h1 id="line-account-link-title">連結 LINE 帳號</h1><article className="line-account-link__business" aria-label={`商家 ${status.businessName}`}><i className="bi bi-shop" aria-hidden="true" /><span><strong>{status.businessName}</strong><small>商家 LINE 預約關聯</small></span></article><p>完成連結後，這個商家 LINE 對話中的既有預約可關聯到你的 Reservio 帳號。</p><p>此連結只套用於 {status.businessName}，不會影響其他商家的 LINE 關聯。</p><div className="line-account-link__validity"><i className="bi bi-clock" aria-hidden="true" /><span><strong>準備連結</strong><small>有效至 {formatExpiry(status.expiresAt)}</small></span></div>{error ? <div className="line-account-link__state line-account-link__state--error" role="alert"><i className="bi bi-exclamation-circle" aria-hidden="true" /><p>{error}</p></div> : null}{businessRole ? <div className="line-account-link__state line-account-link__state--error" role="alert"><i className="bi bi-person-x" aria-hidden="true" /><p>商家帳號無法完成此 LINE 帳號連結。請使用 Reservio 客戶帳號繼續。</p></div> : customerEligible ? <button type="button" className="line-account-link__primary" disabled={confirming} onClick={() => void confirm()}><i className="bi bi-line" aria-hidden="true" />{confirming ? '正在前往 LINE…' : '前往 LINE 完成連結'}</button> : <button type="button" className="line-account-link__primary" onClick={beginLineLogin}><i className="bi bi-line" aria-hidden="true" />使用 LINE 登入並繼續</button>}<p className="line-account-link__handoff"><i className="bi bi-box-arrow-up-right" aria-hidden="true" />將離開 Reservio，前往 LINE 完成確認。</p><p className="line-account-link__security"><i className="bi bi-shield-check" aria-hidden="true" />不會顯示或公開你的 LINE 帳號識別資料。</p><button type="button" className="line-account-link__back" onClick={returnToReservio}><i className="bi bi-arrow-left" aria-hidden="true" />返回</button></>);
 }

@@ -40,6 +40,7 @@ export default function LineAccountLinksPage() {
   const { setSuccessMessage } = useToast();
   const [items, setItems] = useState<LinkedLineBusiness[]>([]);
   const itemsRef = useRef<LinkedLineBusiness[]>([]);
+  const hasAuthoritativeListRef = useRef(false);
   const [phase, setPhase] = useState<LoadPhase>('loading');
   const [staleMessage, setStaleMessage] = useState('');
   const [selected, setSelected] = useState<LinkedLineBusiness | null>(null);
@@ -60,15 +61,16 @@ export default function LineAccountLinksPage() {
   }, []);
 
   const load = useCallback(async () => {
-    const hasPreviousData = itemsRef.current.length > 0;
-    if (!hasPreviousData) setPhase('loading');
+    const hasAuthoritativeList = hasAuthoritativeListRef.current;
+    if (!hasAuthoritativeList) setPhase('loading');
     try {
       const next = await fetchAuthoritativeList();
       replaceItems(next);
+      hasAuthoritativeListRef.current = true;
       setStaleMessage('');
       setPhase('ready');
     } catch {
-      if (hasPreviousData) {
+      if (hasAuthoritativeList) {
         setStaleMessage(staleLoadError);
         setPhase('ready');
       } else {
@@ -85,17 +87,11 @@ export default function LineAccountLinksPage() {
     setSelected(null);
   }, [unlinkPending]);
 
-  const focusAfterSuccessfulUnlink = useCallback((nextItems: LinkedLineBusiness[]) => {
-    window.setTimeout(() => {
-      const nextAction = nextItems[0] ? document.getElementById(`line-unlink-${nextItems[0].unlinkId}`) : null;
-      (nextAction instanceof HTMLElement ? nextAction : headingRef.current)?.focus();
-    }, 0);
-  }, []);
-
   const unlink = useCallback(async () => {
     if (!selected || unlinkPending) return;
     setUnlinkPending(true);
     setUnlinkError('');
+    const previousItems = itemsRef.current;
     try {
       await api.unlinkLineBusiness(mapLineBusinessUnlinkInput(selected));
       try {
@@ -105,7 +101,12 @@ export default function LineAccountLinksPage() {
         setPhase('ready');
         setSelected(null);
         setSuccessMessage('已解除 LINE 綁定。');
-        focusAfterSuccessfulUnlink(next);
+        const removedIndex = previousItems.findIndex((item) => item.unlinkId === selected.unlinkId);
+        const nextItem = next[Math.min(Math.max(removedIndex, 0), next.length - 1)];
+        window.setTimeout(() => {
+          const nextAction = nextItem ? document.getElementById(`line-unlink-${nextItem.unlinkId}`) : null;
+          (nextAction instanceof HTMLElement ? nextAction : headingRef.current)?.focus();
+        }, 0);
       } catch {
         setStaleMessage(unlinkRefreshError);
         setPhase('ready');
@@ -116,7 +117,7 @@ export default function LineAccountLinksPage() {
     } finally {
       setUnlinkPending(false);
     }
-  }, [fetchAuthoritativeList, focusAfterSuccessfulUnlink, replaceItems, selected, setSuccessMessage, unlinkPending]);
+  }, [fetchAuthoritativeList, replaceItems, selected, setSuccessMessage, unlinkPending]);
 
   return <main className="line-account-links" aria-labelledby="line-account-links-title">
     <section className="line-account-links__content">

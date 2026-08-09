@@ -105,7 +105,8 @@ test('account-link parsing and normalization protect the opaque request token', 
   assert.equal(line.normalizeLineAccountLinkRequest({ status: 'CREATED', expiresAt: '2026-08-09T14:40:00' }), null);
   const page = source('pages/LineAccountLinkPage.tsx');
   assert.match(page, /parseAccountLinkRequestToken/);
-  assert.doesNotMatch(page, /sessionStorage|localStorage|console\.(log|debug)/);
+  assert.match(page, /sessionStorage\.setItem\('reservio\.returnTo', currentReturnTo\)/);
+  assert.doesNotMatch(page, /localStorage|console\.(log|debug)|request\.value\}</);
 });
 
 test('external LINE account-link handoff allows only the confirmed destination', () => {

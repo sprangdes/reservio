@@ -29,6 +29,7 @@ test('profile route and update API are registered', () => {
 test('account linking requires a LINE-linked customer session', () => {
   const page = source('src/pages/LineAccountLinkPage.tsx');
   assert.match(page, /me\.lineLoginSession/);
-  assert.match(page, /\/login\?returnTo=/);
+  assert.match(page, /\/api\/auth\/line\/user/);
+  assert.match(page, /sessionStorage\.setItem\('reservio\.returnTo', currentReturnTo\)/);
   assert.match(page, /使用 LINE 登入並繼續/);
 });
