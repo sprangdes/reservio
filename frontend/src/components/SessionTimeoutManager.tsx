@@ -44,7 +44,8 @@ export default function SessionTimeoutManager() {
     setMe(null);
     setErrorMessage(message);
     if (location.pathname !== '/login') {
-      navigate('/login', { replace: true });
+      const returnTo = encodeURIComponent(`${location.pathname}${location.search}`);
+      navigate(`/login?returnTo=${returnTo}`, { replace: true });
     }
   }, [clearTimers, location.pathname, navigate, setErrorMessage, setMe]);
 

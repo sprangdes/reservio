@@ -3,6 +3,16 @@ import type { LineApiResponse, LineCredentialUpdateRequest } from './features/li
 
 export const API_BASE = '';
 
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message = 'Request failed') {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 type Primitive = string | number | boolean;
 export type QueryParams = Record<string, Primitive | null | undefined>;
 
@@ -71,7 +81,7 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
 
   if (!response.ok) {
     const message = data?.message || 'Request failed';
-    throw new Error(message);
+    throw new ApiError(response.status, message);
   }
   emitSessionActivity();
   return data as T;
@@ -163,15 +173,15 @@ export const api = {
   dashboard: () => request('/api/dashboard'),
   businesses: () => request('/api/businesses'),
   businessesByCategory: (category: string) => request(`/api/businesses/${encodeURIComponent(category)}`),
-  getPreferredBusinesses: () => request('/api/preferred-businesses'),
+  getPreferredBusinesses: (options: RequestInit = {}) => request('/api/preferred-businesses', options),
   setPreferredBusinesses: (payload: unknown) => request('/api/preferred-businesses', {
     method: 'POST',
     body: JSON.stringify(payload)
   }),
-  businessServices: (id: string | number) => request(`/api/businesses/${id}/services`),
-  disabledDates: (businessId: string | number) => request(`/api/reservations/disabled-dates?businessId=${businessId}`),
-  slots: (date: string, duration: string | number, businessId: string | number) =>
-    request(`/api/reservations/slots?date=${date}&duration=${duration}&businessId=${businessId}`),
+  businessServices: (id: string | number, options: RequestInit = {}) => request(`/api/businesses/${id}/services`, options),
+  disabledDates: (businessId: string | number, options: RequestInit = {}) => request(`/api/reservations/disabled-dates?businessId=${businessId}`, options),
+  slots: (date: string, duration: string | number, businessId: string | number, options: RequestInit = {}) =>
+    request(`/api/reservations/slots?date=${date}&duration=${duration}&businessId=${businessId}`, options),
   createReservation: (payload: unknown) => request('/api/reservations', {
     method: 'POST',
     body: JSON.stringify(payload)
