@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { classifyLoadedReservationPage } from './query';
 import ReservationFilters from './ReservationFilters';
 import ReservationRow from './ReservationRow';
+import CancelReservationOverlay from './CancelReservationOverlay';
+import type { ReservationSummary } from './domain';
 import { ReservationEmptyState, ReservationErrorState, ReservationListSkeleton, ReservationStaleWarning } from './ReservationWorkspaceStates';
 import { useCustomerReservationsWorkspace } from './useCustomerReservationsWorkspace';
 
@@ -18,6 +20,7 @@ function Section({ title, children, headingRef }: Readonly<{ title: string; chil
 
 export default function MyReservationsWorkspace() {
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [cancelling, setCancelling] = useState<ReservationSummary | null>(null);
   const workspace = useCustomerReservationsWorkspace();
   const sections = useMemo(() => {
     const now = localNow();
@@ -36,17 +39,17 @@ export default function MyReservationsWorkspace() {
           <div><h1>我的預約</h1><p>在這裡查看與管理你的所有預約狀態。</p></div>
           <Link to="/reservation/new" className="customer-reservation-workspace__create"><i className="bi bi-plus-lg" aria-hidden="true" />建立預約</Link>
         </header>
-        <p id="reservation-cancellation-deferred" className="visually-hidden">取消流程將於下一階段提供。</p>
         {initialLoading ? <ReservationListSkeleton /> : null}
         {initialError ? <ReservationErrorState onRetry={workspace.retry} /> : null}
         {successfulEmpty ? <ReservationEmptyState /> : null}
         {workspace.hasLoadedPage && !successfulEmpty ? (
           <>
+            {workspace.cancellationNotice ? <section id="reservation-cancellation-stale" className="customer-reservation-cancellation-notice" tabIndex={-1} role="status" aria-live="polite"><p>{workspace.cancellationNotice}</p></section> : null}
             {workspace.stale ? <ReservationStaleWarning onRetry={workspace.retry} /> : null}
-            {sections.next ? <Section title="下一個預約"><ReservationRow reservation={sections.next} variant="next" /></Section> : null}
-            {sections.attention.length ? <Section title="需要留意">{sections.attention.map((reservation) => <ReservationRow key={reservation.id} reservation={reservation} variant="attention" />)}</Section> : null}
+            {sections.next ? <Section title="下一個預約"><ReservationRow reservation={sections.next} variant="next" cancellationBlocked={workspace.cancellationBlockedIds.has(sections.next.id)} onCancel={setCancelling} /></Section> : null}
+            {sections.attention.length ? <Section title="需要留意">{sections.attention.map((reservation) => <ReservationRow key={reservation.id} reservation={reservation} variant="attention" cancellationBlocked={workspace.cancellationBlockedIds.has(reservation.id)} onCancel={setCancelling} />)}</Section> : null}
             <Section title="即將到來" headingRef={workspace.sectionRef}>
-              {sections.upcoming.length ? sections.upcoming.map((reservation) => <ReservationRow key={reservation.id} reservation={reservation} variant="upcoming" />) : <p className="customer-reservation-workspace__quiet">此頁目前沒有其他即將到來的預約。</p>}
+              {sections.upcoming.length ? sections.upcoming.map((reservation) => <ReservationRow key={reservation.id} reservation={reservation} variant="upcoming" cancellationBlocked={workspace.cancellationBlockedIds.has(reservation.id)} onCancel={setCancelling} />) : <p className="customer-reservation-workspace__quiet">此頁目前沒有其他即將到來的預約。</p>}
             </Section>
             <Section title="歷史預約">
               {sections.history.length ? <div className="customer-reservation-history">{sections.history.map((reservation) => <ReservationRow key={reservation.id} reservation={reservation} variant="history" />)}</div> : <p className="customer-reservation-workspace__quiet">此頁目前沒有歷史預約。</p>}
@@ -61,6 +64,7 @@ export default function MyReservationsWorkspace() {
           </>
         ) : null}
       </div>
+      {cancelling ? <CancelReservationOverlay reservation={cancelling} onClose={() => setCancelling(null)} onMutationComplete={workspace.refreshAfterCancellation} /> : null}
     </main>
   );
 }

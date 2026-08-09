@@ -6,9 +6,11 @@ import ReservationStatus from './ReservationStatus';
 type ReservationRowProps = Readonly<{
   reservation: ReservationSummary;
   variant?: 'next' | 'attention' | 'upcoming' | 'history';
+  cancellationBlocked?: boolean;
+  onCancel?: (reservation: ReservationSummary) => void;
 }>;
 
-export default function ReservationRow({ reservation, variant = 'upcoming' }: ReservationRowProps) {
+export default function ReservationRow({ reservation, variant = 'upcoming', cancellationBlocked = false, onCancel }: ReservationRowProps) {
   const isAttention = variant === 'attention';
   const canOpenCancellation = canCancelReservation(reservation.status) && variant !== 'history';
   return (
@@ -27,7 +29,7 @@ export default function ReservationRow({ reservation, variant = 'upcoming' }: Re
       </div>
       {canOpenCancellation ? (
         <div className="customer-reservation-row__action">
-          <button type="button" disabled aria-describedby="reservation-cancellation-deferred">取消預約</button>
+          <button type="button" disabled={cancellationBlocked} aria-describedby={cancellationBlocked ? 'reservation-cancellation-stale' : undefined} onClick={() => onCancel?.(reservation)}>取消預約</button>
         </div>
       ) : null}
     </article>
