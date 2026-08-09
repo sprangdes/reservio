@@ -30,7 +30,11 @@ export function BookingFlowPage() {
   const [conflictMessage, setConflictMessage] = useState<string | null>(null);
   const [result, setResult] = useState<BookingCreateResult | null>(null);
   const headingRef = useRef<HTMLHeadingElement | null>(null);
+  const serviceHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const conflictRef = useRef<HTMLDivElement | null>(null);
+  const submitErrorRef = useRef<HTMLDivElement | null>(null);
+  const businessRetryRef = useRef(false);
+  const serviceRetryRef = useRef(false);
   const submittingRef = useRef(false);
   const mountedRef = useRef(true);
   const submitControllerRef = useRef<AbortController | null>(null);
@@ -52,6 +56,24 @@ export function BookingFlowPage() {
   useEffect(() => {
     if (conflictMessage && step === 2) conflictRef.current?.focus();
   }, [conflictMessage, step]);
+
+  useEffect(() => {
+    if (businessRetryRef.current && flow.businessState !== 'loading') {
+      businessRetryRef.current = false;
+      headingRef.current?.focus();
+    }
+  }, [flow.businessState]);
+
+  useEffect(() => {
+    if (serviceRetryRef.current && flow.serviceState !== 'loading') {
+      serviceRetryRef.current = false;
+      serviceHeadingRef.current?.focus();
+    }
+  }, [flow.serviceState]);
+
+  useEffect(() => {
+    if (submitError && step === 3 && document.activeElement?.id !== 'booking-remark') submitErrorRef.current?.focus();
+  }, [step, submitError]);
 
   useEffect(() => {
     if (step === 3 && !canProceedStepTwo) setStep(flow.draft.business && activeService ? 2 : 1);
@@ -118,8 +140,8 @@ export function BookingFlowPage() {
         <div className="booking-flow__task">
           {step === 1 ? <>
             <header className="booking-flow__heading"><h1 ref={headingRef} tabIndex={-1}>建立預約</h1><p>先選擇店家與服務，接著查看可預約時段。</p></header>
-            <BusinessSelection businesses={flow.businesses} value={flow.draft.business?.id || null} state={flow.businessState} onSelect={flow.selectBusiness} onRetry={() => void flow.retryBusinesses()} />
-            <ServiceSelection businessName={flow.draft.business?.name || null} services={flow.services} value={flow.draft.service?.id || null} state={flow.serviceState} onSelect={flow.selectService} onRetry={() => void flow.retryServices()} />
+            <BusinessSelection businesses={flow.businesses} value={flow.draft.business?.id || null} state={flow.businessState} onSelect={flow.selectBusiness} onRetry={() => { businessRetryRef.current = true; void flow.retryBusinesses(); }} />
+            <ServiceSelection businessName={flow.draft.business?.name || null} services={flow.services} value={flow.draft.service?.id || null} state={flow.serviceState} onSelect={flow.selectService} onRetry={() => { serviceRetryRef.current = true; void flow.retryServices(); }} headingRef={serviceHeadingRef} />
             <div className="booking-flow__actions"><span /><button type="button" className="booking-flow__next" disabled={!canProceedStepOne} onClick={() => moveToStep(2)}>下一步：選擇日期與時間<i className="bi bi-arrow-right" aria-hidden="true" /></button></div>
           </> : null}
           {step === 2 ? <>
@@ -132,7 +154,7 @@ export function BookingFlowPage() {
             <div className="booking-flow__actions"><button type="button" className="booking-flow__back" onClick={() => moveToStep(1)}><i className="bi bi-arrow-left" aria-hidden="true" />返回服務選擇</button><button type="button" className="booking-flow__next" disabled={!canProceedStepTwo} onClick={() => moveToStep(3)}>下一步：確認預約<i className="bi bi-arrow-right" aria-hidden="true" /></button></div>
           </> : null}
           {step === 3 ? <>
-            <BookingReview draft={flow.draft} submitError={submitError} submitting={submitting} onRemarkChange={flow.updateRemark} headingRef={headingRef} />
+            <BookingReview draft={flow.draft} submitError={submitError} submitting={submitting} onRemarkChange={flow.updateRemark} headingRef={headingRef} submitErrorRef={submitErrorRef} />
             <BookingSubmitBar submitting={submitting} onBack={() => moveToStep(2)} onSubmit={() => void submit()} />
           </> : null}
         </div>

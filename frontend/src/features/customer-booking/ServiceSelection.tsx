@@ -1,3 +1,4 @@
+import type { RefObject } from 'react';
 import type { BookingService } from './domain';
 
 type Props = Readonly<{
@@ -7,11 +8,12 @@ type Props = Readonly<{
   state: 'idle' | 'loading' | 'ready' | 'empty' | 'error';
   onSelect: (service: BookingService) => void;
   onRetry: () => void;
+  headingRef?: RefObject<HTMLHeadingElement | null>;
 }>;
 
-export function ServiceSelection({ businessName, services, value, state, onSelect, onRetry }: Props) {
+export function ServiceSelection({ businessName, services, value, state, onSelect, onRetry, headingRef }: Props) {
   return <section className="booking-flow__section" aria-labelledby="booking-service-heading">
-    <h2 id="booking-service-heading">選擇服務</h2>
+    <h2 id="booking-service-heading" ref={headingRef} tabIndex={-1}>選擇服務</h2>
     {!businessName ? <p className="booking-flow__hint">請先選擇店家。</p> : null}
     {state === 'loading' ? <div className="booking-flow__skeleton" aria-label="正在載入服務"><span /><span /><span /></div> : null}
     {state === 'error' ? <div className="booking-flow__state" role="alert"><p>暫時無法載入服務，請稍後再試。</p><button type="button" onClick={onRetry}>重新載入服務</button></div> : null}

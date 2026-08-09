@@ -8,9 +8,10 @@ type Props = Readonly<{
   submitting: boolean;
   onRemarkChange: (remark: string) => void;
   headingRef: RefObject<HTMLHeadingElement | null>;
+  submitErrorRef: RefObject<HTMLDivElement | null>;
 }>; 
 
-export function BookingReview({ draft, submitError, submitting, onRemarkChange, headingRef }: Props) {
+export function BookingReview({ draft, submitError, submitting, onRemarkChange, headingRef, submitErrorRef }: Props) {
   const date = draft.date ? formatLocalDateZhTw(draft.date) : '';
   const time = draft.startTime && draft.estimatedEndTime ? formatLocalTimeRange(draft.startTime, draft.estimatedEndTime) : '';
 
@@ -30,7 +31,7 @@ export function BookingReview({ draft, submitError, submitting, onRemarkChange, 
         <textarea id="booking-remark" value={draft.remark} onChange={(event) => onRemarkChange(event.target.value)} disabled={submitting} aria-describedby="booking-submit-note booking-submit-error" />
       </label>
       <p className="booking-flow__submit-note" id="booking-submit-note"><i className="bi bi-info-circle" aria-hidden="true" />送出時會再次確認時段；成功送出後將等待店家確認。</p>
-      {submitError ? <div className="booking-flow__submit-error" id="booking-submit-error" tabIndex={-1} role="alert" aria-live="assertive"><i className="bi bi-exclamation-circle" aria-hidden="true" />{submitError}</div> : null}
+      {submitError ? <div ref={submitErrorRef} className="booking-flow__submit-error" id="booking-submit-error" tabIndex={-1} role="alert" aria-live="assertive"><i className="bi bi-exclamation-circle" aria-hidden="true" />{submitError}</div> : null}
     </section>
   </>;
 }
