@@ -189,7 +189,7 @@ export default function Navbar() {
                         </Link>
                       </li>
                       <li className="nav-item mobile-menu__item">
-                        <Link className="nav-link" to="/business/line-integration">
+                        <Link className="nav-link" to="/business/settings/integrations/line">
                           LINE 串接
                         </Link>
                       </li>
@@ -296,7 +296,7 @@ export default function Navbar() {
                             </Link>
                           </li>
                           <li>
-                            <Link className="dropdown-item user-menu__item" to="/business/line-integration">
+                            <Link className="dropdown-item user-menu__item" to="/business/settings/integrations/line">
                               LINE 串接
                             </Link>
                           </li>

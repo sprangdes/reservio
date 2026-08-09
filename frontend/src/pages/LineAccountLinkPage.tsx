@@ -2,47 +2,43 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { api, API_BASE } from '../api';
 import { useAuth } from '../state/AuthContext';
-
-interface LinkStatus {
-  businessName: string;
-  status: string;
-  expiresAt: string;
-}
+import { lineSafeErrorMessage, normalizeLineAccountLinkRequest, parseAccountLinkRequestToken, validateLineAccountLinkHandoff, type LineAccountLinkRequest } from '../features/line/lineDomain';
 
 export default function LineAccountLinkPage() {
   const { me, loading } = useAuth();
   const location = useLocation();
-  const requestToken = useMemo(
-    () => new URLSearchParams(location.search).get('request') || '',
-    [location.search]
-  );
-  const [status, setStatus] = useState<LinkStatus | null>(null);
+  const request = useMemo(() => parseAccountLinkRequestToken(location.search), [location.search]);
+  const [status, setStatus] = useState<LineAccountLinkRequest | null>(null);
   const [error, setError] = useState('');
   const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
-    if (!requestToken) {
+    if (!request) {
       setError('缺少 LINE 帳號綁定資訊。');
       return;
     }
-    void api.lineAccountLinkStatus(requestToken)
-      .then((response) => setStatus(response.data))
-      .catch((reason) => setError(reason instanceof Error ? reason.message : '讀取綁定資訊失敗'));
-  }, [requestToken]);
-
-  const rememberReturnPath = () => {
-    const returnTo = `${location.pathname}${location.search}`;
-    sessionStorage.setItem('reservio.returnTo', returnTo);
-  };
+    void api.lineAccountLinkStatus(request.value)
+      .then((response) => {
+        const normalized = normalizeLineAccountLinkRequest(response.data);
+        if (!normalized) throw new Error('malformed data');
+        setStatus(normalized);
+      })
+      .catch((reason) => setError(lineSafeErrorMessage(reason)));
+  }, [request]);
 
   const confirm = async () => {
     setConfirming(true);
     setError('');
     try {
-      const response = await api.confirmLineAccountLink(requestToken);
-      globalThis.location.assign(response.data.redirectUrl);
+      if (!request) throw new Error('invalid request');
+      const response = await api.confirmLineAccountLink(request.value);
+      const redirectUrl = typeof response.data === 'object' && response.data && 'redirectUrl' in response.data
+        ? validateLineAccountLinkHandoff((response.data as { redirectUrl?: unknown }).redirectUrl)
+        : null;
+      if (!redirectUrl) throw new Error('invalid handoff');
+      globalThis.location.assign(redirectUrl);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : '無法確認帳號綁定');
+      setError(lineSafeErrorMessage(reason));
       setConfirming(false);
     }
   };
@@ -53,7 +49,7 @@ export default function LineAccountLinkPage() {
   if (!status || loading) {
     return <main className="container my-5">讀取綁定資訊中…</main>;
   }
-  if (status.status !== 'CREATED') {
+  if (status.state !== 'created') {
     return (
       <main className="container my-5">
         <div className="alert alert-warning">此綁定連結已使用或已過期。</div>
@@ -71,7 +67,6 @@ export default function LineAccountLinkPage() {
             <a
               href={`${API_BASE}/api/auth/line/user`}
               className="btn btn-success"
-              onClick={rememberReturnPath}
             >
               使用 LINE 登入並繼續
             </a>

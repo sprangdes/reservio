@@ -1,4 +1,5 @@
 import { UnauthorizedError, emitSessionActivity, emitSessionExpired } from './sessionEvents';
+import type { LineApiResponse, LineCredentialUpdateRequest } from './features/line/lineDomain';
 
 export const API_BASE = '';
 
@@ -128,23 +129,23 @@ export const api = {
   markNotificationRead: (id: string | number) => request(`/api/notifications/${id}/read`, { method: 'POST' }),
   markAllNotificationsRead: () => request('/api/notifications/read-all', { method: 'POST' }),
   notificationPreferences: () => request('/api/notifications/preferences'),
-  lineIntegrationSettings: () => request('/api/integrations/line/settings'),
-  saveLineIntegrationSettings: (payload: unknown) => request('/api/integrations/line/settings', {
+  lineIntegrationSettings: () => request<LineApiResponse<unknown>>('/api/integrations/line/settings'),
+  saveLineIntegrationSettings: (payload: LineCredentialUpdateRequest) => request<LineApiResponse<unknown>>('/api/integrations/line/settings', {
     method: 'PUT',
     body: JSON.stringify(payload)
   }),
-  disableLineIntegration: () => request('/api/integrations/line/settings/disable', { method: 'POST' }),
-  rotateLineWebhookKey: () => request('/api/integrations/line/settings/rotate-webhook-key', { method: 'POST' }),
-  lineIntegrationStatus: () => request('/api/integrations/line/status'),
-  testLineIntegrationConnection: () => request('/api/integrations/line/test-connection', { method: 'POST' }),
-  provisionLineRichMenu: () => request('/api/integrations/line/rich-menu', { method: 'POST' }),
+  disableLineIntegration: () => request<LineApiResponse<unknown>>('/api/integrations/line/settings/disable', { method: 'POST' }),
+  rotateLineWebhookKey: () => request<LineApiResponse<unknown>>('/api/integrations/line/settings/rotate-webhook-key', { method: 'POST' }),
+  lineIntegrationStatus: () => request<LineApiResponse<unknown>>('/api/integrations/line/status'),
+  testLineIntegrationConnection: () => request<LineApiResponse<unknown>>('/api/integrations/line/test-connection', { method: 'POST' }),
+  provisionLineRichMenu: () => request<LineApiResponse<unknown>>('/api/integrations/line/rich-menu', { method: 'POST' }),
   lineAccountLinkStatus: (requestToken: string) =>
-    request(`/api/line/account-links/${encodeURIComponent(requestToken)}`),
+    request<LineApiResponse<unknown>>(`/api/line/account-links/${encodeURIComponent(requestToken)}`),
   confirmLineAccountLink: (requestToken: string) =>
-    request(`/api/line/account-links/${encodeURIComponent(requestToken)}/confirm`, {
+    request<LineApiResponse<unknown>>(`/api/line/account-links/${encodeURIComponent(requestToken)}/confirm`, {
       method: 'POST'
     }),
-  linkedLineBusinesses: () => request('/api/line/account-links'),
+  linkedLineBusinesses: () => request<LineApiResponse<unknown>>('/api/line/account-links'),
   unlinkLineBusiness: (lineCustomerId: string | number) =>
     request(`/api/line/account-links/${lineCustomerId}`, { method: 'DELETE' }),
   updateNotificationPreferences: (payload: unknown) => request('/api/notifications/preferences', {

@@ -24,7 +24,7 @@ const managementItems: NavigationItem[] = [
 const systemItems: NavigationItem[] = [
   { label: '商家設定', icon: 'bi-gear', to: '/business/settings', activePaths: ['/business/settings', '/business/settings/profile', '/business/settings/booking', '/business/settings/hours', '/business/settings/notifications', '/business/settings/integrations/line', '/business/settings/account'] },
   { label: '通知', icon: 'bi-bell', to: '/notifications', activePaths: ['/notifications', '/notifications/settings'] },
-  { label: 'LINE 整合', icon: 'bi-line', to: '/business/line-integration', activePaths: ['/business/line-integration'] },
+  { label: 'LINE 整合', icon: 'bi-line', to: '/business/settings/integrations/line', activePaths: ['/business/settings/integrations/line'] },
   { label: '帳號', icon: 'bi-person', to: '/profile', activePaths: ['/profile'] }
 ];
 
