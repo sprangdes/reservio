@@ -17,10 +17,11 @@ const line = loadDomain();
 const page = source('pages/LineAccountLinkPage.tsx');
 const css = source('styles.css');
 
-test('Phase 4 account-link route uses the Phase 1 request parser and never persists or renders bearer-like values', () => {
+test('Phase 4 account-link route uses the Phase 1 request parser and keeps the token out of rendering or diagnostics', () => {
   assert.match(page, /parseAccountLinkRequestToken\(location\.search\)/);
   assert.match(page, /api\.lineAccountLinkStatus\(request\.value\)/);
-  assert.doesNotMatch(page, /sessionStorage|localStorage|console\.(log|debug)|request\.value\}</);
+  assert.doesNotMatch(page, /localStorage|console\.(log|debug)|request\.value\}</);
+  assert.match(page, /sessionStorage\.setItem\('reservio\.returnTo', currentReturnTo\)/);
   assert.equal(line.safeInternalReturnTo('/line/account-link?request=opaque'), '/line/account-link?request=opaque');
   assert.equal(line.safeInternalReturnTo('//evil.example'), '/');
   assert.equal(line.safeInternalReturnTo('https://evil.example'), '/');
@@ -37,7 +38,7 @@ test('account-link states are deliberately distinct in the focused customer flow
 test('created request preserves existing LINE Login authority and customer-role gates', () => {
   assert.match(page, /me\?\.role === 'ROLE_USER' && me\.lineLoginSession/);
   assert.match(page, /商家帳號無法完成此 LINE 帳號連結/);
-  assert.match(page, /\/login\?returnTo=/);
+  assert.match(page, /globalThis\.location\.assign\(`\$\{API_BASE\}\/api\/auth\/line\/user`\)/);
   assert.match(source('pages/LoginPage.tsx'), /safeInternalReturnTo/);
   assert.match(source('App.tsx'), /<PasswordResetGuard>/);
   assert.match(source('App.tsx'), /<BusinessSetupGuard>/);
