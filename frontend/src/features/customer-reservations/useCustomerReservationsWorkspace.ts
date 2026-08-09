@@ -4,7 +4,7 @@ import { normalizeService } from '../customer-booking/normalizers';
 import { createRequestGuard, isIntentionalAbort } from '../customer-booking/requestGuards';
 import { normalizeReservationPage } from './normalizers';
 import { mapCustomerReservationQuery } from './query';
-import type { ReservationPage } from './domain';
+import type { ReservationPage, ReservationSummary } from './domain';
 import type { ReservationFilterDraft } from './ReservationFilters';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -26,6 +26,8 @@ export function useCustomerReservationsWorkspace() {
   const [services, setServices] = useState<Option[]>([]);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [servicesError, setServicesError] = useState(false);
+  const [cancellationNotice, setCancellationNotice] = useState('');
+  const [cancellationBlockedIds, setCancellationBlockedIds] = useState<ReadonlySet<string>>(() => new Set());
   const queryGuard = useRef(createRequestGuard());
   const businessGuard = useRef(createRequestGuard());
   const serviceGuard = useRef(createRequestGuard());
@@ -35,7 +37,7 @@ export function useCustomerReservationsWorkspace() {
 
   useEffect(() => { pageRef.current = page; }, [page]);
 
-  const loadReservations = useCallback(async (focusSection = false) => {
+  const loadReservations = useCallback(async (focusSection = false): Promise<boolean> => {
     const request = queryGuard.current.begin();
     setLoadState('loading');
     const condition = { startDate: applied.dateFrom || null, endDate: applied.dateTo || null, status: applied.status || null, businessId: applied.businessId || null, service: applied.service || null, keyword: applied.keyword || null };
@@ -49,10 +51,13 @@ export function useCustomerReservationsWorkspace() {
         focusAfterPageLoad.current = false;
         queueMicrotask(() => sectionRef.current?.focus());
       }
+      setCancellationBlockedIds(new Set());
+      return true;
     } catch (error) {
-      if (!queryGuard.current.isCurrent(request) || isIntentionalAbort(error)) return;
+      if (!queryGuard.current.isCurrent(request) || isIntentionalAbort(error)) return false;
       setLoadState('error');
       setStale(Boolean(pageRef.current));
+      return false;
     }
   }, [applied, pageIndex]);
 
@@ -87,6 +92,19 @@ export function useCustomerReservationsWorkspace() {
   const applyFilters = useCallback(() => { setPageIndex(0); setApplied(draft); }, [draft]);
   const clearFilters = useCallback(() => { setPageIndex(0); setDraft(emptyReservationFilterDraft); setApplied(emptyReservationFilterDraft); }, []);
   const changePage = useCallback((next: number) => { if (next === pageIndex || next < 0 || (page && next >= page.totalPages)) return; focusAfterPageLoad.current = true; setPageIndex(next); }, [page, pageIndex]);
+  const refreshAfterCancellation = useCallback(async (reservation: ReservationSummary, message: string): Promise<'refreshed' | 'stale'> => {
+    setCancellationNotice('');
+    const refreshed = await loadReservations();
+    if (refreshed) {
+      setCancellationNotice(message);
+      window.setTimeout(() => sectionRef.current?.focus(), 0);
+      return 'refreshed';
+    }
+    setCancellationBlockedIds((current) => new Set([...current, reservation.id]));
+    setCancellationNotice('取消操作已送出，但目前無法取得最新預約狀態。');
+    window.setTimeout(() => document.getElementById('reservation-cancellation-stale')?.focus(), 0);
+    return 'stale';
+  }, [loadReservations]);
 
-  return useMemo(() => ({ page: page || emptyPage, hasLoadedPage: Boolean(page), loadState, stale, draft, applied, businesses, services, servicesLoading, servicesError, sectionRef, changeDraft, applyFilters, clearFilters, changePage, retry: () => loadReservations(), retryServices: () => loadServices(draft.businessId) }), [applied, businesses, changeDraft, changePage, clearFilters, draft, loadState, page, services, servicesError, servicesLoading, stale, applyFilters, loadReservations, loadServices]);
+  return useMemo(() => ({ page: page || emptyPage, hasLoadedPage: Boolean(page), loadState, stale, draft, applied, businesses, services, servicesLoading, servicesError, cancellationNotice, cancellationBlockedIds, sectionRef, changeDraft, applyFilters, clearFilters, changePage, refreshAfterCancellation, retry: () => loadReservations(), retryServices: () => loadServices(draft.businessId) }), [applied, businesses, cancellationBlockedIds, cancellationNotice, changeDraft, changePage, clearFilters, draft, loadState, page, refreshAfterCancellation, services, servicesError, servicesLoading, stale, applyFilters, loadReservations, loadServices]);
 }
