@@ -4,6 +4,7 @@ import { api } from '../api';
 import { useAuth } from '../state/AuthContext';
 import { useToast } from '../state/ToastContext';
 import { SESSION_ACTIVITY_EVENT, SESSION_EXPIRED_EVENT, isUnauthorizedError } from '../sessionEvents';
+import { buildLoginPath } from '../features/auth/authDestination';
 
 const DEFAULT_TIMEOUT_SECONDS = 1800;
 const DEFAULT_WARNING_SECONDS = 60;
@@ -44,8 +45,7 @@ export default function SessionTimeoutManager() {
     setMe(null);
     setErrorMessage(message);
     if (location.pathname !== '/login') {
-      const returnTo = encodeURIComponent(`${location.pathname}${location.search}`);
-      navigate(`/login?returnTo=${returnTo}`, { replace: true });
+      navigate(buildLoginPath(location.pathname, location.search), { replace: true });
     }
   }, [clearTimers, location.pathname, navigate, setErrorMessage, setMe]);
 

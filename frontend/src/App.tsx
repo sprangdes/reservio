@@ -29,6 +29,7 @@ import {JSX} from "react";
 import SessionTimeoutManager from './components/SessionTimeoutManager';
 import { ServiceEditorScaffold, SettingsLandingPage, SettingsScaffoldPage } from './features/business-settings/SettingsPages';
 import { resolveNotificationSettingsRoute } from './features/customer-notifications/customerNotificationSettingsRoute';
+import { buildLoginPath, resolvePostAuthDestination } from './features/auth/authDestination';
 
 function RequireAuth({ children }: Readonly<{ children: JSX.Element }>) {
   const { me, loading } = useAuth();
@@ -39,8 +40,7 @@ function RequireAuth({ children }: Readonly<{ children: JSX.Element }>) {
   }
 
   if (!me) {
-    const returnTo = encodeURIComponent(`${location.pathname}${location.search}`);
-    return <Navigate to={`/login?returnTo=${returnTo}`} replace />;
+    return <Navigate to={buildLoginPath(location.pathname, location.search)} replace />;
   }
 
   return children;
@@ -49,13 +49,11 @@ function RequireAuth({ children }: Readonly<{ children: JSX.Element }>) {
 function PasswordResetGuard({ children }: Readonly<{ children: JSX.Element }>) {
   const { me, loading } = useAuth();
   const location = useLocation();
-  const allowPaths = ['/force-change-password', '/login', '/forgot-password', '/forgot-password/verify'];
-
   if (loading) {
     return children;
   }
 
-  if (me?.mustChangePassword && !allowPaths.includes(location.pathname)) {
+  if (me?.mustChangePassword && location.pathname !== '/force-change-password') {
     return <Navigate to="/force-change-password" replace />;
   }
 
@@ -74,6 +72,12 @@ function BusinessSetupGuard({ children }: Readonly<{ children: JSX.Element }>) {
   return children;
 }
 
+function AuthRouteRedirect({ children }: Readonly<{ children: JSX.Element }>) {
+  const { me, loading } = useAuth();
+  if (loading || !me) return children;
+  return <Navigate to={resolvePostAuthDestination(me).path} replace />;
+}
+
 function BusinessAwareHome() {
   const { me } = useAuth();
   if (me?.role === 'ROLE_BUSINESS') {
@@ -88,15 +92,28 @@ function ReservationCenterRoute({ preset, legacyContent }: Readonly<{ preset: Re
 
 function RequireBusiness({ children }: Readonly<{ children: JSX.Element }>) {
   const { me, loading } = useAuth();
+  const location = useLocation();
   if (loading) return null;
-  if (me?.role !== 'ROLE_BUSINESS' || !me.business) return <Navigate to="/" replace />;
+  if (!me) return <Navigate to={buildLoginPath(location.pathname, location.search)} replace />;
+  if (me.mustChangePassword || me.role !== 'ROLE_BUSINESS' || !me.business) return <Navigate to={resolvePostAuthDestination(me).path} replace />;
   return children;
 }
 
 function RequireCustomer({ children }: Readonly<{ children: JSX.Element }>) {
   const { me, loading } = useAuth();
+  const location = useLocation();
   if (loading) return null;
-  if (me?.role !== 'ROLE_USER') return <Navigate to="/" replace />;
+  if (!me) return <Navigate to={buildLoginPath(location.pathname, location.search)} replace />;
+  if (me.mustChangePassword || me.role !== 'ROLE_USER') return <Navigate to={resolvePostAuthDestination(me).path} replace />;
+  return children;
+}
+
+function RequireBusinessSetup({ children }: Readonly<{ children: JSX.Element }>) {
+  const { me, loading } = useAuth();
+  const location = useLocation();
+  if (loading) return null;
+  if (!me) return <Navigate to={buildLoginPath(location.pathname, location.search)} replace />;
+  if (me.mustChangePassword || me.role !== 'ROLE_BUSINESS' || me.business) return <Navigate to={resolvePostAuthDestination(me).path} replace />;
   return children;
 }
 
@@ -135,41 +152,31 @@ export default function App() {
       <Route
         path="/login"
         element={
-          <Layout>
-            <LoginPage />
-          </Layout>
+          <AuthRouteRedirect><Layout><LoginPage /></Layout></AuthRouteRedirect>
         }
       />
       <Route
         path="/register"
         element={
-          <Layout>
-            <RegisterPage />
-          </Layout>
+          <AuthRouteRedirect><Layout><RegisterPage /></Layout></AuthRouteRedirect>
         }
       />
       <Route
         path="/register-business"
         element={
-          <Layout>
-            <RegisterBusinessPage />
-          </Layout>
+          <AuthRouteRedirect><Layout><RegisterBusinessPage /></Layout></AuthRouteRedirect>
         }
       />
       <Route
         path="/forgot-password"
         element={
-          <Layout>
-            <ForgotPasswordPage />
-          </Layout>
+          <AuthRouteRedirect><Layout><ForgotPasswordPage /></Layout></AuthRouteRedirect>
         }
       />
       <Route
         path="/forgot-password/verify"
         element={
-          <Layout>
-            <ForgotPasswordVerifyPage />
-          </Layout>
+          <AuthRouteRedirect><Layout><ForgotPasswordVerifyPage /></Layout></AuthRouteRedirect>
         }
       />
       <Route
@@ -215,19 +222,19 @@ export default function App() {
       <Route
         path="/reservation/today/manage"
         element={
-          <RequireAuth><ReservationCenterRoute preset="today" legacyContent={<ManageTodayPage />} /></RequireAuth>
+          <RequireAuth><RequireBusiness><ReservationCenterRoute preset="today" legacyContent={<ManageTodayPage />} /></RequireBusiness></RequireAuth>
         }
       />
       <Route
         path="/reservation/manage"
         element={
-          <RequireAuth><ReservationCenterRoute preset="all" legacyContent={<ManageAllPage />} /></RequireAuth>
+          <RequireAuth><RequireBusiness><ReservationCenterRoute preset="all" legacyContent={<ManageAllPage />} /></RequireBusiness></RequireAuth>
         }
       />
       <Route
         path="/reservation/pending/manage"
         element={
-          <RequireAuth><ReservationCenterRoute preset="pending" legacyContent={<ManagePendingPage />} /></RequireAuth>
+          <RequireAuth><RequireBusiness><ReservationCenterRoute preset="pending" legacyContent={<ManagePendingPage />} /></RequireBusiness></RequireAuth>
         }
       />
       <Route
@@ -250,9 +257,7 @@ export default function App() {
         path="/business/setup"
         element={
           <Layout>
-            <RequireAuth>
-              <BusinessSetupPage />
-            </RequireAuth>
+            <RequireAuth><RequireBusinessSetup><BusinessSetupPage /></RequireBusinessSetup></RequireAuth>
           </Layout>
         }
       />

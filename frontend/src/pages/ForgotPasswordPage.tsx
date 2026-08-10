@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useToast } from '../state/ToastContext';
+import { savePasswordResetState } from '../features/auth/passwordResetState';
+import { normalizeAuthError } from '../features/auth/authErrors';
 
 export default function ForgotPasswordPage() {
   const { setErrorMessage } = useToast();
@@ -20,12 +22,12 @@ export default function ForgotPasswordPage() {
       setSubmitting(true);
       await api.requestPasswordResetOtp({ emailOrUsername });
       setLocalSuccess('若帳號存在，系統已寄送一次性密碼到您的信箱。');
-      setTimeout(() => {
-        navigate(`/forgot-password/verify?account=${encodeURIComponent(emailOrUsername)}`);
-      }, 600);
+      savePasswordResetState(emailOrUsername);
+      navigate('/forgot-password/verify');
     } catch (err) {
-      setLocalError(err.message || '寄送 OTP 失敗，請稍後再試。');
-      setErrorMessage(err.message || '寄送 OTP 失敗');
+      const normalized = normalizeAuthError(err, 'otp-request');
+      setLocalError(normalized.message);
+      setErrorMessage(normalized.message);
     } finally {
       setSubmitting(false);
     }

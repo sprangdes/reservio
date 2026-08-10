@@ -28,14 +28,14 @@ test('Family 2 customer routes enforce RequireAuth then RequireCustomer without 
   const app = source('App.tsx');
   const customerPage = source('pages/MyReservationsPage.tsx');
   assert.match(app, /function RequireCustomer/);
-  assert.match(app, /me\?\.role !== 'ROLE_USER'/);
+  assert.match(app, /me\.role !== 'ROLE_USER'/);
   assert.match(app, /<RequireAuth>\s*<RequireCustomer><ReservationNewPage \/><\/RequireCustomer>/);
   assert.match(app, /<RequireAuth>\s*<RequireCustomer><MyReservationsPage \/><\/RequireCustomer>/);
   assert.match(app, /<PasswordResetGuard>\s*<BusinessSetupGuard>/);
   assert.match(app, /path="\/reservation\/manage"/);
   assert.doesNotMatch(customerPage, /navigate\('\/reservation\/manage'/);
-  assert.match(app, /returnTo=\$\{returnTo\}/);
-  assert.match(source('components/SessionTimeoutManager.tsx'), /navigate\(`\/login\?returnTo=\$\{returnTo\}`/);
+  assert.match(app, /buildLoginPath\(location\.pathname, location\.search\)/);
+  assert.match(source('components/SessionTimeoutManager.tsx'), /buildLoginPath\(location\.pathname, location\.search\)/);
   assert.match(source('api.ts'), /class ApiError/);
   assert.match(source('api.ts'), /new ApiError\(response\.status, message\)/);
 });

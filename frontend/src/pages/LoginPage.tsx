@@ -3,10 +3,12 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api, API_BASE } from '../api';
 import { useAuth } from '../state/AuthContext';
 import { useToast } from '../state/ToastContext';
-import { safeInternalReturnTo } from '../features/line/lineDomain';
+import { resolvePostAuthDestination } from '../features/auth/authDestination';
+import { consumeReturnContext, persistReturnContext } from '../features/auth/returnContext';
+import { normalizeAuthError } from '../features/auth/authErrors';
 
 export default function LoginPage() {
-  const { setMe } = useAuth();
+  const { refresh } = useAuth();
   const { setSuccessMessage, setErrorMessage } = useToast();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -18,9 +20,9 @@ export default function LoginPage() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const requestedReturnTo = params.get('returnTo');
-    if (safeInternalReturnTo(requestedReturnTo, '') !== '') {
-      sessionStorage.setItem('reservio.returnTo', requestedReturnTo);
-    }
+    const legacyReturnTo = sessionStorage.getItem('reservio.returnTo');
+    persistReturnContext(requestedReturnTo || legacyReturnTo);
+    sessionStorage.removeItem('reservio.returnTo');
     if (params.get('registered')) {
       setLocalSuccess('註冊成功。請登入您的帳號。');
     }
@@ -32,20 +34,14 @@ export default function LoginPage() {
     if (lineLogin === 'success') {
       void (async () => {
         try {
+          await refresh();
           const res = await api.me();
-          setMe(res.data);
           setSuccessMessage('LINE 登入成功');
-
-          if (res?.data?.mustChangePassword) {
-            navigate('/force-change-password', { replace: true });
-            return;
-          }
-
-          const returnTo = safeReturnTo();
-          navigate(returnTo, { replace: true, state: { lineRole: role } });
+          navigate(resolvePostAuthDestination(res.data, consumeReturnContext()).path, { replace: true, state: { lineRole: role } });
         } catch (err: any) {
+          const normalized = normalizeAuthError(err);
           setLocalError('LINE 登入成功，但讀取使用者資訊失敗，請再試一次。');
-          setErrorMessage(err?.message || 'LINE 登入失敗');
+          setErrorMessage(normalized.message);
         }
       })();
     }
@@ -60,26 +56,18 @@ export default function LoginPage() {
     event.preventDefault();
     setLocalError('');
     try {
-      const res = await api.login({ username, password });
+      await api.login({ username, password });
       setPassword('');
-      setMe(res.data);
+      await refresh();
+      const res = await api.me();
       setSuccessMessage('登入成功');
-      if (res?.data?.mustChangePassword) {
-        navigate('/force-change-password');
-        return;
-      }
-      navigate(safeReturnTo());
+      navigate(resolvePostAuthDestination(res.data, consumeReturnContext()).path);
     } catch (err: any) {
       setPassword('');
-      setLocalError('使用者名稱或密碼不正確，請再試一次。');
-      setErrorMessage(err.message);
+      const normalized = normalizeAuthError(err, 'login');
+      setLocalError(normalized.message);
+      setErrorMessage(normalized.message);
     }
-  };
-
-  const safeReturnTo = () => {
-    const returnTo = sessionStorage.getItem('reservio.returnTo');
-    sessionStorage.removeItem('reservio.returnTo');
-    return safeInternalReturnTo(returnTo);
   };
 
   return (
@@ -99,7 +87,7 @@ export default function LoginPage() {
 
                 <form onSubmit={handleSubmit}>
                   <div className="mb-3">
-                    <label htmlFor="username" className="form-label">使用者名稱 / 電子郵件</label>
+                    <label htmlFor="username" className="form-label">使用者名稱</label>
                     <input
                       type="text"
                       className="form-control"

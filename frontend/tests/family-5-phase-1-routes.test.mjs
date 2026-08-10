@@ -21,7 +21,7 @@ test('Family 5 resolves the canonical customer notification route by authenticat
   assert.match(app, /PasswordResetGuard/);
   assert.match(app, /BusinessSetupGuard/);
   assert.match(app, /function RequireBusiness/);
-  assert.match(app, /login\?returnTo=\$\{returnTo\}/);
+  assert.match(app, /buildLoginPath\(location\.pathname, location\.search\)/);
 });
 
 test('Family 5 route metadata keeps customer and merchant canonical destinations distinct', () => {
