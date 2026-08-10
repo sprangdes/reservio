@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../state/AuthContext';
 import { useToast } from '../state/ToastContext';
+import { clearPasswordResetState, loadPasswordResetState } from '../features/auth/passwordResetState';
+import { normalizeAuthError } from '../features/auth/authErrors';
 
 export default function ForgotPasswordVerifyPage() {
   const { setMe } = useAuth();
@@ -15,11 +17,8 @@ export default function ForgotPasswordVerifyPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const account = params.get('account');
-    if (account) {
-      setEmailOrUsername(account);
-    }
+    const state = loadPasswordResetState();
+    if (state) setEmailOrUsername(state.identifier);
   }, [location.search]);
 
   const handleSubmit = async (event: { preventDefault: () => void }) => {
@@ -32,11 +31,13 @@ export default function ForgotPasswordVerifyPage() {
       if (res?.data) {
         setMe(res.data);
       }
+      clearPasswordResetState();
       setSuccessMessage('OTP 驗證成功，請更新密碼。');
       navigate('/force-change-password');
     } catch (err) {
-      setLocalError(err.message || 'OTP 驗證失敗，請再試一次。');
-      setErrorMessage(err.message || 'OTP 驗證失敗');
+      const normalized = normalizeAuthError(err, 'otp-verify');
+      setLocalError(normalized.message);
+      setErrorMessage(normalized.message);
     } finally {
       setSubmitting(false);
     }

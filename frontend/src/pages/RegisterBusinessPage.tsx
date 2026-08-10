@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useToast } from '../state/ToastContext';
+import { clearMerchantRegistrationDraft, loadMerchantRegistrationDraft } from '../features/auth/merchantRegistrationDraft';
 
 function getErrorMessage(err: unknown, fallback: string): string {
   if (err instanceof Error && err.message) {
@@ -39,14 +40,9 @@ export default function RegisterBusinessPage() {
   }, []);
 
   useEffect(() => {
-    const draft = sessionStorage.getItem('businessRegisterDraft');
+    const draft = loadMerchantRegistrationDraft();
     if (draft) {
-      try {
-        const parsed = JSON.parse(draft);
-        setForm((prev) => ({ ...prev, ...parsed }));
-      } catch {
-        // ignore
-      }
+      setForm((prev) => ({ ...prev, ...draft }));
     }
   }, []);
 
@@ -61,7 +57,7 @@ export default function RegisterBusinessPage() {
 
     try {
       await api.registerBusiness(form);
-      sessionStorage.removeItem('businessRegisterDraft');
+      clearMerchantRegistrationDraft();
       navigate('/login?registered=1');
     } catch (err) {
       const message = getErrorMessage(err, '商家註冊失敗');

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useToast } from '../state/ToastContext';
+import { saveMerchantRegistrationDraft } from '../features/auth/merchantRegistrationDraft';
 
 export default function RegisterPage() {
   const { setErrorMessage } = useToast();
@@ -34,11 +35,10 @@ export default function RegisterPage() {
     }
 
     if (form.isBusiness) {
-      sessionStorage.setItem('businessRegisterDraft', JSON.stringify({
+      saveMerchantRegistrationDraft({
         username: form.username,
-        email: form.email,
-        password: form.password
-      }));
+        email: form.email
+      });
       navigate('/register-business');
       return;
     }

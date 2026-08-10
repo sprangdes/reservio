@@ -9,7 +9,7 @@ test('Family 2 retains exactly the two customer routes and structural guard orde
   const app = source('App.tsx');
   assert.match(app, /path="\/reservation\/new"[\s\S]*?<RequireAuth>[\s\S]*?<RequireCustomer><ReservationNewPage/);
   assert.match(app, /path="\/my\/reservations"[\s\S]*?<RequireAuth>[\s\S]*?<RequireCustomer><MyReservationsPage/);
-  assert.match(app, /function RequireCustomer[\s\S]*?me\?\.role !== 'ROLE_USER'[\s\S]*?<Navigate to="\/" replace/);
+  assert.match(app, /function RequireCustomer[\s\S]*?me\.role !== 'ROLE_USER'[\s\S]*?resolvePostAuthDestination\(me\)\.path/);
   assert.match(app, /<PasswordResetGuard>[\s\S]*?<BusinessSetupGuard>/);
   assert.match(app, /path="\/reservation\/manage"/);
   assert.match(app, /path="\/reservation\/today\/manage"/);

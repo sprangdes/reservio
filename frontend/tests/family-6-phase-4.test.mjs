@@ -39,7 +39,7 @@ test('created request preserves existing LINE Login authority and customer-role 
   assert.match(page, /me\?\.role === 'ROLE_USER' && me\.lineLoginSession/);
   assert.match(page, /商家帳號無法完成此 LINE 帳號連結/);
   assert.match(page, /globalThis\.location\.assign\(`\$\{API_BASE\}\/api\/auth\/line\/user`\)/);
-  assert.match(source('pages/LoginPage.tsx'), /safeInternalReturnTo/);
+  assert.match(source('pages/LoginPage.tsx'), /persistReturnContext/);
   assert.match(source('App.tsx'), /<PasswordResetGuard>/);
   assert.match(source('App.tsx'), /<BusinessSetupGuard>/);
 });

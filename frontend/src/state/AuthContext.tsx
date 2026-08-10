@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from 'react';
 import { api } from '../api';
 
-interface AuthUser {
+export interface AuthUser {
   role?: string;
   username?: string;
   email?: string;
