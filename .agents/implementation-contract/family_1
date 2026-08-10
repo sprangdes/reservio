@@ -1,266 +1,1376 @@
-# Family 1 Redesign Contract
+Use the following skills:
 
-1. **Executive summary**
-   Family 1 是 Reservio 的公開進入與帳號取得層；現況混合行銷、登入與已登入儀表板。重設後，公開頁只負責說明服務、區分客戶／商家意圖並導向既有流程；不改動 Families 2–6 的產品介面。
+- redesign-existing-projects
+- image-to-code
 
-2. **Repository areas inspected**
-   `frontend/src/App.tsx`、公開／認證頁、`Layout`、`Navbar`、`Footer`、`AuthContext`、`api.ts`、session 機制、LINE OAuth、Spring Security、auth／user／business／OTP services、controllers、entities、設定與現有測試。
+Produce the Family 1 Implementation Contract only.
 
-3. **Current Family 1 route map**
-
-| Route | 類型／受眾 | Guard／殼層 | 現況與成功去向 | Family ownership |
-|---|---|---|---|---|
-| `/` | canonical；公開、客戶、商家 | `BusinessAwareHome` | 訪客首頁；客戶顯示 dashboard 式首頁；商家進 Family 3 workspace | 1，僅公開版本 |
-| `/login` | canonical；匿名 | `Layout` | 帳密、LINE customer/business；成功預設 `/` | 1 |
-| `/register` | canonical；匿名 | `Layout` | 客戶註冊；勾商家後到 `/register-business` | 1 |
-| `/register-business` | canonical；匿名 | `Layout` | 商家＋商家資料註冊；成功到 `/login?registered=1` | 1 |
-| `/forgot-password` | canonical；匿名 | `Layout` | 發送 OTP，轉 `/forgot-password/verify` | 1 |
-| `/forgot-password/verify` | canonical；匿名 | `Layout` | 驗 OTP，建立 session，轉 `/force-change-password` | 1 |
-| `/force-change-password` | canonical；已認證 | `RequireAuth`、全域 `PasswordResetGuard` | 更新密碼後 `/` | 1 auth enforcement |
-| `/business/setup` | canonical；商家、無 business | `RequireAuth`、`BusinessSetupGuard` | 建立商家後 `/business/info` | 1→4 handoff |
-| `/reservation/new` | 已認證客戶 | `RequireAuth`、`RequireCustomer` | 匿名者到 login returnTo | Family 2 |
-| `/my/reservations` | 已認證客戶 | `RequireAuth`、`RequireCustomer` | 同上 | Family 2 |
-| `/reservation/*/manage` | 已認證商家 | `RequireAuth` | 商家工作區 | Family 3 |
-| `/business/settings/*` | 已認證商家 | `RequireAuth`、`RequireBusiness` | 設定工作區 | Family 4 |
-| `/line/account-link` | 特殊公開 handoff | `Layout` | LINE 帳號連結，非 LINE Login | Family 6 |
-| `*` | fallback | — | redirect `/`，沒有獨立 404 | Family 1 |
-
-4. **Current public shell/navigation**
-   共用 `Layout` 永遠渲染深色 fixed `Navbar`、`Footer` 和 toast。匿名導覽只有登入、註冊；公開頁沒有產品導覽。已登入導覽混入通知、設定、LINE 與工作區項目。
-
-5. **Current homepage experience**
-   訪客 hero 使用「最直覺、最快速」等未由程式能力證實的文案，CTA 為一般註冊／登入；下方三張等高功能卡包含資料分析宣稱。客戶與商家登入後，`/` 變成 dashboard，商家甚至直接載入 Family 3 workspace。
-
-6. **Current login experience**
-   `/api/auth/login` 接受 `{ username, password }`，前端標示「使用者名稱／電子郵件」，但 backend authentication 僅以 username 查詢。登入成功建立 server session，直接使用 API 回傳的使用者資料，未執行 authoritative `refresh()`。支援兩個 LINE 入口。
-
-7. **Current customer registration experience**
-   `/register` 收 username、email、password、confirmPassword；前端只驗證 required 與確認密碼。`POST /api/auth/register` 建立 `ROLE_USER`，回傳 201 及 user，但不建立 session；前端去 `/login?registered=1`。
-
-8. **Current merchant registration experience**
-   `/register` 的 checkbox 將 username/email/password 暫存到 `sessionStorage.businessRegisterDraft`，再進 `/register-business`。後者同時送 user 與 businessName/category/phone/address；`POST /api/auth/register-business` 建立 `ROLE_BUSINESS` 與 `BusinessData`，不建立 session，去登入頁。
-
-9. **Current password recovery experience**
-   使用 email 或 username 的六位 OTP，不是 reset link/token route。`/forgot-password` 送出後固定導向 verify 頁；驗證成功即建立 session、標記 `mustChangePassword=true`，再強制換密碼。
-
-10. **Current forced-password-change experience**
-    `/force-change-password` 必須已登入；只送 `newPassword`，不要求舊密碼。全域 `PasswordResetGuard` 阻止此類帳號使用其他頁面，允許 login／forgot／verify／force-change。成功後回 `/`。
-
-11. **Current business-setup acquisition boundary**
-    `/business/setup` 是 cross-family handoff：它支援「商家帳號已存在但尚無 BusinessData」的取得／補建情境，完成資料後應移交 Family 4 的商家設定表面。標準 `/register-business` 已立即建立 BusinessData，所以通常不會進此頁。
-
-12. **Current third-party login/provider behavior**
-    已支援 LINE Login：`GET /api/auth/line/user` 與 `/api/auth/line/business`，分別導向 `line-user`／`line-business` OAuth registration。沒有 Google、Apple、Facebook 或其他 provider。
-
-13. **Backend authentication contracts**
-    `POST /api/auth/login`：username/password、IP 20 次／分鐘與帳號 10 次／分鐘限制；成功使用 `HttpSessionSecurityContextRepository` 寫入 session，回傳 `UserResponse`。失敗由全域 handler 回 401「帳號或密碼錯誤」。
-
-14. **Backend registration contracts**
-    `POST /api/auth/register`：建立 bcrypt password 的 `ROLE_USER`。
-    `POST /api/auth/register-business`：建立 bcrypt password 的 `ROLE_BUSINESS` 與 `BusinessData`。
-    username、email 皆 DB unique；重複會暴露「此電子郵件已被註冊」或「此使用者名稱已被使用」。沒有 server-side length、格式或 password-strength validation。
-
-15. **Backend password-reset contracts**
-    `POST /api/auth/forgot-password/request-otp`：匿名成功文案固定；已知帳號才寄信。OTP 為 bcrypt hash、10 分鐘過期、最多 5 次 OTP mismatch。
-    `POST /api/auth/forgot-password/verify-otp`：成功後 OTP one-time use、建立 session、設 `mustChangePassword=true`。
-    `POST /api/auth/force-change-password`：驗證該旗標後更新密碼。
-
-16. **Auth/session/security model**
-    Cookie server session，`credentials: include`；cookie 設定為 `Secure`、`HttpOnly`、`SameSite=None`、15 分鐘。寫入 API 以 XSRF cookie/header 防護；login、registration、forgot flow、LINE OAuth callback 被排除 CSRF。前端收到 401 會發 session-expired event 並導回 login。
-
-17. **Account-role acquisition model**
-    角色由兩條 backend registration contract 決定，不能在前端任意切換。客戶為 `ROLE_USER`；商家為 `ROLE_BUSINESS`，且標準商家註冊同步建立商家。LINE Login 依入口決定／建立角色，首次使用會自動建立帳號；商家 LINE 帳號不會自動建立 BusinessData。
-
-18. **Identity/data/privacy model**
-
-| Field | 來源／必填 | Unique／持久化 | 現有處理 |
-|---|---|---|---|
-| username | login、所有註冊；必填 | unique、持久化 | backend 未 trim/normalize；登入實際使用此欄 |
-| email | 所有註冊；必填 | unique、持久化 | 未驗證即允許使用；前端 type=email |
-| password | 所有註冊／login；必填 | bcrypt，不回傳 | 未見複雜度規則 |
-| confirmPassword | 前端 | 不持久化 | 僅前端比對 |
-| role | backend 決定 | 持久化 | `ROLE_USER`／`ROLE_BUSINESS` |
-| businessName/category/phone/address | 商家註冊或 setup | BusinessData | 商家取得必要資料 |
-| lineUserId | LINE OAuth | 持久化 | 不應在 UI 顯示或記錄 |
-| emailVerified | backend | 持久化 | 非登入 gate；驗證屬 Family 5 流程 |
+Project:
 
-19. **Current public UX problems**
-    客戶與商家意圖在首頁未清楚分流；首頁與已登入 dashboard 混用；功能卡與「資料分析」不受可見產品能力支持；商家 CTA 不足；公開導航沒有產品敘事。
+Reservio
 
-20. **Current login UX problems**
-    未顯示 pending／防重複送出；password 無顯示切換、autocomplete、inline field error；LINE 入口角色差異無解釋；成功預設 `/` 導致角色 handoff 不明確。
-
-21. **Current registration UX problems**
-    checkbox 是模糊的角色選擇；商家註冊跨頁依賴 sessionStorage 草稿；重複帳號訊息直接列出 identity existence；無 password rule、輸入 autocomplete、pending 或 field-level server error。
-
-22. **Current password-recovery UX problems**
-    UX 把 OTP 稱為「一次性密碼」但未顯示 10 分鐘、五次嘗試或重送限制；成功後 600ms timer navigation；無 OTP 過期／用盡／network 的區分狀態。
-
-23. **Family 1 product principles**
-    單一公開敘事；明確客戶／商家選擇；認證以任務為核心；認證後去向可預期；不在公開頁洩露營運資訊；不複製已完成產品工作區。
-
-24. **Capability matrix**
-
-| Capability | Status | Evidence |
-|---|---|---|
-| Public homepage／anonymous browsing | Enabled | `/` |
-| Customer registration | Enabled | `/register`、`/api/auth/register` |
-| Merchant registration | Enabled | `/register-business`、`/api/auth/register-business` |
-| Shared registration route | Conditional | `/register` 轉商家頁 |
-| Explicit role selection | Conditional | checkbox，非明確選擇頁 |
-| Username/password login | Enabled | backend login |
-| Email login | Unavailable | label 支援但 backend authenticates username |
-| LINE Login | Enabled | user/business OAuth |
-| Forgot/reset password | Enabled，OTP | request/verify/force-change |
-| Reset-token expiry | Unavailable | 沒有 token link；OTP 10 分鐘 |
-| Email verification | Enabled，非 acquisition gate | `/api/email-verification/*` |
-| Automatic login after registration | Unavailable | registration 不寫 session |
-| ReturnTo | Enabled，limited | protected-route/login flow |
-| Merchant setup handoff | Enabled | guard + `/business/setup` |
-| Customer booking handoff | Enabled | protected `/reservation/new` |
-| Logout | Enabled | POST logout、導向 login |
-| Remember me／CAPTCHA／MFA／passkeys | Unavailable | 未找到實作 |
-| Account lockout | Unavailable | 只有 memory rate limiter |
-| Rate limiting | Enabled | login、OTP request/verify |
-| Terms/privacy acceptance | Unavailable | 未找到欄位或 route |
-
-25. **Unsupported capabilities**
-    Google、Apple、Facebook login；magic link；OTP login（OTP 僅重設）；phone login；MFA；passkeys；CAPTCHA；帳號鎖定 UI；SSO；邀請制註冊；公開 pricing；plan／checkout／subscription／trial；team creation；referral code：目前 frontend/backend 均未找到。
+Project directory:
 
-26. **Proposed public information architecture**
-    Public header → hero → 客戶「找到並完成預約」→ 商家「建立商家帳號與管理預約」→ 實際流程說明 → capability proof（預約、商家服務與通知；不使用數據／成效宣稱）→ final role CTA → minimal footer。
+`/Users/machi/IntelliJ/reservio/frontend`
 
-27. **Public header/navigation contract**
-    匿名：品牌、`我要預約`（`/reservation/new`）、`我是商家`（`/register-business`）、`登入`、`建立帳號`。
-    已登入客戶：`前往預約`→`/reservation/new`、`我的預約`→`/my/reservations`。
-    已登入商家：單一 `前往商家工作區`→`/`；不在公開 header 曝露 merchant operational nav。
+Authoritative design/product sources:
 
-28. **Hero contract**
-    H1 意圖：「安排服務預約，也讓商家有條理地管理每一筆預約。」主 CTA「開始預約」；次 CTA「建立商家帳號」。已登入時只顯示對應工作區 CTA。桌面採文字優先、不使用虛構產品截圖；手機 CTA 垂直堆疊。
+1. Approved Family 1 Redesign Contract
+2. Family 1 Desktop Proven set
+3. Family 1 Mobile Proven set
+4. Existing completed Families 2–6 implementation patterns
+5. Current frontend/backend repository truth
 
-29. **Customer conversion contract**
-    匿名 `開始預約` → `/reservation/new` → `RequireAuth` → `/login?returnTo=/reservation/new`；新客戶從 login 的「建立客戶帳號」→ `/register` → `/login?registered=1` → login → safe returnTo → booking。不要在首頁複製 Family 2 booking flow。
+Do not implement code.
 
-30. **Merchant conversion contract**
-    匿名「建立商家帳號」→`/register-business`；成功→`/login?registered=1`；登入後：若 `mustChangePassword`，先 force change；若 `ROLE_BUSINESS && !business`，guard→`/business/setup`；否則→`/` 的 Family 3 workspace。標準商家註冊已有 business，通常直接進 workspace。
+Do not modify files.
 
-31. **Public footer contract**
-    只保留品牌、登入、客戶註冊、商家註冊與既有必要連結。Terms／Privacy route 目前不存在，不得虛構；移除「Built with Spring Boot & Bootstrap」技術文案。
+Do not generate images.
 
-32. **Auth shell contract**
-    新增 focused `AuthShell`，與完整 public header/footer 分離：品牌返回 `/`、單一 H1、簡短目的說明、可見返回／切換連結、inline error、必要法律連結（僅在未來 route 存在時）。forced-password-change 保持同一視覺殼，但標示為安全強制流程。
+Do not begin implementation phases.
 
-33. **Login redesign contract**
-    顯示「登入後將繼續：預約／商家工作區」的 return context；欄位 label 改為「使用者名稱」，除非 backend 改為 email login。登入、LINE 客戶登入、LINE 商家登入應清楚標示角色。送出中禁用全部提交途徑；401、429、network 分開呈現。
+The output must be a detailed, implementation-ready contract that maps the approved Family 1 design into the existing codebase without inventing backend contracts or unsupported product behavior.
 
-34. **Registration/account-type contract**
-    `/register` 仍是客戶 canonical route；把目前 checkbox 改為明確的 inline account-type choice，客戶預設且商家選擇直接導向 `/register-business`。不合併兩個送出 payload，不改 backend role contract。
+# Family 1 scope
 
-35. **Customer registration contract**
-    username、email、password、confirm password；保留現有 required 需求，新增前端 trim／email syntax／inline mismatch，但不宣稱未存在的 password rules。成功清楚告知「帳號已建立，請登入」，保留 registered status。
+Family 1 owns:
 
-36. **Merchant registration contract**
-    username、email、password、businessName、category、phone、address。先在頁首說明「建立後會有商家帳號與商家資料」。category load 失敗要有 retry；sessionStorage 草稿只能是便利功能，不能成為唯一可恢復機制。
+- Public homepage `/`
+- Public navigation/header/footer
+- Login `/login`
+- Customer registration `/register`
+- Merchant registration `/register-business`
+- Forgot password `/forgot-password`
+- OTP verification `/forgot-password/verify`
+- Forced password change `/force-change-password`
+- Public/auth acquisition shell
+- Auth destination resolution
+- Customer vs merchant LINE Login entry points
+- Anonymous-to-authenticated handoff
+- Authenticated-user behavior on public/auth routes
+- Business-setup acquisition handoff `/business/setup` only where Family 1 routing/guard behavior is involved
 
-37. **Password-field contract**
-    加入顯示／隱藏切換，`aria-pressed` 與可見名稱；使用 `autocomplete="current-password"`、`new-password"`、`username"`、`email"`；允許 password manager 與貼上；確認密碼只做 client mismatch；所有密碼送出後清除本地 state。
+Family 1 must not redesign or reimplement product surfaces owned by Families 2–6.
 
-38. **Forgot-password contract**
-    保持 email-or-username 與 OTP backend。成功文案固定：「若帳號存在，驗證碼已寄至對應信箱。」顯示「驗證碼有效 10 分鐘」；重送回此頁，429 顯示稍後再試；不得依寄送結果顯示帳號是否存在。
+# Previously approved Family 1 product truth
 
-39. **Reset-password contract**
-    現有沒有 `/reset-password` 與 reset-link token；Family 1 不新增或假裝存在。以 `/forgot-password/verify` 作為 OTP verification step；驗證失敗統一、OTP 過期／已用／attempts exhausted 為「驗證碼無效或已失效」，提供重送。
+Treat the following as binding unless repository inspection proves the code has changed.
 
-40. **Force-change-password contract**
-    必須保留 authenticated enforcement；不要求舊密碼；顯示安全原因及單一完成 CTA。成功後使用 role-aware default destination，不應一律 `/`。
+## Canonical routes
 
-41. **Third-party login contract**
-    僅保留 LINE Login。兩個 provider CTA 必須說明：「客戶 LINE 登入建立／使用客戶帳號」與「商家 LINE 登入建立／使用商家帳號」。LINE 首登角色由入口決定；LINE business 首登若無商家資料，走既有 setup guard。不得混入 Family 6 merchant LINE integration 或 account-link。
+- `/`
+- `/login`
+- `/register`
+- `/register-business`
+- `/forgot-password`
+- `/forgot-password/verify`
+- `/force-change-password`
+- `/business/setup` as Family 1 → Family 4 handoff boundary
 
-42. **Authenticated-user-on-public-page contract**
-    已登入客戶造訪 `/`：可看公開頁，hero CTA 改為 `/reservation/new`。已登入商家：公開入口 CTA 改為 workspace；現有 `/` 直接 workspace 的相容行為可保留，但最終需明定不將其作為公開首頁。登入／註冊頁目前仍可進入，應在實作時 role-aware redirect，避免取得流程重複。
+Protected downstream handoffs:
 
-43. **Post-auth routing matrix**
+- `/reservation/new` → Family 2
+- `/my/reservations` → Family 2
+- merchant workspace routes → Family 3
+- `/business/settings/*` → Family 4
+- `/notifications/settings` / profile surfaces → Family 5
+- LINE account-link/integration surfaces → Family 6
 
-| 情境 | 目的地 |
-|---|---|
-| 匿名客戶到 `/reservation/new` | `/login?returnTo=/reservation/new` |
-| 客戶登入且有 valid returnTo | returnTo |
-| 商家登入且有 valid returnTo | 現況也採 returnTo；實作時須拒絕不符合角色的 destination |
-| 客戶登入無 returnTo | `/`，建議 Family 2 `/reservation/new` |
-| 商家登入無 returnTo | `/`，即 Family 3 workspace |
-| 客戶註冊成功 | `/login?registered=1` |
-| 商家註冊成功 | `/login?registered=1` |
-| 商家無 BusinessData | `/business/setup` |
-| mustChangePassword | `/force-change-password` 優先 |
-| 已登入進 login/register | 現況仍可見；建議 role-aware redirect |
-| logout | `/login` |
+## Login backend truth
 
-44. **Loading/error/recovery contract**
-    每個 mutation 使用 local pending 狀態、disabled CTA、保留輸入、inline error；只在成功後導航。Toast 為輔助，不得是唯一錯誤通道。`refresh()` 失敗但 login/register mutation 已成功時，留在安全成功狀態並提供重新載入，而非假定 session state。
+Credential login supports:
 
-45. **Account-enumeration/privacy contract**
-    Forgot request 已具 enumeration-resistant success copy；但 registration 明示 username/email 是否存在，login account/password error 統一。重設 verify 也統一。重設設計不得擴大 identity 外洩；duplicate 註冊訊息維持 backend 現況，若要改善需另行核准 backend 改動。
+- `username`
+- `password`
 
-46. **Desktop redesign contract**
-    1024–1440px：受限 1200–1280px 寬度、深森林綠／暖白／低飽和橘、細邊框與小陰影。首頁以左對齊敘事為主，客戶／商家轉換採不對稱兩區塊，避免三張均等卡與 dashboard composition。
+Do not implement email login unless backend has changed and exact contract is verified.
 
-47. **Mobile redesign contract**
-    390px：16–20px gutters、44px targets、header 簡化、CTA 垂直排列、認證單欄、無強制插圖、不讓 fixed nav 壓住表單與鍵盤。商家表單分群但不拆成不必要多步驟。
+Login creates server session.
 
-48. **Responsive breakpoint contract**
-    390px 單欄；768px 可採較寬 auth column、首頁適度雙欄；1024px 完整 public nav 與兩欄 narrative；1440px 不超過可讀容器，避免巨大空白。沿用目前 `768px` breakpoint 並補齊 390／1024／1440 視覺測試。
+Use authoritative existing session/CSRF/cookie handling.
 
-49. **Component architecture**
-    `features/public-entry/`: `PublicHomePage`、`PublicHeader`、`AudienceChoice`、`CustomerValue`、`MerchantValue`、`HowItWorks`、`PublicFooter`。
-    `features/auth/`: `AuthShell`、`LoginPage`、`CustomerRegistrationPage`、`MerchantRegistrationPage`、`PasswordField`、`ForgotPasswordPage`、`OtpVerificationPage`、`ForceChangePasswordPage`、`AuthErrorState`、`ReturnContext`。
-    現有 pages 可先成為 route adapters；不重寫 Family 2–6 components。
+## Customer registration truth
 
-50. **Domain/normalization architecture**
-    建立 frontend-only `AuthFormState`、`RegistrationKind`、`AuthErrorCategory`、`PostAuthDestination`、`PasswordResetState`。把 `ApiError.status`、message、`UserResponse.role/mustChangePassword/business` 正規化後才交給 UI。
+Supported payload:
 
-51. **Async/mutation architecture**
-    每次登入、註冊、OTP request/verify、force change 都以單一 pending guard 防重送；component unmount 後不 set state；API 成功後才 refresh／navigate；LINE redirect 前顯示 transition pending；returnTo 一次性讀取與刪除。
+- username
+- email
+- password
 
-52. **Accessibility contract**
-    每 route 一個 H1；header/nav/main/footer landmarks；skip link；清楚 label 與 autocomplete；error 用 `aria-describedby`、summary/live region；password toggle 有 state；focus ring；menu 有 Escape、focus containment／return focus；reduced motion；route 後 focus 至 H1/error；不以顏色作唯一錯誤提示。
+Frontend also has:
 
-53. **Security/privacy contract**
-    維持 server session、CSRF cookie/header、Secure HttpOnly session cookie；不使用 localStorage token。所有 returnTo 必須經 `safeInternalReturnTo`，且 final role-aware resolution 要阻止跨角色／不合法目的地。不得顯示 password、OTP、LINE user ID 或完整敏感 backend error；保留 OAuth state persistence 與 10-minute TTL。
+- confirm password
 
-54. **Test strategy**
-    新增 auth route tests、safe returnTo、no redirect loops、role guards、must-change、business setup；login 401/429/network/pending；customer／merchant registration 與 duplicate；OTP generic request、valid／invalid／expired／used；LINE role login；a11y H1/labels/errors/menu；390/768/1024/1440；現有 repository 幾乎沒有 Family 1 frontend/auth tests，需補足。
+Registration does not auto-login.
 
-55. **Family 2 regression boundary**
-    `/reservation/new`、`/my/reservations` 不改 UI；驗證匿名 booking handoff、客戶登入 returnTo、客戶角色 guard 不被商家登入繞過。
+Success goes to login.
 
-56. **Family 3 regression boundary**
-    商家登入後 `/` workspace handoff、reservation management routes、workspace shell 與商家無 setup 時的 redirect 順序。
+## Merchant registration truth
 
-57. **Family 4 regression boundary**
-    `/business/setup` 完成後移交商家設定／資料頁；不在註冊頁複製 settings profile、hours、LINE integration。
+Supported acquisition data:
 
-58. **Family 5 regression boundary**
-    emailVerified state、通知與 profile shell 不因 auth shell 分離而失效；註冊不加入尚不存在的通知偏好設定。
+- username
+- email
+- password
+- businessName
+- category
+- phone
+- address
 
-59. **Family 6 regression boundary**
-    保留 LINE Login 供認證；不混入 merchant Messaging API、Rich Menu、LINE account-link 或 customer linked-business management。
+Do not add services/hours/staff/pricing/subscription fields.
 
-60. **Final full-project integration boundary**
-    最終 release 必須驗證 Family 1→2 customer acquisition、1→3 merchant workspace、1→4 incomplete setup、1→5 profile/verification、1→6 LINE login/account-link，並驗證 auth/session、CSRF、mobile shell、404 fallback。
+## Password recovery truth
 
-61. **Recommended implementation phases**
-    1) auth destination/normalization/route tests；2) public shell/homepage；3) login/LINE handoff；4) customer and merchant registration；5) OTP/force-change；6) a11y/security/responsive/full Family 1–6 regression。
+Current flow:
 
-62. **Known limitations**
-    backend 無 email-login、password policy、password-reset link、registration auto-login、account lockout、CAPTCHA、Terms/Privacy routes；registration duplicate responses會暴露 identity existence；rate limiter 為 in-memory，非 distributed persistence。
+1. `/forgot-password`
+2. request OTP using email or username
+3. 6-digit OTP
+4. OTP valid 10 minutes
+5. `/forgot-password/verify`
+6. successful verify creates session
+7. `mustChangePassword=true`
+8. `/force-change-password`
+9. forced new-password update
+10. role-aware post-auth destination
 
-63. **Remaining open technical decisions**
-    是否將登入改為真正 username-or-email（需 backend）；客戶無 returnTo 的正式 default 是否改 `/reservation/new`；已登入使用者訪問 auth routes 是否立即 redirect；是否將商家 LINE 首登補 BusinessData 的文案與 setup UX 明確化；是否新增合法條款／隱私 routes。
+There is no reset-link token route.
 
-64. **Final recommended next step**
-    Family 1 Desktop Design。
+## Force-change truth
 
-未修改檔案。
-未實作程式碼。
-未生成圖片。
+Current backend requires exactly:
+
+- `newPassword`
+
+Do not add:
+
+- old password
+- confirm new password
+
+## LINE truth
+
+Family 1 supports:
+
+- customer LINE Login
+- merchant LINE Login
+
+Keep role-specific entry points distinct.
+
+Do not merge with Family 6:
+
+- merchant Messaging API integration
+- Rich Menu
+- `/line/account-link`
+- `/settings/line-accounts`
+
+# Proven visual direction
+
+## Shared system
+
+- deep forest green primary
+- warm off-white / neutral canvas
+- muted orange used only as merchant/acquisition accent
+- thin borders
+- restrained radius
+- low shadow
+- refined Traditional Chinese hierarchy
+- no oversized dashboard chrome on auth pages
+- no photo-heavy auth backgrounds
+- no product sidebar on auth pages
+
+## Desktop Proven
+
+Eight canonical primary states:
+
+1. Public homepage — anonymous
+2. Login — booking return context
+3. Customer registration
+4. Merchant registration
+5. Forgot password — idle
+6. OTP verification
+7. Force change password
+8. Generic login — no returnTo
+
+## Mobile Proven
+
+Same eight states.
+
+Mobile requirements:
+
+- 390px primary reference
+- 16–20px gutters
+- 44px minimum touch targets
+- focused one-column AuthShell
+- stacked LINE buttons
+- merchant registration single-column grouped form
+- OTP fits 360px/390px
+- force-change CTA in normal document flow
+- no giant dead space
+- keyboard-safe forms
+- public homepage uses compact mobile navigation
+
+# Core implementation objective
+
+Define exactly how the current codebase should evolve so the proven Family 1 desktop/mobile designs can be implemented safely.
+
+The contract must resolve:
+
+- route ownership
+- shell architecture
+- auth destination logic
+- safe returnTo behavior
+- role-aware redirects
+- public vs authenticated homepage behavior
+- form state
+- error normalization
+- pending states
+- password-field reuse
+- LINE role login handoff
+- customer/merchant registration separation
+- OTP state
+- force-change enforcement
+- mobile menu behavior
+- responsive behavior
+- accessibility
+- security/privacy
+- test coverage
+- regression boundaries
+
+# Mandatory repository inspection
+
+Before writing the contract, inspect the exact current repository implementation for:
+
+## Routing / guards
+
+- `frontend/src/App.tsx`
+- router configuration
+- route order
+- wildcard/fallback
+- `RequireAuth`
+- `RequireCustomer`
+- `RequireBusiness`
+- `PasswordResetGuard`
+- `BusinessSetupGuard`
+- any role-aware home routing
+- any `BusinessAwareHome`
+- any helper used for `returnTo`
+- route adapters
+- session-expired redirect logic
+
+## Family 1 pages/components
+
+Inspect all current implementations corresponding to:
+
+- homepage
+- login
+- register
+- register-business
+- forgot-password
+- forgot-password/verify
+- force-change-password
+- business setup if acquisition-related
+- Navbar
+- Footer
+- Layout
+- any current auth/public shell
+
+## State / transport
+
+Inspect:
+
+- `AuthContext`
+- `ToastContext`
+- `api.ts`
+- auth API helpers
+- LINE OAuth helpers
+- session-expired event handling
+- CSRF/XSRF handling
+- session storage usage
+- business registration draft storage
+- post-login refresh behavior
+- logout behavior
+
+## Backend
+
+Verify exact current contracts in:
+
+- auth controller
+- user controller
+- password reset / OTP services
+- LINE OAuth controller/service
+- business registration/setup backend
+- Spring Security config
+- session/cookie config
+- exception handler
+- rate-limiting logic
+- user/business entities and DTOs
+- tests
+
+Do not rely only on the Redesign Contract if repository truth has changed.
+
+If a repository difference is found, explicitly document it.
+
+# Required route inventory
+
+Produce a table for every Family 1 route containing:
+
+- route
+- canonical / compatibility / special handoff
+- audience
+- authentication requirement
+- role requirement
+- guard chain
+- current shell
+- target shell
+- success destination
+- back/home target
+- returnTo behavior
+- mobile behavior
+- owning family
+- downstream family boundary
+
+Include:
+
+- `/`
+- `/login`
+- `/register`
+- `/register-business`
+- `/forgot-password`
+- `/forgot-password/verify`
+- `/force-change-password`
+- `/business/setup`
+- `*`
+
+Also document protected downstream acquisition entry behavior for:
+
+- `/reservation/new`
+- `/my/reservations`
+- merchant workspace entry
+
+# Required API inventory
+
+For every relevant endpoint, document exact:
+
+- method
+- path
+- auth state
+- CSRF behavior
+- request body
+- response shape
+- status codes
+- error shape
+- side effects
+- session side effects
+- redirect responsibility
+- rate limits where known
+
+At minimum verify:
+
+1. credential login
+2. logout
+3. customer registration
+4. merchant registration
+5. forgot-password OTP request
+6. forgot-password OTP verify
+7. force-change-password
+8. current-user/session refresh
+9. LINE customer login start
+10. LINE merchant login start
+11. any auth callback/session endpoint used by frontend
+12. business category loading
+13. business setup creation if relevant to acquisition handoff
+
+If an endpoint is absent, mark:
+
+`Unavailable in current backend`
+
+# Post-auth destination contract
+
+Define a single implementation-ready destination resolver.
+
+The contract must specify behavior for:
+
+## Priority order
+
+1. `mustChangePassword`
+2. valid internal `returnTo`
+3. role/business completeness
+4. role-aware default
+
+## Safe returnTo
+
+Define exact rules for:
+
+- internal paths only
+- reject protocol URLs
+- reject protocol-relative URLs
+- reject malformed values
+- reject auth-loop destinations
+- reject role-incompatible destinations
+- preserve query string where valid
+- consume/clear once used if stored
+- prevent open redirect
+
+## Role-aware behavior
+
+Verify and define:
+
+### Customer
+
+Valid customer destination examples:
+
+- `/reservation/new`
+- `/my/reservations`
+- customer settings/profile routes as currently allowed
+
+Default when no returnTo:
+
+State current behavior and recommended implementation target.
+
+Do not silently change product destination without explicitly documenting it.
+
+### Merchant
+
+- if `mustChangePassword` → force change first
+- if no `BusinessData` → `/business/setup`
+- else merchant workspace
+- reject customer-only returnTo such as `/reservation/new` if route role guard requires customer
+
+### Authenticated user entering auth pages
+
+Define desired behavior for:
+
+- `/login`
+- `/register`
+- `/register-business`
+- `/forgot-password`
+- `/forgot-password/verify`
+
+Avoid redirect loops.
+
+# Public homepage architecture contract
+
+Define the target implementation architecture for `/`.
+
+Important existing constraint:
+
+Historically `/` may behave differently for:
+
+- anonymous
+- customer
+- merchant
+
+The contract must inspect and define a safe transition strategy.
+
+Required target components:
+
+- `PublicHomePage`
+- `PublicHeader`
+- mobile public menu
+- Hero
+- CustomerValue
+- MerchantValue
+- HowItWorks
+- CapabilityProof
+- FinalAudienceCTA
+- `PublicFooter`
+
+Do not duplicate Family 2 booking UI or Family 3 workspace UI.
+
+## Homepage CTA behavior
+
+Anonymous:
+
+- `開始預約` → `/reservation/new`, allowing RequireAuth to hand off to login
+- `建立商家帳號` → `/register-business`
+
+Authenticated customer:
+
+- booking CTA → `/reservation/new`
+- secondary customer CTA may use `/my/reservations` only if design/source requires
+- no merchant operational nav
+
+Authenticated merchant:
+
+- single workspace-oriented CTA
+- do not expose full merchant operational navigation inside the public header
+
+Document compatibility if `/` currently directly renders merchant workspace.
+
+# Public navigation contract
+
+Desktop anonymous navigation:
+
+- `我要預約`
+- `我是商家`
+- `登入`
+- `建立帳號`
+
+Authenticated customer:
+
+- `前往預約`
+- `我的預約`
+
+Authenticated merchant:
+
+- single `前往商家工作區`
+
+Mobile:
+
+- compact brand + menu trigger
+- menu behavior defined with:
+  - open/close
+  - focus entry
+  - focus trap if modal/sheet
+  - focus return
+  - body scroll lock
+  - Escape handling
+  - backdrop
+  - inert background
+  - route-selection close
+
+Do not use product workspace navigation on auth/public acquisition pages.
+
+# AuthShell architecture
+
+Define one shared `AuthShell` used by:
+
+- login
+- customer registration
+- merchant registration
+- forgot password
+- OTP verification
+- force change password
+
+Specify:
+
+- DOM landmarks
+- brand/home link
+- optional return-home action
+- H1 placement
+- supporting text slot
+- main form/content slot
+- footer/switch links
+- desktop width
+- merchant wider variant if needed
+- mobile full-width behavior
+- safe-area behavior
+- keyboard behavior
+
+Do not create separate unrelated shells per route.
+
+# Login implementation contract
+
+Define:
+
+- username field
+- password field
+- password toggle
+- pending
+- error categories
+- return-context block
+- generic-login supporting copy
+- forgot-password link
+- LINE customer button
+- LINE merchant button
+- registration links
+
+## Login mutation behavior
+
+Define exact sequence:
+
+1. validate required fields
+2. set pending
+3. call credential login
+4. use returned session/user data according to actual API
+5. perform authoritative refresh if needed
+6. resolve destination
+7. navigate only after authoritative session state is known
+
+If current code directly trusts login response and does not refresh, explicitly decide whether implementation should change this.
+
+## Error categories
+
+Normalize:
+
+- invalid credentials
+- 429 rate limit
+- session/auth state issue
+- network failure
+- server failure
+- unknown safe fallback
+
+Do not show raw backend exceptions.
+
+# LINE Login implementation contract
+
+Keep two explicit actions:
+
+- customer LINE login
+- merchant LINE login
+
+Define:
+
+- exact start endpoints
+- pending/transition state
+- role intent
+- OAuth state persistence
+- callback/session refresh behavior
+- business-first-login setup handoff
+- returnTo behavior if current flow supports it
+
+Do not mix with Family 6 LINE linking.
+
+# Customer registration implementation contract
+
+Define:
+
+- explicit customer/merchant account intent control
+- customer selected by default
+- merchant selection navigates to `/register-business`
+- fields:
+  - username
+  - email
+  - password
+  - confirm password
+- client validation:
+  - trim where safe
+  - required
+  - email syntax
+  - password confirmation match
+- no invented password-strength policy
+- pending
+- duplicate account error handling
+- success state
+- navigate to `/login?registered=1`
+
+Define password clearing behavior after successful/failed mutation where security-relevant.
+
+# Merchant registration implementation contract
+
+Define:
+
+- one route
+- one backend payload
+- one-column mobile / grouped desktop layout
+- account-data section
+- business-data section
+- category loading
+- category loading failure/retry
+- no multi-step wizard unless repository constraints require
+- sessionStorage draft handling
+
+Important:
+
+The contract must decide how to remove sessionStorage as a single point of failure while preserving convenience.
+
+Do not invent server-side draft persistence.
+
+Define exact behavior if user navigates from customer registration to merchant registration.
+
+# PasswordField shared primitive
+
+Define one reusable component.
+
+Required API/behavior:
+
+- controlled value
+- label
+- autocomplete
+- current/new-password mode
+- visible/hidden toggle
+- `aria-pressed`
+- accessible toggle label
+- error association
+- disabled/pending state
+- optional confirmation field usage only where frontend actually requires it
+
+Use it for:
+
+- login
+- customer registration
+- merchant registration
+- force change
+
+Force change must use exactly one password input.
+
+# Forgot-password request contract
+
+Define initial idle state.
+
+Field:
+
+- email or username
+
+Behavior:
+
+- enumeration-resistant copy
+- pending
+- 429
+- network/server
+- success state
+- OTP validity note
+- navigation to verify step
+
+Do not show account-existence-specific success.
+
+Define how the identifier is carried into verification:
+
+- route state
+- sessionStorage
+- component/global state
+- query string
+
+Inspect existing code and choose safest compatible option.
+
+Do not expose sensitive data unnecessarily.
+
+# OTP verification contract
+
+Define:
+
+- six-digit semantic value
+- visual segmented input
+- one-time-code autocomplete
+- numeric input mode
+- paste full code
+- auto advance
+- backspace behavior
+- error state
+- resend behavior
+- pending
+- rate limit
+- generic invalid/expired/used/exhausted copy
+
+On success:
+
+- session created
+- mustChangePassword=true
+- authoritative auth state refresh if required
+- navigate to `/force-change-password`
+
+Do not expose attempt counters unless backend explicitly returns a safe public contract.
+
+# Force-change-password implementation contract
+
+Must preserve global enforcement.
+
+Fields:
+
+Exactly:
+
+- `newPassword`
+
+No:
+
+- old password
+- confirm password
+
+Define:
+
+- password field
+- pending
+- mutation error
+- success auth refresh
+- role-aware destination
+- no direct bypass of `mustChangePassword`
+
+Mobile:
+
+CTA in normal document flow.
+
+Do not use fixed bottom action.
+
+# Registration/login success banners
+
+Define handling for query flags such as:
+
+- `registered=1`
+
+Specify:
+
+- whether query state is consumed
+- whether banner is dismissible
+- screen-reader announcement
+- avoiding repeated banner on refresh/back
+
+Do not invent new server state.
+
+# Error normalization architecture
+
+Create an implementation-ready frontend error model, for example:
+
+`AuthErrorCategory`
+
+Allowed categories should be grounded in actual HTTP behavior.
+
+At minimum consider:
+
+- VALIDATION
+- INVALID_CREDENTIALS
+- DUPLICATE_IDENTITY
+- RATE_LIMITED
+- SESSION_EXPIRED
+- OTP_INVALID_OR_EXPIRED
+- NETWORK
+- SERVER
+- UNKNOWN
+
+Map actual API status/message behavior into safe UI copy.
+
+Do not leak sensitive raw errors.
+
+# Async/mutation architecture
+
+Define route-local mutation state for:
+
+- login
+- customer register
+- merchant register
+- OTP request
+- OTP verify
+- force change password
+
+Requirements:
+
+- duplicate-submit prevention
+- preserve safe inputs on recoverable failure
+- clear password values at appropriate security boundaries
+- no state updates after unmount
+- navigate only after successful mutation
+- refresh only where identity/session state changed
+- avoid timer-based navigation
+
+# Form validation contract
+
+Specify exactly which checks are client-side vs server-authoritative.
+
+Do not invent backend requirements.
+
+Include:
+
+- required
+- email syntax
+- password confirmation match
+- OTP numeric/length
+- merchant required fields according to current UI/backend
+- category presence if required
+
+If backend currently lacks length/password complexity validation, do not claim such rules exist.
+
+# Responsive implementation contract
+
+Define exact target behavior at:
+
+## 360px
+
+- no overflow
+- OTP fits
+- long Chinese labels wrap
+- LINE actions readable
+- account-type control usable
+- merchant form usable
+
+## 390px
+
+Primary Mobile Proven reference.
+
+## 430px
+
+Relax spacing only.
+
+## 768px
+
+- focused auth single-column or modest centered card
+- merchant form may widen cautiously
+- public homepage may begin modest two-column behavior
+- no premature desktop layout
+
+## 1024px
+
+Desktop AuthShell / homepage proven composition begins.
+
+## 1440px
+
+Constrained readable container.
+
+# Accessibility implementation contract
+
+Define exact implementation requirements:
+
+- one H1 per route
+- skip link on public shell where applicable
+- header/nav/main/footer landmarks
+- form labels
+- autocomplete
+- `aria-describedby`
+- live regions
+- focus to H1/error after route transitions
+- password toggle semantics
+- OTP semantics
+- mobile menu focus behavior
+- 44px targets
+- visible focus
+- reduced motion
+- no color-only selected/error state
+- pending state announcements
+
+# Security/privacy implementation contract
+
+Mandatory:
+
+- preserve server session
+- preserve `credentials: include`
+- preserve CSRF/XSRF behavior
+- do not create localStorage auth token
+- sanitize returnTo
+- reject role-incompatible returnTo
+- do not log passwords
+- do not log OTP
+- do not log session/CSRF/LINE IDs
+- do not expose raw backend exception text
+- preserve OAuth state handling
+- preserve OTP one-time behavior
+- preserve `mustChangePassword` enforcement
+- backend remains authoritative for roles/business existence
+
+# Authenticated-user-on-auth-route behavior
+
+Define exact behavior for an already-authenticated:
+
+- customer opening `/login`
+- merchant opening `/login`
+- user opening `/register`
+- user opening `/register-business`
+- user opening forgot-password pages
+
+Avoid forcing users into loops if `mustChangePassword=true`.
+
+Priority must remain security-safe.
+
+# Business setup handoff
+
+Inspect `/business/setup`.
+
+Define only Family 1 responsibilities:
+
+- how merchant reaches setup
+- guard priority
+- post-setup destination
+- no duplication of Family 4 settings content
+- no change to Family 4 business profile/settings ownership
+
+# Fallback / 404 contract
+
+Current wildcard reportedly redirects to `/`.
+
+Verify repository truth.
+
+Implementation Contract must decide whether Family 1 phase should:
+
+- preserve redirect compatibility
+or
+- introduce a user-facing not-found state
+
+Do not add a new 404 route unless explicitly justified by existing project scope.
+
+# Component architecture
+
+Provide proposed file/component map.
+
+At minimum consider:
+
+## Public entry
+
+`features/public-entry/`
+
+- `PublicHomePage`
+- `PublicHeader`
+- `PublicMobileMenu`
+- `PublicHero`
+- `CustomerValue`
+- `MerchantValue`
+- `HowItWorks`
+- `CapabilityProof`
+- `FinalAudienceCTA`
+- `PublicFooter`
+
+## Auth
+
+`features/auth/`
+
+- `AuthShell`
+- `LoginPage`
+- `CustomerRegistrationPage`
+- `MerchantRegistrationPage`
+- `ForgotPasswordPage`
+- `OtpVerificationPage`
+- `ForceChangePasswordPage`
+- `PasswordField`
+- `AuthErrorMessage`
+- `AuthStatusMessage`
+- `ReturnContext`
+- `AccountTypeChoice`
+- `LineLoginActions`
+
+Adapt naming to repository conventions.
+
+Do not require a directory move if a staged adapter strategy is safer.
+
+# Domain/normalization architecture
+
+Define implementation-ready types/helpers.
+
+At minimum consider:
+
+- `RegistrationKind`
+- `AuthErrorCategory`
+- `PostAuthDestination`
+- `AuthReturnContext`
+- `PasswordResetState`
+- `AuthMutationState`
+
+Helpers:
+
+- `safeInternalReturnTo`
+- `isRoleCompatibleDestination`
+- `resolvePostAuthDestination`
+- `normalizeAuthError`
+- `buildReturnContext`
+
+Do not create generic abstractions without a real use case.
+
+# Styling architecture
+
+Inspect current global `styles.css` and Bootstrap usage.
+
+Define:
+
+- which styles remain global
+- which become Family 1 scoped classes/components
+- reuse of existing tokens from Families 2–6
+- breakpoint strategy
+- avoiding Bootstrap default visual dominance
+- avoiding collision with merchant/customer product shells
+- preserving current icons where possible
+
+Do not require a new CSS framework.
+
+# Image/design-to-code mapping
+
+For every Desktop Proven and Mobile Proven primary frame, provide:
+
+- route
+- target component
+- layout primitive
+- key state
+- reusable subcomponents
+- responsive change
+- backend dependency
+- required interaction
+- accessibility notes
+- implementation risk
+
+Cover all eight frames.
+
+# Test strategy
+
+Define exact tests required before implementation completion.
+
+## Routing/guards
+
+- anonymous `/reservation/new` → login returnTo
+- valid returnTo
+- invalid external returnTo rejected
+- customer-only route rejected for merchant
+- mustChangePassword priority
+- merchant without BusinessData → setup
+- authenticated user on auth route
+- no redirect loop
+
+## Login
+
+- success
+- invalid credentials
+- 429
+- network/server
+- pending
+- password toggle
+- LINE customer
+- LINE merchant
+
+## Registration
+
+Customer:
+- required
+- email syntax
+- mismatch
+- duplicate
+- pending
+- success to login
+
+Merchant:
+- required fields
+- category load
+- category load failure/retry
+- duplicate
+- success to login
+- draft persistence behavior
+
+## Password recovery
+
+- generic OTP request success
+- 429
+- network error
+- OTP valid
+- OTP invalid
+- OTP expired/used
+- OTP resend
+- successful session handoff
+- force-change required
+
+## Force change
+
+- exactly one new-password field
+- failure
+- pending
+- success
+- role-aware destination
+
+## Accessibility
+
+- one H1
+- labels
+- autocomplete
+- error association
+- live feedback
+- menu focus return
+- OTP accessible grouping
+- 44px controls
+
+## Responsive
+
+- 360px
+- 390px
+- 430px
+- 768px
+- 1024px
+- 1440px
+
+# Family 2–6 regression boundaries
+
+Explicitly list what Family 1 implementation must not break.
+
+## Family 2
+
+Protect:
+
+- `/reservation/new`
+- `/my/reservations`
+- `RequireCustomer`
+- booking returnTo
+- customer mobile task flow
+
+## Family 3
+
+Protect:
+
+- merchant workspace `/`
+- merchant reservation management
+- workspace shell
+- merchant role behavior
+
+## Family 4
+
+Protect:
+
+- `/business/setup` handoff
+- `/business/settings/*`
+- merchant settings architecture
+
+## Family 5
+
+Protect:
+
+- notification settings
+- profile
+- email verification state
+- auth identity refresh behavior
+
+## Family 6
+
+Protect:
+
+- LINE account-link
+- linked businesses
+- merchant LINE integration
+- LINE OAuth login vs Family 6 LINE linking distinction
+
+# Recommended implementation phases
+
+Produce an implementation sequence based on repository truth.
+
+Default proposed phases:
+
+## Phase 1 — Auth routing/domain/security foundation
+
+- destination helpers
+- role-aware guards
+- safe returnTo
+- auth error normalization
+- shared PasswordField foundation
+- route tests
+
+## Phase 2 — Public shell/homepage
+
+- PublicHomePage
+- PublicHeader
+- mobile menu
+- PublicFooter
+- responsive homepage
+
+## Phase 3 — Login + LINE handoff
+
+- shared AuthShell
+- generic login
+- booking return context
+- LINE customer/business actions
+- pending/error states
+
+## Phase 4 — Customer + merchant registration
+
+- account-type choice
+- customer registration
+- merchant grouped registration
+- category loading/error
+- registration success state
+
+## Phase 5 — OTP + force-change password
+
+- forgot request
+- OTP verify/resend
+- force-change enforcement
+- auth/session refresh
+- role-aware success handoff
+
+## Phase 6 — Family 1 integration/regression
+
+- responsive
+- accessibility
+- security/privacy
+- Families 2–6 regression
+- full auth journey tests
+
+Adapt phase boundaries if repository dependencies require.
+
+Do not implement them in this task.
+
+# Open technical decisions
+
+The Implementation Contract must explicitly resolve or defer:
+
+1. Customer default destination when login has no returnTo:
+   - preserve `/`
+   - or move to `/reservation/new`
+   - state recommendation and migration risk
+
+2. Authenticated user entering `/login` or registration routes:
+   - immediate redirect behavior
+   - exceptions for `mustChangePassword`
+
+3. Whether login success must call `AuthContext.refresh()` before navigation
+
+4. How merchant registration draft survives navigation without making sessionStorage the sole recovery mechanism
+
+5. Whether `/` remains merchant workspace for authenticated merchants or public homepage with workspace CTA
+
+6. Whether wildcard continues redirecting to `/`
+
+7. Whether backend should eventually support username-or-email login
+   - implementation must not assume it now
+
+8. Registration duplicate identity enumeration exposure
+   - preserve backend behavior unless backend change is separately approved
+
+9. Business timezone / other unrelated Family 2+ concerns must remain out of scope
+
+# Required output format
+
+Return a structured Family 1 Implementation Contract with these exact sections:
+
+1. Executive summary
+2. Repository areas inspected
+3. Repository differences from approved Redesign Contract
+4. Current Family 1 route map
+5. Target Family 1 route map
+6. Guard-chain contract
+7. Public homepage routing contract
+8. Public header/navigation contract
+9. Mobile public-menu contract
+10. Public footer contract
+11. AuthShell contract
+12. Credential-login backend contract
+13. Login UI/interaction contract
+14. Login return-context contract
+15. Generic-login contract
+16. LINE customer-login contract
+17. LINE merchant-login contract
+18. Customer-registration backend contract
+19. Customer-registration UI contract
+20. Merchant-registration backend contract
+21. Merchant-registration UI contract
+22. Merchant category-loading contract
+23. Merchant registration-draft contract
+24. PasswordField shared-component contract
+25. Forgot-password request backend contract
+26. Forgot-password UI contract
+27. OTP verification backend contract
+28. OTP input/interaction contract
+29. OTP resend contract
+30. Force-change-password backend contract
+31. Force-change-password UI contract
+32. Auth/session refresh contract
+33. Post-auth destination matrix
+34. Safe returnTo contract
+35. Role-compatible destination contract
+36. Authenticated-user-on-auth-route contract
+37. Business-setup handoff contract
+38. Registration/login success-state contract
+39. Error-normalization architecture
+40. Async/mutation architecture
+41. Form-validation contract
+42. Domain/normalization architecture
+43. Component architecture
+44. Styling architecture
+45. Desktop Proven → code mapping
+46. Mobile Proven → code mapping
+47. Responsive breakpoint contract
+48. Keyboard/safe-area contract
+49. Accessibility contract
+50. Security/privacy contract
+51. Fallback/404 contract
+52. Test strategy
+53. Family 2 regression boundary
+54. Family 3 regression boundary
+55. Family 4 regression boundary
+56. Family 5 regression boundary
+57. Family 6 regression boundary
+58. Recommended implementation phases
+59. Known limitations
+60. Open technical decisions
+61. Final implementation readiness checklist
+62. Final recommended next step
+
+# Final requirements
+
+The contract must be specific enough that a later coding phase can implement each phase without re-interpreting product intent.
+
+Do not write code.
+
+Do not modify files.
+
+Do not generate images.
+
+Do not start Phase 1.
+
+End by recommending the first implementation phase only after the contract is complete.
