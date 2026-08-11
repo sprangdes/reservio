@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
-import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import RegisterBusinessPage from './pages/RegisterBusinessPage';
@@ -30,6 +29,7 @@ import SessionTimeoutManager from './components/SessionTimeoutManager';
 import { ServiceEditorScaffold, SettingsLandingPage, SettingsScaffoldPage } from './features/business-settings/SettingsPages';
 import { resolveNotificationSettingsRoute } from './features/customer-notifications/customerNotificationSettingsRoute';
 import { buildLoginPath, resolvePostAuthDestination } from './features/auth/authDestination';
+import PublicHomePage from './features/public-entry/PublicHomePage';
 
 function RequireAuth({ children }: Readonly<{ children: JSX.Element }>) {
   const { me, loading } = useAuth();
@@ -79,11 +79,12 @@ function AuthRouteRedirect({ children }: Readonly<{ children: JSX.Element }>) {
 }
 
 function BusinessAwareHome() {
-  const { me } = useAuth();
+  const { me, loading } = useAuth();
+  if (loading) return null;
   if (me?.role === 'ROLE_BUSINESS') {
     return <BusinessWorkspaceShell><OperationsOverviewPage /></BusinessWorkspaceShell>;
   }
-  return <Layout><HomePage /></Layout>;
+  return <PublicHomePage />;
 }
 
 function ReservationCenterRoute({ preset, legacyContent }: Readonly<{ preset: ReservationCenterPreset; legacyContent: JSX.Element }>) {

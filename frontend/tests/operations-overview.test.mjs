@@ -24,7 +24,7 @@ const page = source('OperationsOverviewPage.tsx');
 const hook = source('hooks/useOperationsOverview.ts');
 const sections = source('ui/OperationsOverviewSections.tsx');
 const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
-const home = readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8');
+const publicHome = readFileSync(new URL('../src/features/public-entry/PublicHomePage.tsx', import.meta.url), 'utf8');
 
 test('business overview uses the existing pending query and derives only reliable totals', () => {
   const pending = overview.createOverviewPendingQuery(new Date('2026-07-24T09:30:00'));
@@ -46,7 +46,7 @@ test('next reservation and agenda use local date/time values and exclude termina
 
 test('operations overview keeps business routing isolated, shares controller mutations, and has no invented endpoint', () => {
   assert.match(app, /me\?\.role === 'ROLE_BUSINESS'/);
-  assert.match(app, /<Layout><HomePage \/><\/Layout>/);
+  assert.match(app, /return <PublicHomePage \/>;/);
   assert.match(page, /useReservationCenter\(\{ preset: 'today' \}\)/);
   assert.match(page, /ReservationDetailsExperience/);
   assert.match(page, /todayController\.mutate/);
@@ -59,5 +59,5 @@ test('operations overview keeps business routing isolated, shares controller mut
   assert.match(sections, /getReservationRouteForPreset/);
   assert.match(sections, /resolveReservationActionCapabilities/);
   assert.doesNotMatch(sections, /updateReservationStatus|businessReservations/);
-  assert.match(home, /export default function HomePage/);
+  assert.match(publicHome, /export default function PublicHomePage/);
 });
