@@ -10,6 +10,9 @@ import {
   CUSTOMER_NOTIFICATION_SETTINGS_ROUTE,
   notificationSettingsDestinationFor
 } from '../features/customer-notifications/customerNotificationSettingsRoute';
+import { clearMerchantRegistrationDraft } from '../features/auth/merchantRegistrationDraft';
+import { clearPasswordResetState } from '../features/auth/passwordResetState';
+import { clearReturnContext } from '../features/auth/returnContext';
 
 interface NotificationItem {
   id: number;
@@ -81,12 +84,14 @@ export default function Navbar() {
   const handleLogout = async () => {
     try {
       await api.logout();
+      clearReturnContext();
+      clearPasswordResetState();
+      clearMerchantRegistrationDraft();
       setMe(null);
       setSuccessMessage('您已成功登出。');
       navigate('/login');
-    } catch (err) {
-      const error = err as Error;
-      setErrorMessage(error.message || '登出失敗');
+    } catch {
+      setErrorMessage('目前無法完成登出，請確認網路連線後再試。');
     }
   };
 
@@ -99,8 +104,8 @@ export default function Navbar() {
       setNotificationModalOpen(false);
       setOpen(false);
       navigate(me?.role === 'ROLE_BUSINESS' ? '/reservation/manage' : '/my/reservations');
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '通知更新失敗');
+    } catch {
+      setErrorMessage('暫時無法更新通知，請稍後再試。');
     }
   };
 
@@ -108,8 +113,8 @@ export default function Navbar() {
     try {
       await api.markAllNotificationsRead();
       emitNotificationsChanged();
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '通知更新失敗');
+    } catch {
+      setErrorMessage('暫時無法更新通知，請稍後再試。');
     }
   };
 
@@ -164,11 +169,13 @@ export default function Navbar() {
                       </Link>
                     </li>
                   )}
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/my/reservations">
-                      我的預約
-                    </Link>
-                  </li>
+                  {me.role === 'ROLE_BUSINESS' ? null : (
+                    <li className="nav-item">
+                      <Link className="nav-link" to="/my/reservations">
+                        我的預約
+                      </Link>
+                    </li>
+                  )}
                   <li className="nav-item mobile-menu__divider"></li>
                   <li className="nav-item mobile-menu__user">
                     <span className="nav-link">

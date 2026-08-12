@@ -15,16 +15,16 @@ function loadDomain() {
 
 const line = loadDomain();
 const page = source('pages/LineAccountLinkPage.tsx');
+const returnContext = source('features/auth/returnContext.ts');
 const css = source('styles.css');
 
 test('Phase 4 account-link route uses the Phase 1 request parser and keeps the token out of rendering or diagnostics', () => {
   assert.match(page, /parseAccountLinkRequestToken\(location\.search\)/);
   assert.match(page, /api\.lineAccountLinkStatus\(request\.value\)/);
   assert.doesNotMatch(page, /localStorage|console\.(log|debug)|request\.value\}</);
-  assert.match(page, /sessionStorage\.setItem\('reservio\.returnTo', currentReturnTo\)/);
-  assert.equal(line.safeInternalReturnTo('/line/account-link?request=opaque'), '/line/account-link?request=opaque');
-  assert.equal(line.safeInternalReturnTo('//evil.example'), '/');
-  assert.equal(line.safeInternalReturnTo('https://evil.example'), '/');
+  assert.match(page, /persistReturnContext\(`\$\{location\.pathname\}\$\{location\.search\}`\)/);
+  assert.doesNotMatch(page, /sessionStorage|localStorage/);
+  assert.match(returnContext, /safeInternalReturnTo\(source\)/);
 });
 
 test('account-link states are deliberately distinct in the focused customer flow', () => {

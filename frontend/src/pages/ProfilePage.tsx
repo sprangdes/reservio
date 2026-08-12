@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { api } from '../api';
+import { useEffect, useRef, useState } from 'react';
+import { ApiError, api } from '../api';
 import { useAuth } from '../state/AuthContext';
 
 export default function ProfilePage() {
@@ -10,6 +10,7 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [emailChanged, setEmailChanged] = useState(false);
+  const savingRef = useRef(false);
 
   useEffect(() => {
     setUsername(me?.username || '');
@@ -18,22 +19,32 @@ export default function ProfilePage() {
 
   const submit = async (event: { preventDefault: () => void }) => {
     event.preventDefault();
+    if (savingRef.current) return;
+    const normalizedUsername = username.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedUsername || !/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+      setError('請輸入使用者名稱與有效的 Email。');
+      return;
+    }
+    savingRef.current = true;
     setSaving(true);
     setSuccess('');
     setError('');
-    const normalizedEmail = email.trim().toLowerCase();
     const changed = normalizedEmail !== (me?.email || '').toLowerCase();
     try {
       await api.updateProfile({
-        username: username.trim(),
+        username: normalizedUsername,
         email: normalizedEmail
       });
       await refresh();
       setEmailChanged(changed);
       setSuccess('個人資料已更新');
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : '個人資料更新失敗');
+      if (reason instanceof ApiError && reason.status === 409) setError('此使用者名稱或 Email 無法使用，請調整後再試。');
+      else if (reason instanceof TypeError) setError('網路連線失敗，請確認連線後再試。');
+      else setError('個人資料更新失敗，請稍後再試。');
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
@@ -48,13 +59,13 @@ export default function ProfilePage() {
   return (
     <main className="customer-profile-page">
       <section className="customer-profile-page__content" aria-labelledby="profile-title">
-          <header><p>帳號設定</p><h1 id="profile-title">修改我的資料</h1><span>更新你的顯示名稱與聯絡 Email。</span></header>
-          {success ? <p className="customer-profile-page__message is-success">{success}</p> : null}
-          {error ? <p className="customer-profile-page__message is-error">{error}</p> : null}
+          <header><p>帳號設定</p><h1 id="profile-title" tabIndex={-1}>修改我的資料</h1><span>更新你的顯示名稱與聯絡 Email。</span></header>
+          {success ? <p className="customer-profile-page__message is-success" role="status">{success}</p> : null}
+          {error ? <p className="customer-profile-page__message is-error" id="profile-form-error" role="alert">{error}</p> : null}
           {emailChanged ? (
             <p className="customer-profile-page__message is-info">Email 已變更，請重新驗證後再使用 Email 通知。</p>
           ) : null}
-          <form className="customer-profile-page__form" onSubmit={(event) => void submit(event)}>
+          <form className="customer-profile-page__form" onSubmit={(event) => void submit(event)} aria-describedby={error ? 'profile-form-error' : undefined} noValidate>
               <label htmlFor="profile-username">使用者名稱
               <input
                 id="profile-username"

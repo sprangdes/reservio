@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api, API_BASE } from '../api';
-import { lineSafeErrorMessage, normalizeLineAccountLinkRequest, parseAccountLinkRequestToken, safeInternalReturnTo, validateLineAccountLinkHandoff, type LineAccountLinkRequest } from '../features/line/lineDomain';
+import { persistReturnContext } from '../features/auth/returnContext';
+import { lineSafeErrorMessage, normalizeLineAccountLinkRequest, parseAccountLinkRequestToken, validateLineAccountLinkHandoff, type LineAccountLinkRequest } from '../features/line/lineDomain';
 import { useAuth } from '../state/AuthContext';
 
 type LoadPhase = 'loading' | 'ready' | 'invalid' | 'error';
@@ -53,9 +54,12 @@ export default function LineAccountLinkPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const currentReturnTo = useMemo(() => safeInternalReturnTo(`${location.pathname}${location.search}`), [location.pathname, location.search]);
   const beginLineLogin = () => {
-    sessionStorage.setItem('reservio.returnTo', currentReturnTo);
+    const returnTo = persistReturnContext(`${location.pathname}${location.search}`);
+    if (!returnTo) {
+      setError('這個 LINE 帳號連結資訊無法使用。請返回商家的 LINE 對話重新啟動帳號連結。');
+      return;
+    }
     globalThis.location.assign(`${API_BASE}/api/auth/line/user`);
   };
   const returnToReservio = () => navigate('/');

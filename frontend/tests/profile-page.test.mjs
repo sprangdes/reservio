@@ -29,6 +29,7 @@ test('account linking requires a LINE-linked customer session', () => {
   const page = source('src/pages/LineAccountLinkPage.tsx');
   assert.match(page, /me\.lineLoginSession/);
   assert.match(page, /\/api\/auth\/line\/user/);
-  assert.match(page, /sessionStorage\.setItem\('reservio\.returnTo', currentReturnTo\)/);
+  assert.match(page, /persistReturnContext\(`\$\{location\.pathname\}\$\{location\.search\}`\)/);
+  assert.doesNotMatch(page, /sessionStorage|localStorage/);
   assert.match(page, /使用 LINE 登入並繼續/);
 });
