@@ -132,7 +132,7 @@ export default function SessionTimeoutManager() {
         expireSession();
         return;
       }
-      setErrorMessage(err instanceof Error ? err.message : '延長登入狀態失敗');
+      setErrorMessage('目前無法延長登入狀態，請稍後再試。');
     }
   };
 

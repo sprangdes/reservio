@@ -26,6 +26,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [registered, setRegistered] = useState(false);
   const callbackHandled = useRef(false);
+  const authActionRef = useRef(false);
   const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const requestedReturnTo = params.get('returnTo');
   const returnPresentation = useMemo(() => loginReturnPresentation(requestedReturnTo || peekReturnContext()), [requestedReturnTo, location.search]);
@@ -51,15 +52,30 @@ export default function LoginPage() {
     if (callback.failed) {
       clearReturnContext();
       setError('無法完成 LINE 登入，請改用其他方式或稍後再試。');
+      params.delete('lineLogin');
+      params.delete('reason');
+      params.delete('role');
+      const nextSearch = params.toString();
+      navigate({ pathname: '/login', search: nextSearch ? `?${nextSearch}` : '' }, { replace: true });
+      return;
+    }
+    if (params.has('lineLogin') && !callback.success) {
+      params.delete('lineLogin');
+      params.delete('reason');
+      params.delete('role');
+      const nextSearch = params.toString();
+      navigate({ pathname: '/login', search: nextSearch ? `?${nextSearch}` : '' }, { replace: true });
       return;
     }
     if (!callback.success || callbackHandled.current) return;
     callbackHandled.current = true;
+    authActionRef.current = true;
     setPhase('callback');
     setError('');
     void (async () => {
       const user = await refresh();
       if (!user) {
+        authActionRef.current = false;
         setPhase('idle');
         setError('LINE 登入已完成，但目前無法確認帳號狀態。請重新載入後再試。');
         return;
@@ -79,11 +95,12 @@ export default function LoginPage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (isBusy) return;
+    if (authActionRef.current || isBusy) return;
     if (!username.trim() || !password) {
       setError('請輸入使用者名稱與密碼。');
       return;
     }
+    authActionRef.current = true;
     setPhase('credentials');
     setError('');
     try {
@@ -91,12 +108,14 @@ export default function LoginPage() {
       setPassword('');
       const user = await refresh();
       if (!user) {
+        authActionRef.current = false;
         setError('登入已完成，但目前無法確認帳號狀態。請重新載入後再試。');
         setPhase('idle');
         return;
       }
       completeDestination(user);
     } catch (requestError) {
+      authActionRef.current = false;
       setPassword('');
       setError(normalizeAuthError(requestError, 'login').message);
       setPhase('idle');
@@ -104,7 +123,8 @@ export default function LoginPage() {
   };
 
   const startLineLogin = (kind: 'user' | 'business') => {
-    if (isBusy) return;
+    if (authActionRef.current || isBusy) return;
+    authActionRef.current = true;
     setError('');
     if (kind === 'user') {
       const safeCustomerReturn = customerLineReturnContext(requestedReturnTo || peekReturnContext());
@@ -114,7 +134,13 @@ export default function LoginPage() {
       clearReturnContext();
     }
     setPhase('line');
-    globalThis.location.assign(`${API_BASE}/api/auth/line/${kind}`);
+    try {
+      globalThis.location.assign(`${API_BASE}/api/auth/line/${kind}`);
+    } catch {
+      authActionRef.current = false;
+      setPhase('idle');
+      setError('目前無法前往 LINE，請稍後再試。');
+    }
   };
 
   const contextBlock = returnPresentation

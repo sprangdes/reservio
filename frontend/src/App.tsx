@@ -76,7 +76,8 @@ function AuthRouteRedirect({ children }: Readonly<{ children: JSX.Element }>) {
   const { me, loading } = useAuth();
   const location = useLocation();
   // A successful LINE callback must consume its safe return context before the generic redirect runs.
-  if (new URLSearchParams(location.search).get('lineLogin') === 'success') return children;
+  const lineLogin = new URLSearchParams(location.search).get('lineLogin');
+  if (lineLogin === 'success' || lineLogin === 'failed') return children;
   if (loading || !me) return children;
   return <Navigate to={resolvePostAuthDestination(me).path} replace />;
 }
