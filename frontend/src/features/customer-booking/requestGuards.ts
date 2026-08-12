@@ -3,7 +3,6 @@ export type RequestGeneration = Readonly<{ generation: number; signal: AbortSign
 export function createRequestGuard() {
   let controller: AbortController | null = null;
   let generation = 0;
-  let disposed = false;
 
   return {
     begin(): RequestGeneration {
@@ -13,15 +12,9 @@ export function createRequestGuard() {
       return { generation, signal: controller.signal };
     },
     isCurrent(request: RequestGeneration): boolean {
-      return !disposed && request.generation === generation && !request.signal.aborted;
+      return request.generation === generation && !request.signal.aborted;
     },
     abort(): void {
-      controller?.abort();
-      controller = null;
-      generation += 1;
-    },
-    dispose(): void {
-      disposed = true;
       controller?.abort();
       controller = null;
       generation += 1;

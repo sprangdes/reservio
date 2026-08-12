@@ -62,7 +62,7 @@ export function BookingDatePicker({ value, disabledDates, disabledState, onChang
           return;
         }
         setInputError('');
-        onChange(localDate);
+        if (localDate !== value) onChange(localDate);
       }}
     />
     {inputError ? <p id="booking-date-error" className="booking-flow__input-error" role="alert">{inputError}</p> : null}
