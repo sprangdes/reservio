@@ -1,5 +1,5 @@
 import { isLocalDate, normalizeLocalTime } from './bookingDates';
-import type { BookingBusiness, BookingCreateResult, BookingService, BookingSlot } from './domain';
+import type { BookingBusiness, BookingCreateResult, BookingDraft, BookingService, BookingSlot } from './domain';
 
 type RecordValue = Record<string, unknown>;
 
@@ -46,15 +46,31 @@ export function normalizeSlots(value: unknown): BookingSlot[] {
   });
 }
 
-export function normalizeBookingCreateResult(value: unknown): BookingCreateResult | null {
+function responseText(value: unknown, fallback: unknown): string | null {
+  return value == null ? text(fallback) : text(value);
+}
+
+function responseDate(value: unknown, fallback: unknown): string | null {
+  const candidate = value == null ? fallback : value;
+  return isLocalDate(candidate) ? candidate : null;
+}
+
+function responseTime(value: unknown, fallback: unknown): string | null {
+  return normalizeLocalTime(value == null ? fallback : value);
+}
+
+export function normalizeBookingCreateResult(value: unknown, submitted?: BookingDraft): BookingCreateResult | null {
   if (!isRecord(value)) return null;
-  const businessName = text(value.businessName);
-  const serviceName = text(value.title ?? value.serviceName);
-  const date = text(value.reservationDate);
-  const startTime = normalizeLocalTime(value.startTime);
-  const endTime = normalizeLocalTime(value.endTime);
-  const remark = value.remark == null || value.remark === '' ? null : text(value.remark);
-  return businessName && serviceName && date && isLocalDate(date) && startTime && endTime && value.status === 'PENDING' && (value.remark == null || remark !== null)
+  const id = identifier(value.id);
+  const businessName = responseText(value.businessName, submitted?.business?.name);
+  const serviceName = responseText(value.title ?? value.serviceName, submitted?.service?.name);
+  const date = responseDate(value.reservationDate, submitted?.date);
+  const startTime = responseTime(value.startTime, submitted?.startTime);
+  const endTime = responseTime(value.endTime, submitted?.estimatedEndTime);
+  const responseHasRemark = Object.prototype.hasOwnProperty.call(value, 'remark');
+  const remarkSource = responseHasRemark ? value.remark : submitted?.remark;
+  const remark = remarkSource == null || remarkSource === '' ? null : text(remarkSource);
+  return id && businessName && serviceName && date && startTime && endTime && value.status === 'PENDING' && (remarkSource == null || remarkSource === '' || remark !== null)
     ? { businessName, serviceName, date, startTime, endTime, status: 'PENDING', remark }
     : null;
 }
