@@ -18,14 +18,14 @@ import { accountSummary, normalizeAccountIdentity } from './account/accountSetti
 
 const copy: Record<'landing' | 'profile' | 'booking' | 'hours' | 'notifications' | 'line' | 'account' | 'serviceNew' | 'serviceEdit', { title: string; description: string }> = {
   landing: { title: '商家設定', description: '管理商家資料、營運設定與整合服務，讓系統符合您的營運需求。' },
-  profile: { title: '商家資料', description: '商家資料設定將於下一階段整合現有資料與儲存流程。' },
-  booking: { title: '預約與時段', description: '預約與時段設定將於後續階段接入既有預約間隔資料。' },
-  hours: { title: '營業時間', description: '營業時間設定將於後續階段接入既有時段資料。' },
-  notifications: { title: '通知與溝通', description: '通知偏好目前仍可從既有通知設定頁面使用。' },
-  line: { title: 'LINE 整合', description: 'LINE 整合目前仍可從既有整合頁面使用。' },
+  profile: { title: '商家資料', description: '管理商家對外顯示的基本資料與聯絡資訊。' },
+  booking: { title: '預約與時段', description: '設定顧客可預約時段的間隔。' },
+  hours: { title: '營業時間', description: '管理每週營業時間與指定日期調整。' },
+  notifications: { title: '通知與溝通', description: '管理商家帳號的 Email 通知與驗證狀態。' },
+  line: { title: 'LINE 整合', description: '設定 LINE Messaging API、Webhook 與 Rich Menu。' },
   account: { title: '帳號與安全', description: '帳號與安全目前僅顯示系統已支援的資訊。' },
-  serviceNew: { title: '新增服務', description: '新增服務流程將於服務管理階段整合既有儲存流程。' },
-  serviceEdit: { title: '編輯服務', description: '服務編輯將於服務管理階段提供；此頁不會載入或建立資料。' }
+  serviceNew: { title: '新增服務', description: '建立可供顧客預約的服務。' },
+  serviceEdit: { title: '編輯服務', description: '更新服務名稱、時長與啟用狀態。' }
 };
 
 function PageHeader({ title, description }: Readonly<{ title: string; description: string }>) { return <SettingsPageHeader title={title} description={description} />; }

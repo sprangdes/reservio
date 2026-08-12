@@ -1,0 +1,60 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:reservio-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  mail:
+    host: localhost
+    port: 2525
+  security:
+    oauth2:
+      client:
+        provider:
+          line:
+            authorization-uri: https://access.line.me/oauth2/v2.1/authorize
+            token-uri: https://api.line.me/oauth2/v2.1/token
+            user-info-uri: https://api.line.me/v2/profile
+            user-name-attribute: userId
+        registration:
+          line-user:
+            provider: line
+            client-id: test-channel
+            client-secret: test-secret
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: profile
+          line-business:
+            provider: line
+            client-id: test-channel
+            client-secret: test-secret
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: profile
+
+server:
+  servlet:
+    session:
+      timeout: 15m
+      cookie:
+        secure: false
+
+app:
+  line:
+    login:
+      channel-id: test-channel
+      channel-secret: test-secret
+      callback-base-url: http://localhost
+    messaging:
+      credential-encryption-key: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      webhook-base-url: http://localhost
+  auth:
+    success-redirect-path: /login
+    failure-redirect-path: /login
+  cors:
+    allowed-origins: http://localhost

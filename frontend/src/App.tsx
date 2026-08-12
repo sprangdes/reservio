@@ -27,6 +27,7 @@ import { ServiceEditorScaffold, SettingsLandingPage, SettingsScaffoldPage } from
 import { resolveNotificationSettingsRoute } from './features/customer-notifications/customerNotificationSettingsRoute';
 import { buildLoginPath, resolvePostAuthDestination } from './features/auth/authDestination';
 import PublicHomePage from './features/public-entry/PublicHomePage';
+import RouteFocusManager from './components/RouteFocusManager';
 
 function RequireAuth({ children }: Readonly<{ children: JSX.Element }>) {
   const { me, loading } = useAuth();
@@ -153,6 +154,7 @@ export default function App() {
       <BusinessSetupGuard>
         <>
         <SessionTimeoutManager />
+        <RouteFocusManager />
         <Routes>
       <Route
         path="/"
@@ -222,9 +224,7 @@ export default function App() {
         path="/preferred-businesses"
         element={
           <Layout>
-            <RequireAuth>
-              <PreferredBusinessesPage />
-            </RequireAuth>
+            <RequireAuth><RequireCustomer><PreferredBusinessesPage /></RequireCustomer></RequireAuth>
           </Layout>
         }
       />
@@ -291,9 +291,7 @@ export default function App() {
         path="/settings/line-accounts"
         element={
           <Layout>
-            <RequireAuth>
-              <LineAccountLinksPage />
-            </RequireAuth>
+            <RequireAuth><RequireCustomer><LineAccountLinksPage /></RequireCustomer></RequireAuth>
           </Layout>
         }
       />
@@ -301,9 +299,7 @@ export default function App() {
         path="/profile"
         element={
           <Layout>
-            <RequireAuth>
-              <ProfilePage />
-            </RequireAuth>
+            <RequireAuth><RequireCustomer><ProfilePage /></RequireCustomer></RequireAuth>
           </Layout>
         }
       />

@@ -87,10 +87,7 @@ export default function LoginPage() {
   }, [location.search]);
 
   useEffect(() => {
-    const legacyReturnTo = sessionStorage.getItem('reservio.returnTo');
-    const source = requestedReturnTo || legacyReturnTo;
-    if (source) persistReturnContext(source);
-    sessionStorage.removeItem('reservio.returnTo');
+    if (requestedReturnTo) persistReturnContext(requestedReturnTo);
   }, [requestedReturnTo]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {

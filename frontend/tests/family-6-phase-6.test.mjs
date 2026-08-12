@@ -9,6 +9,7 @@ const merchant = source('features/business-settings/line/LineIntegrationEditor.t
 const accountLink = source('pages/LineAccountLinkPage.tsx');
 const linkedBusinesses = source('pages/LineAccountLinksPage.tsx');
 const domain = source('features/line/lineDomain.ts');
+const returnContext = source('features/auth/returnContext.ts');
 
 test('Family 6 retains one canonical route per domain and a non-looping merchant compatibility redirect', () => {
   assert.match(app, /path="\/business\/settings\/integrations\/line"/);
@@ -29,11 +30,12 @@ test('Family 6 mutation refresh failures always resolve pending local state with
 });
 
 test('Family 6 account-link only persists its safe internal return path for the existing LINE Login handoff', () => {
-  assert.match(accountLink, /safeInternalReturnTo\(`\$\{location\.pathname\}\$\{location\.search\}`\)/);
-  assert.match(accountLink, /sessionStorage\.setItem\('reservio\.returnTo', currentReturnTo\)/);
+  assert.match(accountLink, /persistReturnContext\(`\$\{location\.pathname\}\$\{location\.search\}`\)/);
+  assert.doesNotMatch(accountLink, /sessionStorage|localStorage/);
   assert.match(accountLink, /globalThis\.location\.assign\(`\$\{API_BASE\}\/api\/auth\/line\/user`\)/);
   assert.doesNotMatch(accountLink, /localStorage|console\.(log|debug)|request\.value\}</);
-  assert.match(domain, /source\.startsWith\('\/'\) && !source\.startsWith\('\/\/'\)/);
+  assert.doesNotMatch(domain, /safeInternalReturnTo/);
+  assert.match(returnContext, /safeInternalReturnTo\(source\)/);
 });
 
 test('Family 6 linked-business stale recovery preserves even an authoritative empty result and keeps unlink identity internal', () => {

@@ -63,9 +63,9 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
   }
 
   const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
     credentials: 'include',
-    headers,
-    ...options
+    headers
   });
 
   if (response.status === 204) {

@@ -12,6 +12,7 @@ type AuthShellProps = {
 
 export default function AuthShell({ title, description, status, children, footer, variant = 'default' }: Readonly<AuthShellProps>) {
   return <div className="auth-shell">
+    <a className="auth-shell__skip-link" href="#main-content">跳至主要內容</a>
     <header className="auth-shell__header">
       <Link className="auth-shell__brand" to="/" aria-label="Reservio 首頁">Reservio</Link>
       <Link className="auth-shell__back" to="/"><i className="bi bi-arrow-left" aria-hidden="true" /> 返回首頁</Link>

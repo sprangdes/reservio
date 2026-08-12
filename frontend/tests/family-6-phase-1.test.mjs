@@ -46,7 +46,7 @@ test('Family 6 keeps one canonical merchant route and a guarded compatibility re
   assert.match(app, /<BusinessSetupGuard>/);
   assert.match(app, /<RequireAuth><SettingsRoute page="line" \/><\/RequireAuth>/);
   assert.match(app, /<Layout><LineAccountLinkPage \/><\/Layout>/);
-  assert.match(app, /<Layout>\s*<RequireAuth>\s*<LineAccountLinksPage \/>/);
+  assert.match(app, /<Layout>\s*<RequireAuth>\s*<RequireCustomer>\s*<LineAccountLinksPage \/>/);
 });
 
 test('merchant integration normalization separates configuration and health without mutation', () => {
@@ -105,7 +105,8 @@ test('account-link parsing and normalization protect the opaque request token', 
   assert.equal(line.normalizeLineAccountLinkRequest({ status: 'CREATED', expiresAt: '2026-08-09T14:40:00' }), null);
   const page = source('pages/LineAccountLinkPage.tsx');
   assert.match(page, /parseAccountLinkRequestToken/);
-  assert.match(page, /sessionStorage\.setItem\('reservio\.returnTo', currentReturnTo\)/);
+  assert.match(page, /persistReturnContext\(`\$\{location\.pathname\}\$\{location\.search\}`\)/);
+  assert.doesNotMatch(page, /sessionStorage|localStorage/);
   assert.doesNotMatch(page, /localStorage|console\.(log|debug)|request\.value\}</);
 });
 
