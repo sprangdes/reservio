@@ -174,21 +174,13 @@ export default function PreferredBusinessesPage() {
   const navigate = useNavigate();
 
   return (
-    <main>
-      <div className="container my-5">
-        <div className="row justify-content-center">
-          <div className="col-lg-10">
-            <div className="card shadow-sm border-0">
-              <div className="card-header bg-gradient text-white text-white-strong p-4">
-                <h4 className="mb-0 fw-bold"><i className="bi bi-bookmark-heart me-2"></i>管理想預約店家</h4>
-              </div>
-              <div className="card-body p-4">
+    <main className="preferred-businesses-page">
+      <section className="preferred-businesses-page__content" aria-labelledby="preferred-businesses-title">
+              <header><p>預約偏好</p><h1 id="preferred-businesses-title">管理想預約店家</h1><span>選擇你想在建立預約時優先看到的店家。</span></header>
+              <div className="preferred-businesses-page__panel">
                 <PreferredBusinessesPanel onCancel={() => navigate(-1)} />
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      </section>
     </main>
   );
 }

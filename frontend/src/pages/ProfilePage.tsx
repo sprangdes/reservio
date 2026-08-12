@@ -39,25 +39,23 @@ export default function ProfilePage() {
   };
 
   if (loading) {
-    return <main className="container my-5">讀取個人資料中…</main>;
+    return <main className="customer-profile-page"><p className="customer-profile-page__state">讀取個人資料中…</p></main>;
   }
   if (me?.role !== 'ROLE_USER') {
-    return <main className="container my-5"><div className="alert alert-warning">只有客戶帳號可以修改個人資料。</div></main>;
+    return <main className="customer-profile-page"><p className="customer-profile-page__state is-warning">只有客戶帳號可以修改個人資料。</p></main>;
   }
 
   return (
-    <main className="container my-5">
-      <div className="card shadow-sm border-0 mx-auto" style={{ maxWidth: 560 }}>
-        <div className="card-body p-4">
-          <h1 className="h3 mb-4">修改我的資料</h1>
-          {success ? <div className="alert alert-success">{success}</div> : null}
-          {error ? <div className="alert alert-danger">{error}</div> : null}
+    <main className="customer-profile-page">
+      <section className="customer-profile-page__content" aria-labelledby="profile-title">
+          <header><p>帳號設定</p><h1 id="profile-title">修改我的資料</h1><span>更新你的顯示名稱與聯絡 Email。</span></header>
+          {success ? <p className="customer-profile-page__message is-success">{success}</p> : null}
+          {error ? <p className="customer-profile-page__message is-error">{error}</p> : null}
           {emailChanged ? (
-            <div className="alert alert-info">Email 已變更，請重新驗證後再使用 Email 通知。</div>
+            <p className="customer-profile-page__message is-info">Email 已變更，請重新驗證後再使用 Email 通知。</p>
           ) : null}
-          <form onSubmit={(event) => void submit(event)}>
-            <div className="mb-3">
-              <label className="form-label" htmlFor="profile-username">使用者名稱</label>
+          <form className="customer-profile-page__form" onSubmit={(event) => void submit(event)}>
+              <label htmlFor="profile-username">使用者名稱
               <input
                 id="profile-username"
                 name="username"
@@ -67,9 +65,8 @@ export default function ProfilePage() {
                 required
                 onChange={(event) => setUsername(event.target.value)}
               />
-            </div>
-            <div className="mb-4">
-              <label className="form-label" htmlFor="profile-email">Email</label>
+              </label>
+              <label htmlFor="profile-email">Email
               <input
                 id="profile-email"
                 name="email"
@@ -80,13 +77,12 @@ export default function ProfilePage() {
                 required
                 onChange={(event) => setEmail(event.target.value)}
               />
-            </div>
-            <button type="submit" className="btn btn-success" disabled={saving}>
+              </label>
+            <button type="submit" disabled={saving}>
               {saving ? '儲存中…' : '儲存變更'}
             </button>
           </form>
-        </div>
-      </div>
+      </section>
     </main>
   );
 }

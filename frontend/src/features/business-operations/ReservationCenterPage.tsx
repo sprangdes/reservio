@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { api } from '../../api';
 import { useAuth } from '../../state/AuthContext';
 import { defaultReservationFilter } from './reservations/query';
@@ -40,13 +39,8 @@ function useBusinessServices() {
   return services;
 }
 
-function LegacyReservationPage({ content }: Readonly<{ content: ReactNode }>) {
-  return <section className="reservation-center"><header className="reservation-center__header"><p>預約中心</p><h1>現有預約管理</h1><Link to="/reservation/manage" className="reservation-center__back-link"><i className="bi bi-arrow-left" aria-hidden="true" /> 返回新版預約中心</Link></header><div className="reservation-center__legacy">{content}</div></section>;
-}
-
-export default function ReservationCenterPage({ preset, legacyContent }: Readonly<{ preset: ReservationCenterPreset; legacyContent: ReactNode }>) {
+export default function ReservationCenterPage({ preset }: Readonly<{ preset: ReservationCenterPreset }>) {
   const { search } = useLocation();
-  const legacyMode = new URLSearchParams(search).get('legacy') === '1';
   const calendarFromUrl = new URLSearchParams(search).get('view') === 'calendar';
   const services = useBusinessServices();
   const controller = useReservationCenter({ preset });
@@ -54,8 +48,6 @@ export default function ReservationCenterPage({ preset, legacyContent }: Readonl
   const [confirmationAction, setConfirmationAction] = useState<ReservationMutationAction | null>(null);
   const meta = presetMeta[preset];
   useEffect(() => { setCalendarOpen(calendarFromUrl); }, [calendarFromUrl, preset]);
-  if (legacyMode) return <LegacyReservationPage content={legacyContent} />;
-
   const applyFilter = (filter: ReservationFilter) => controller.setQuery({ filter });
   const removeFilter = (key: keyof ReservationFilter, value?: ReservationStatusKey) => {
     const filter = { ...controller.query.filter };

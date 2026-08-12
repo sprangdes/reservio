@@ -15,7 +15,7 @@ const flags = source('features/business-operations/future/featureFlags.ts');
 
 test('Family 3 final integration preserves one Reservation Center with safe calendar history state', () => {
   assert.match(reservationPage, /calendarFromUrl/);
-  assert.match(reservationPage, /legacyMode/);
+  assert.doesNotMatch(reservationPage, /legacyMode|LegacyReservationPage/);
   assert.match(reservationPage, /ReservationCalendarView/);
   assert.match(mobileNavigation, /行事曆/);
   assert.match(mobileNavigation, /view=calendar/);
