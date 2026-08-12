@@ -56,7 +56,7 @@ public class LineOAuth2AuthenticationSuccessHandler implements AuthenticationSuc
             return;
         }
 
-        log.info("LINE oauth callback received. registrationId={}, sub={}", registrationId, lineUserId);
+        log.info("LINE oauth callback received. registrationId={}", registrationId);
 
         UserData user = lineAuthService.findOrCreateUserByLine(
                 lineUserId,
@@ -64,8 +64,7 @@ public class LineOAuth2AuthenticationSuccessHandler implements AuthenticationSuc
                 oauth2User.getAttribute("displayName")
         );
 
-        log.info("LINE user resolved. userId={}, username={}, role={}, lineUserId={}",
-                user.getId(), user.getUsername(), user.getRole(), user.getLineUserId());
+        log.info("LINE user resolved. role={}", user.getRole());
 
         UsernamePasswordAuthenticationToken appAuth = new UsernamePasswordAuthenticationToken(
                 user.getUsername(),
@@ -80,7 +79,7 @@ public class LineOAuth2AuthenticationSuccessHandler implements AuthenticationSuc
         context.setAuthentication(appAuth);
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, request, response);
-        log.info("Session authentication established for username={}", user.getUsername());
+        log.info("LINE session authentication established");
 
         response.sendRedirect(buildSuccessRedirect(user.getRole()));
     }

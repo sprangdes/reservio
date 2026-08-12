@@ -11,7 +11,13 @@ function parse(value: string | null): StoredReturnContext | null {
     const parsed: unknown = JSON.parse(value);
     if (!parsed || typeof parsed !== 'object') return null;
     const candidate = parsed as Partial<StoredReturnContext>;
-    if (candidate.version !== 1 || typeof candidate.createdAt !== 'number' || Date.now() - candidate.createdAt > MAX_AGE_MS) return null;
+    if (
+      candidate.version !== 1
+      || typeof candidate.createdAt !== 'number'
+      || !Number.isFinite(candidate.createdAt)
+      || candidate.createdAt > Date.now()
+      || Date.now() - candidate.createdAt > MAX_AGE_MS
+    ) return null;
     const path = safeInternalReturnTo(candidate.path);
     return path ? { version: 1, path, createdAt: candidate.createdAt } : null;
   } catch {

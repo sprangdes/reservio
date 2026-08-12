@@ -41,7 +41,14 @@ const MERCHANT_EXACT_PATHS = new Set([
   '/business/info',
   '/business/line-integration',
   '/notifications',
-  '/notifications/settings'
+  '/notifications/settings',
+  '/business/settings',
+  '/business/settings/profile',
+  '/business/settings/booking',
+  '/business/settings/hours',
+  '/business/settings/notifications',
+  '/business/settings/integrations/line',
+  '/business/settings/account'
 ]);
 
 function hasControlCharacter(value: string): boolean {
@@ -50,9 +57,7 @@ function hasControlCharacter(value: string): boolean {
 
 function isKnownMerchantPath(pathname: string): boolean {
   return MERCHANT_EXACT_PATHS.has(pathname)
-    || pathname.startsWith('/service/')
-    || pathname === '/business/settings'
-    || pathname.startsWith('/business/settings/');
+    || /^\/service\/[^/]+\/edit$/.test(pathname);
 }
 
 function isKnownReturnPath(pathname: string): boolean {
@@ -69,6 +74,10 @@ export function safeInternalReturnTo(source: unknown): string | null {
   }
 
   try {
+    const decodedSource = decodeURIComponent(source);
+    if (hasControlCharacter(decodedSource) || decodedSource.includes('\\') || decodedSource.startsWith('//')) {
+      return null;
+    }
     const parsed = new URL(source, 'https://reservio.internal');
     if (parsed.origin !== 'https://reservio.internal' || AUTH_LOOP_PATHS.has(parsed.pathname) || !isKnownReturnPath(parsed.pathname)) {
       return null;

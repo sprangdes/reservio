@@ -48,7 +48,7 @@ test('credential mutation uses exact payload, locks actions, refreshes authorita
   assert.match(login, /if \(!user\) \{/);
   assert.match(login, /登入已完成，但目前無法確認帳號狀態/);
   assert.match(login, /resolvePostAuthDestination\(user, returnTo\)/);
-  assert.match(login, /if \(isBusy\) return;/);
+  assert.match(login, /if \(authActionRef\.current \|\| isBusy\) return;/);
   assert.match(login, /setPassword\(''\)/);
   assert.match(login, /normalizeAuthError\(requestError, 'login'\)/);
   assert.match(login, /disabled=\{isBusy\}/);
@@ -75,7 +75,7 @@ test('LINE starts only real endpoints, customer stores only compatible context, 
   assert.match(login, /else \{\s*clearReturnContext\(\)/);
   assert.match(login, /params\.get\('lineLogin'\) === 'success'/);
   assert.match(login, /const user = await refresh\(\)/);
-  assert.match(app, /get\('lineLogin'\) === 'success'\) return children/);
+  assert.match(app, /lineLogin === 'success' \|\| lineLogin === 'failed'/);
   assert.doesNotMatch(login, /state: \{ lineRole|params\.get\('role'\)/);
 });
 
