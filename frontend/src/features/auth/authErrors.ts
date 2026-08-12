@@ -38,7 +38,11 @@ export function normalizeAuthError(error: unknown, context?: AuthErrorContext): 
       return { category: context === 'login' ? 'INVALID_CREDENTIALS' : 'SESSION_EXPIRED', message: messages[context === 'login' ? 'INVALID_CREDENTIALS' : 'SESSION_EXPIRED'] };
     }
     if (error.status === 429) return { category: 'RATE_LIMITED', message: messages.RATE_LIMITED };
-    if (error.status >= 500) return { category: 'SERVER', message: context === 'login' ? '系統暫時無法完成登入，請稍後再試。' : messages.SERVER };
+    if (error.status >= 500) {
+      if (context === 'login') return { category: 'SERVER', message: '系統暫時無法完成登入，請稍後再試。' };
+      if (context === 'customer-registration' || context === 'merchant-registration') return { category: 'SERVER', message: '系統暫時無法建立帳號，請稍後再試。' };
+      return { category: 'SERVER', message: messages.SERVER };
+    }
     if (error.status === 400 && context === 'otp-verify') return { category: 'OTP_INVALID_OR_EXPIRED', message: messages.OTP_INVALID_OR_EXPIRED };
     if (error.status === 400 && (context === 'customer-registration' || context === 'merchant-registration')) {
       return { category: 'DUPLICATE_IDENTITY', message: messages.DUPLICATE_IDENTITY };
@@ -48,5 +52,7 @@ export function normalizeAuthError(error: unknown, context?: AuthErrorContext): 
   if (error instanceof TypeError || (error instanceof Error && /fetch|network/i.test(error.message))) {
     return { category: 'NETWORK', message: messages.NETWORK };
   }
-  return { category: 'UNKNOWN', message: context === 'login' ? '無法完成登入，請稍後再試。' : messages.UNKNOWN };
+  if (context === 'login') return { category: 'UNKNOWN', message: '無法完成登入，請稍後再試。' };
+  if (context === 'customer-registration' || context === 'merchant-registration') return { category: 'UNKNOWN', message: '無法建立帳號，請稍後再試。' };
+  return { category: 'UNKNOWN', message: messages.UNKNOWN };
 }
