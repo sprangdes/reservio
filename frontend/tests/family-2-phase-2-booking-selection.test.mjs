@@ -69,6 +69,13 @@ test('request guards prevent stale services, disabled dates and slots from becom
   assert.equal(guards.isIntentionalAbort(new DOMException('aborted', 'AbortError')), true);
 });
 
+test('booking effect cleanup stays reusable during React Strict Mode remounts', () => {
+  const hook = source('features/customer-booking/useBookingFlow.ts');
+  assert.match(hook, /return \(\) => businessGuard\.current\.abort\(\)/);
+  assert.match(hook, /serviceGuard\.current\.abort\(\); disabledDateGuard\.current\.abort\(\); slotGuard\.current\.abort\(\)/);
+  assert.doesNotMatch(hook, /Guard\.current\.dispose\(\)/);
+});
+
 test('selection controls expose accessibility and availability semantics without internal IDs', () => {
   const slots = source('features/customer-booking/BookingTimeSlots.tsx');
   const summary = source('features/customer-booking/BookingContextSummary.tsx');
