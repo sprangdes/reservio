@@ -1,80 +1,65 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import { useToast } from '../state/ToastContext';
-import { savePasswordResetState } from '../features/auth/passwordResetState';
+import AuthShell from '../features/auth/AuthShell';
+import { AuthErrorMessage, AuthStatusMessage } from '../features/auth/AuthMessages';
 import { normalizeAuthError } from '../features/auth/authErrors';
+import { forgotPasswordRequest, normalizeRecoveryIdentifier } from '../features/auth/passwordRecoveryDomain';
+import { savePasswordResetState } from '../features/auth/passwordResetState';
 
 export default function ForgotPasswordPage() {
-  const { setErrorMessage } = useToast();
-  const [emailOrUsername, setEmailOrUsername] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [localError, setLocalError] = useState('');
-  const [localSuccess, setLocalSuccess] = useState('');
   const navigate = useNavigate();
+  const submittingRef = useRef(false);
+  const [identifier, setIdentifier] = useState('');
+  const [fieldError, setFieldError] = useState('');
+  const [requestError, setRequestError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = async (event: { preventDefault: () => void }) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setLocalError('');
-    setLocalSuccess('');
+    if (submittingRef.current) return;
+    const normalizedIdentifier = normalizeRecoveryIdentifier(identifier);
+    setFieldError('');
+    setRequestError('');
+    if (!normalizedIdentifier) {
+      setFieldError('請輸入電子郵件或使用者名稱。');
+      return;
+    }
 
+    submittingRef.current = true;
+    setSubmitting(true);
     try {
-      setSubmitting(true);
-      await api.requestPasswordResetOtp({ emailOrUsername });
-      setLocalSuccess('若帳號存在，系統已寄送一次性密碼到您的信箱。');
-      savePasswordResetState(emailOrUsername);
-      navigate('/forgot-password/verify');
-    } catch (err) {
-      const normalized = normalizeAuthError(err, 'otp-request');
-      setLocalError(normalized.message);
-      setErrorMessage(normalized.message);
+      await api.requestPasswordResetOtp(forgotPasswordRequest(normalizedIdentifier));
+      const resetState = savePasswordResetState(normalizedIdentifier);
+      if (!resetState) {
+        setRequestError('目前無法開始驗證流程，請稍後再試。');
+        return;
+      }
+      navigate('/forgot-password/verify', { state: resetState });
+    } catch (error) {
+      setRequestError(normalizeAuthError(error, 'otp-request').message);
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
 
-  return (
-    <main>
-      <div className="container my-5">
-        <div className="row justify-content-center">
-          <div className="col-md-6 col-lg-5">
-            <div className="card shadow-sm border-0">
-              <div className="card-header bg-gradient text-white text-white-strong p-4 text-center">
-                <h4 className="mb-0 fw-bold">忘記密碼</h4>
-                <p className="mb-0 mt-2 opacity-75">輸入帳號或電子郵件，我們將寄送一次性密碼給您</p>
-              </div>
-              <div className="card-body p-4">
-                {localSuccess ? <div className="alert alert-success shadow-sm mb-4">{localSuccess}</div> : null}
-                {localError ? <div className="alert alert-danger shadow-sm mb-4">{localError}</div> : null}
-
-                <form onSubmit={handleSubmit}>
-                  <div className="mb-3">
-                    <label htmlFor="account" className="form-label">使用者名稱 / 電子郵件</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="account"
-                      value={emailOrUsername}
-                      onChange={(e) => setEmailOrUsername(e.target.value)}
-                      placeholder="請輸入帳號或電子郵件"
-                      required
-                      autoFocus
-                    />
-                  </div>
-                  <div className="d-grid mt-4">
-                    <button type="submit" className="btn btn-gradient btn-lg fw-bold shadow-sm" disabled={submitting}>
-                      {submitting ? '寄送中...' : '寄送一次性密碼'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-              <div className="card-footer text-center py-3">
-                <small className="text-muted">想起密碼了？ <Link to="/login" className="text-primary text-decoration-none fw-bold">返回登入</Link></small>
-              </div>
-            </div>
-          </div>
-        </div>
+  return <AuthShell
+    title="忘記密碼"
+    description="輸入電子郵件或使用者名稱，我們會在帳號存在時寄送驗證碼。"
+    footer={<Link to="/login"><i className="bi bi-arrow-left" aria-hidden="true" /> 返回登入</Link>}
+  >
+    <form className="auth-recovery" onSubmit={handleSubmit} noValidate>
+      {requestError ? <AuthErrorMessage>{requestError}</AuthErrorMessage> : null}
+      <div className="auth-recovery__field">
+        <label htmlFor="recovery-identifier">電子郵件或使用者名稱</label>
+        <input id="recovery-identifier" type="text" value={identifier} onChange={(event) => setIdentifier(event.target.value)} autoComplete="username" aria-describedby={fieldError ? 'recovery-identifier-error' : undefined} aria-invalid={Boolean(fieldError)} disabled={submitting} required />
+        {fieldError ? <p className="auth-recovery__field-error" id="recovery-identifier-error">{fieldError}</p> : null}
       </div>
-    </main>
-  );
+      <button className="auth-recovery__primary" type="submit" disabled={submitting}>{submitting ? '寄送中…' : '寄送驗證碼'}</button>
+      {submitting ? <AuthStatusMessage>寄送中…</AuthStatusMessage> : null}
+      <p className="auth-recovery__note"><i className="bi bi-clock" aria-hidden="true" /> 驗證碼有效 10 分鐘。</p>
+      <p className="visually-hidden" aria-live="polite">{requestError || ''}</p>
+    </form>
+  </AuthShell>;
 }

@@ -50,7 +50,7 @@ function PasswordResetGuard({ children }: Readonly<{ children: JSX.Element }>) {
   const { me, loading } = useAuth();
   const location = useLocation();
   if (loading) {
-    return children;
+    return null;
   }
 
   if (me?.mustChangePassword && location.pathname !== '/force-change-password') {
@@ -79,6 +79,13 @@ function AuthRouteRedirect({ children }: Readonly<{ children: JSX.Element }>) {
   if (new URLSearchParams(location.search).get('lineLogin') === 'success') return children;
   if (loading || !me) return children;
   return <Navigate to={resolvePostAuthDestination(me).path} replace />;
+}
+
+function ForceChangeRouteGuard({ children }: Readonly<{ children: JSX.Element }>) {
+  const { me, loading } = useAuth();
+  if (loading || !me) return children;
+  if (!me.mustChangePassword) return <Navigate to={resolvePostAuthDestination(me).path} replace />;
+  return children;
 }
 
 function BusinessAwareHome() {
@@ -174,23 +181,23 @@ export default function App() {
       <Route
         path="/forgot-password"
         element={
-          <AuthRouteRedirect><Layout><ForgotPasswordPage /></Layout></AuthRouteRedirect>
+          <AuthRouteRedirect><ForgotPasswordPage /></AuthRouteRedirect>
         }
       />
       <Route
         path="/forgot-password/verify"
         element={
-          <AuthRouteRedirect><Layout><ForgotPasswordVerifyPage /></Layout></AuthRouteRedirect>
+          <AuthRouteRedirect><ForgotPasswordVerifyPage /></AuthRouteRedirect>
         }
       />
       <Route
         path="/force-change-password"
         element={
-          <Layout>
-            <RequireAuth>
+          <RequireAuth>
+            <ForceChangeRouteGuard>
               <ForceChangePasswordPage />
-            </RequireAuth>
-          </Layout>
+            </ForceChangeRouteGuard>
+          </RequireAuth>
         }
       />
       <Route
