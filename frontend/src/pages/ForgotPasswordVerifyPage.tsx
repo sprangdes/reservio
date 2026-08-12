@@ -1,100 +1,123 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import { useAuth } from '../state/AuthContext';
-import { useToast } from '../state/ToastContext';
-import { clearPasswordResetState, loadPasswordResetState } from '../features/auth/passwordResetState';
+import AuthShell from '../features/auth/AuthShell';
+import { AuthErrorMessage, AuthStatusMessage } from '../features/auth/AuthMessages';
+import OtpInput, { sanitizeOtp } from '../features/auth/OtpInput';
 import { normalizeAuthError } from '../features/auth/authErrors';
+import { forgotPasswordRequest, verifyPasswordOtpRequest } from '../features/auth/passwordRecoveryDomain';
+import { clearPasswordResetState, loadPasswordResetState, savePasswordResetState, type PasswordResetState } from '../features/auth/passwordResetState';
+import { useAuth } from '../state/AuthContext';
+
+type VerifyPhase = 'idle' | 'verify' | 'resend' | 'refresh-failed';
+
+function routeResetState(value: unknown): PasswordResetState | null {
+  if (!value || typeof value !== 'object') return null;
+  const state = value as Partial<PasswordResetState>;
+  if (typeof state.identifier !== 'string' || !state.identifier.trim() || typeof state.requestedAt !== 'number') return null;
+  if (state.requestedAt > Date.now() || Date.now() - state.requestedAt > 10 * 60 * 1000) return null;
+  return { identifier: state.identifier.trim(), requestedAt: state.requestedAt };
+}
 
 export default function ForgotPasswordVerifyPage() {
-  const { setMe } = useAuth();
-  const { setErrorMessage, setSuccessMessage } = useToast();
+  const { refresh } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [emailOrUsername, setEmailOrUsername] = useState('');
+  const actionRef = useRef(false);
   const [otp, setOtp] = useState('');
-  const [localError, setLocalError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [fieldError, setFieldError] = useState('');
+  const [requestError, setRequestError] = useState('');
+  const [status, setStatus] = useState('若帳號存在，驗證碼已寄至對應信箱。');
+  const [phase, setPhase] = useState<VerifyPhase>('idle');
+  const retainedState = useMemo(() => routeResetState(location.state) || loadPasswordResetState(), [location.state]);
+  const identifier = retainedState?.identifier || '';
+  const busy = phase === 'verify' || phase === 'resend';
 
   useEffect(() => {
-    const state = loadPasswordResetState();
-    if (state) setEmailOrUsername(state.identifier);
-  }, [location.search]);
+    if (new URLSearchParams(location.search).has('account')) {
+      navigate('/forgot-password/verify', { replace: true, state: retainedState || undefined });
+      return;
+    }
+    if (!retainedState) {
+      clearPasswordResetState();
+      navigate('/forgot-password', { replace: true });
+    }
+  }, [location.search, navigate, retainedState]);
 
-  const handleSubmit = async (event: { preventDefault: () => void }) => {
+  const handleVerify = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setLocalError('');
-
+    if (actionRef.current || !identifier) return;
+    const normalizedOtp = sanitizeOtp(otp);
+    setFieldError('');
+    setRequestError('');
+    setStatus('');
+    if (normalizedOtp.length !== 6) {
+      setFieldError('請輸入完整的 6 位數驗證碼。');
+      return;
+    }
+    actionRef.current = true;
+    setPhase('verify');
     try {
-      setSubmitting(true);
-      const res = await api.verifyPasswordResetOtp({ emailOrUsername, otp });
-      if (res?.data) {
-        setMe(res.data);
+      await api.verifyPasswordResetOtp(verifyPasswordOtpRequest(identifier, normalizedOtp));
+      setOtp('');
+      const user = await refresh();
+      if (!user || !user.mustChangePassword) {
+        setPhase('refresh-failed');
+        setRequestError('驗證已完成，但目前無法確認帳號狀態。請重新載入後再試。');
+        return;
       }
       clearPasswordResetState();
-      setSuccessMessage('OTP 驗證成功，請更新密碼。');
-      navigate('/force-change-password');
-    } catch (err) {
-      const normalized = normalizeAuthError(err, 'otp-verify');
-      setLocalError(normalized.message);
-      setErrorMessage(normalized.message);
+      navigate('/force-change-password', { replace: true });
+    } catch (requestError) {
+      setOtp('');
+      const normalizedError = normalizeAuthError(requestError, 'otp-verify');
+      if (normalizedError.category === 'OTP_INVALID_OR_EXPIRED' || normalizedError.category === 'VALIDATION') setFieldError(normalizedError.message);
+      else setRequestError(normalizedError.message);
+      setPhase('idle');
     } finally {
-      setSubmitting(false);
+      actionRef.current = false;
+      setPhase((current) => current === 'verify' ? 'idle' : current);
     }
   };
 
-  return (
-    <main>
-      <div className="container my-5">
-        <div className="row justify-content-center">
-          <div className="col-md-6 col-lg-5">
-            <div className="card shadow-sm border-0">
-              <div className="card-header bg-gradient text-white text-white-strong p-4 text-center">
-                <h4 className="mb-0 fw-bold">驗證一次性密碼</h4>
-                <p className="mb-0 mt-2 opacity-75">請輸入信件中的 OTP，完成身分確認</p>
-              </div>
-              <div className="card-body p-4">
-                {localError ? <div className="alert alert-danger shadow-sm mb-4">{localError}</div> : null}
+  const handleResend = async () => {
+    if (actionRef.current) return;
+    if (!identifier) {
+      clearPasswordResetState();
+      navigate('/forgot-password', { replace: true });
+      return;
+    }
+    actionRef.current = true;
+    setPhase('resend');
+    setFieldError('');
+    setRequestError('');
+    setStatus('');
+    try {
+      await api.requestPasswordResetOtp(forgotPasswordRequest(identifier));
+      const nextState = savePasswordResetState(identifier);
+      setOtp('');
+      setStatus('若帳號存在，新的驗證碼已寄至對應信箱。');
+      navigate('/forgot-password/verify', { replace: true, state: nextState || undefined });
+    } catch (requestError) {
+      setRequestError(normalizeAuthError(requestError, 'otp-request').message);
+    } finally {
+      actionRef.current = false;
+      setPhase('idle');
+    }
+  };
 
-                <form onSubmit={handleSubmit}>
-                  <div className="mb-3">
-                    <label htmlFor="account" className="form-label">使用者名稱 / 電子郵件</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="account"
-                      value={emailOrUsername}
-                      onChange={(e) => setEmailOrUsername(e.target.value)}
-                      placeholder="請輸入帳號或電子郵件"
-                      required
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="otp" className="form-label">一次性密碼 (OTP)</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="otp"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\s/g, ''))}
-                      placeholder="請輸入 6 位數 OTP"
-                      required
-                    />
-                  </div>
-                  <div className="d-grid mt-4">
-                    <button type="submit" className="btn btn-gradient btn-lg fw-bold shadow-sm" disabled={submitting}>
-                      {submitting ? '驗證中...' : '驗證 OTP'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-              <div className="card-footer text-center py-3">
-                <small className="text-muted">沒有收到信？ <Link to="/forgot-password" className="text-primary text-decoration-none fw-bold">重新寄送</Link></small>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  );
+  if (!retainedState) return null;
+
+  return <AuthShell title="輸入驗證碼" description="輸入收到的 6 位數驗證碼。" footer={<Link to="/forgot-password"><i className="bi bi-arrow-left" aria-hidden="true" /> 返回</Link>}>
+    <form className="auth-recovery auth-recovery--otp" onSubmit={handleVerify} noValidate>
+      {status ? <p className="auth-shell__success" role="status" aria-live="polite">{status}</p> : null}
+      {requestError ? <AuthErrorMessage>{requestError}</AuthErrorMessage> : null}
+      <OtpInput id="password-reset-otp" value={otp} onChange={setOtp} error={fieldError || undefined} describedBy="password-reset-otp-error" disabled={busy || phase === 'refresh-failed'} />
+      <p className="auth-recovery__note"><i className="bi bi-shield-check" aria-hidden="true" /> 驗證碼有效 10 分鐘。</p>
+      <button className="auth-recovery__primary" type="submit" disabled={busy || phase === 'refresh-failed' || otp.length !== 6}>{phase === 'verify' ? '驗證中…' : '驗證'}</button>
+      <button className="auth-recovery__secondary" type="button" onClick={handleResend} disabled={busy || phase === 'refresh-failed'}>{phase === 'resend' ? '重新寄送中…' : '重新取得驗證碼'}</button>
+      {busy ? <AuthStatusMessage>{phase === 'verify' ? '驗證中…' : '重新寄送中…'}</AuthStatusMessage> : null}
+      {phase === 'refresh-failed' ? <button className="auth-recovery__reload" type="button" onClick={() => globalThis.location.reload()}>重新載入</button> : null}
+    </form>
+  </AuthShell>;
 }
