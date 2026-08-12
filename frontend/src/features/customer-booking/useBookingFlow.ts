@@ -92,8 +92,8 @@ export function useBookingFlow() {
     }
   }, []);
 
-  useEffect(() => { void loadBusinesses(); return () => businessGuard.current.dispose(); }, [loadBusinesses]);
-  useEffect(() => () => { serviceGuard.current.dispose(); disabledDateGuard.current.dispose(); slotGuard.current.dispose(); }, []);
+  useEffect(() => { void loadBusinesses(); return () => businessGuard.current.abort(); }, [loadBusinesses]);
+  useEffect(() => () => { serviceGuard.current.abort(); disabledDateGuard.current.abort(); slotGuard.current.abort(); }, []);
 
   const selectBusiness = useCallback((business: BookingBusiness) => {
     slotGuard.current.abort();

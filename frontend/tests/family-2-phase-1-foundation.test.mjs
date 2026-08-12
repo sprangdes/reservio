@@ -119,6 +119,8 @@ test('request guards abort superseded work, latest generation wins, and instance
   first.abort();
   assert.equal(latestRequest.signal.aborted, true);
   assert.equal(second.isCurrent(secondRequest), true);
+  const resumedRequest = first.begin();
+  assert.equal(first.isCurrent(resumedRequest), true);
   assert.equal(requestGuards.isIntentionalAbort(new DOMException('aborted', 'AbortError')), true);
 });
 
