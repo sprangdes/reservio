@@ -84,9 +84,9 @@ export function useCustomerReservationsWorkspace() {
   }, []);
 
   useEffect(() => { void loadReservations(); }, [loadReservations]);
-  useEffect(() => { void loadBusinesses(); return () => businessGuard.current.dispose(); }, [loadBusinesses]);
+  useEffect(() => { void loadBusinesses(); return () => businessGuard.current.abort(); }, [loadBusinesses]);
   useEffect(() => { void loadServices(draft.businessId); }, [draft.businessId, loadServices]);
-  useEffect(() => () => { queryGuard.current.dispose(); serviceGuard.current.dispose(); }, []);
+  useEffect(() => () => { queryGuard.current.abort(); serviceGuard.current.abort(); }, []);
 
   const changeDraft = useCallback((patch: Partial<ReservationFilterDraft>) => setDraft((current) => ({ ...current, ...patch })), []);
   const applyFilters = useCallback(() => { setPageIndex(0); setApplied(draft); }, [draft]);

@@ -90,6 +90,15 @@ test('workspace provides honest loading, empty, error and stale states without r
   assert.doesNotMatch(states, /error\.message/);
 });
 
+test('reservation workspace cleanup remains reusable during React Strict Mode remounts', () => {
+  const hook = source('features/customer-reservations/useCustomerReservationsWorkspace.ts');
+  const guards = source('features/customer-booking/requestGuards.ts');
+  assert.match(hook, /businessGuard\.current\.abort\(\)/);
+  assert.match(hook, /queryGuard\.current\.abort\(\); serviceGuard\.current\.abort\(\)/);
+  assert.doesNotMatch(hook, /\.dispose\(\)/);
+  assert.doesNotMatch(guards, /dispose\(\)/);
+});
+
 test('Phase 4 cancellation boundary is capability-gated, inert, and contains no mutation or browser confirmation', () => {
   const row = source('features/customer-reservations/ReservationRow.tsx');
   const workspace = source('features/customer-reservations/MyReservationsWorkspace.tsx');

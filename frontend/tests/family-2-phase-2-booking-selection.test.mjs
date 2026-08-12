@@ -92,6 +92,14 @@ test('selection controls expose accessibility and availability semantics without
   assert.doesNotMatch(picker, /new Date\("\d{4}-\d{2}-\d{2}"\)/);
 });
 
+test('an unchanged date blur cannot clear loaded slots before a slot click', () => {
+  const hook = source('features/customer-booking/useBookingFlow.ts');
+  const picker = source('features/customer-booking/BookingDatePicker.tsx');
+  assert.match(hook, /if \(draft\.date === date\) return;/);
+  assert.match(hook, /\}, \[draft\.date\]\);/);
+  assert.match(picker, /if \(localDate !== value\) onChange\(localDate\);/);
+});
+
 test('responsive booking shell owns its header, desktop summary and touch target hooks', () => {
   const css = source('styles.css');
   assert.match(css, /\.booking-flow__header/);

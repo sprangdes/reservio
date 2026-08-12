@@ -108,9 +108,10 @@ export function useBookingFlow() {
   }, []);
 
   const selectDate = useCallback((date: string | null) => {
+    if (draft.date === date) return;
     slotGuard.current.abort(); setSlots([]); setSlotState('idle');
     setDraft((current) => selectBookingDate(current, date));
-  }, []);
+  }, [draft.date]);
 
   useEffect(() => { if (draft.business && draft.service && draft.date) void loadSlots(draft); }, [draft.business?.id, draft.service?.id, draft.service?.durationMinutes, draft.date, loadSlots]);
 
