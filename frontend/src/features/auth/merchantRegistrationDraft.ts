@@ -27,15 +27,29 @@ export function loadMerchantRegistrationDraft(): DraftInput | null {
   if (!raw) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object' || (parsed as { version?: unknown }).version !== 1) return null;
+    if (!parsed || typeof parsed !== 'object') {
+      clearMerchantRegistrationDraft();
+      return null;
+    }
     const candidate = parsed as Partial<MerchantRegistrationDraft>;
+    const version = (parsed as { version?: unknown }).version;
+    if (version !== undefined && version !== 1) {
+      clearMerchantRegistrationDraft();
+      return null;
+    }
     const values = empty();
     for (const key of Object.keys(values) as Array<keyof DraftInput>) {
-      if (typeof candidate[key] !== 'string') return null;
-      values[key] = candidate[key] as string;
+      if (candidate[key] !== undefined && typeof candidate[key] !== 'string') {
+        clearMerchantRegistrationDraft();
+        return null;
+      }
+      values[key] = typeof candidate[key] === 'string' ? candidate[key] : '';
     }
+    // Rewriting removes passwords and other legacy properties from older drafts.
+    saveMerchantRegistrationDraft(values);
     return values;
   } catch {
+    clearMerchantRegistrationDraft();
     return null;
   }
 }

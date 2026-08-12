@@ -162,13 +162,13 @@ export default function App() {
       <Route
         path="/register"
         element={
-          <AuthRouteRedirect><Layout><RegisterPage /></Layout></AuthRouteRedirect>
+          <AuthRouteRedirect><RegisterPage /></AuthRouteRedirect>
         }
       />
       <Route
         path="/register-business"
         element={
-          <AuthRouteRedirect><Layout><RegisterBusinessPage /></Layout></AuthRouteRedirect>
+          <AuthRouteRedirect><RegisterBusinessPage /></AuthRouteRedirect>
         }
       />
       <Route
