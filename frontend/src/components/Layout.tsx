@@ -5,12 +5,13 @@ import ToastContainer from './ToastContainer';
 
 interface LayoutProps {
   children: ReactNode;
+  hideNavigation?: boolean;
 }
 
-export default function Layout({ children }: Readonly<LayoutProps>) {
+export default function Layout({ children, hideNavigation = false }: Readonly<LayoutProps>) {
   return (
     <div>
-      <Navbar />
+      {hideNavigation ? null : <Navbar />}
       {children}
       <Footer />
       <ToastContainer />

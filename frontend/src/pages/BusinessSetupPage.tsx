@@ -69,7 +69,7 @@ export default function BusinessSetupPage() {
   };
 
   return (
-    <main>
+    <main className="business-setup-page">
       <div className="container my-5">
         <div className="row justify-content-center">
           <div className="col-md-8 col-lg-6">

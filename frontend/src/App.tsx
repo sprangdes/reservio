@@ -5,9 +5,6 @@ import RegisterPage from './pages/RegisterPage';
 import RegisterBusinessPage from './pages/RegisterBusinessPage';
 import ReservationNewPage from './pages/ReservationNewPage';
 import MyReservationsPage from './pages/MyReservationsPage';
-import ManageTodayPage from './pages/ManageTodayPage';
-import ManageAllPage from './pages/ManageAllPage';
-import ManagePendingPage from './pages/ManagePendingPage';
 import ServiceManagementPage from './pages/ServiceManagementPage';
 import BusinessInfoPage from './features/business-settings/LegacyBusinessInfoCompatibility';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -98,8 +95,8 @@ function BusinessAwareHome() {
   return <PublicHomePage />;
 }
 
-function ReservationCenterRoute({ preset, legacyContent }: Readonly<{ preset: ReservationCenterPreset; legacyContent: JSX.Element }>) {
-  return <BusinessWorkspaceShell><ReservationCenterPage preset={preset} legacyContent={legacyContent} /></BusinessWorkspaceShell>;
+function ReservationCenterRoute({ preset }: Readonly<{ preset: ReservationCenterPreset }>) {
+  return <BusinessWorkspaceShell><ReservationCenterPage preset={preset} /></BusinessWorkspaceShell>;
 }
 
 function RequireBusiness({ children }: Readonly<{ children: JSX.Element }>) {
@@ -204,7 +201,7 @@ export default function App() {
       <Route
         path="/reservation/new"
         element={
-          <Layout>
+          <Layout hideNavigation>
             <RequireAuth>
               <RequireCustomer><ReservationNewPage /></RequireCustomer>
             </RequireAuth>
@@ -214,7 +211,7 @@ export default function App() {
       <Route
         path="/my/reservations"
         element={
-          <Layout>
+          <Layout hideNavigation>
             <RequireAuth>
               <RequireCustomer><MyReservationsPage /></RequireCustomer>
             </RequireAuth>
@@ -234,19 +231,19 @@ export default function App() {
       <Route
         path="/reservation/today/manage"
         element={
-          <RequireAuth><RequireBusiness><ReservationCenterRoute preset="today" legacyContent={<ManageTodayPage />} /></RequireBusiness></RequireAuth>
+          <RequireAuth><RequireBusiness><ReservationCenterRoute preset="today" /></RequireBusiness></RequireAuth>
         }
       />
       <Route
         path="/reservation/manage"
         element={
-          <RequireAuth><RequireBusiness><ReservationCenterRoute preset="all" legacyContent={<ManageAllPage />} /></RequireBusiness></RequireAuth>
+          <RequireAuth><RequireBusiness><ReservationCenterRoute preset="all" /></RequireBusiness></RequireAuth>
         }
       />
       <Route
         path="/reservation/pending/manage"
         element={
-          <RequireAuth><RequireBusiness><ReservationCenterRoute preset="pending" legacyContent={<ManagePendingPage />} /></RequireBusiness></RequireAuth>
+          <RequireAuth><RequireBusiness><ReservationCenterRoute preset="pending" /></RequireBusiness></RequireAuth>
         }
       />
       <Route

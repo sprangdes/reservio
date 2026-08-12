@@ -85,9 +85,9 @@ test('selection controls expose accessibility and availability semantics without
   assert.doesNotMatch(picker, /new Date\("\d{4}-\d{2}-\d{2}"\)/);
 });
 
-test('responsive booking shell keeps mobile header, desktop summary and touch target hooks', () => {
+test('responsive booking shell owns its header, desktop summary and touch target hooks', () => {
   const css = source('styles.css');
-  assert.match(css, /\.booking-flow__mobile-header/);
+  assert.match(css, /\.booking-flow__header/);
   assert.match(css, /@media \(max-width: 768px\)/);
   assert.match(css, /\.booking-flow__layout \{ display: grid; grid-template-columns: minmax\(0, 1fr\) 21rem/);
   assert.match(css, /min-height: 4\.5rem/);

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { formatLocalDateZhTw, formatLocalTimeRange } from './bookingDates';
 import type { BookingCreateResult } from './domain';
 
@@ -8,7 +8,10 @@ export function BookingResultState({ result }: Readonly<{ result: BookingCreateR
   const headingRef = useRef<HTMLHeadingElement | null>(null);
   useEffect(() => { headingRef.current?.focus(); }, []);
   return <main className="booking-result" aria-labelledby="booking-result-title">
-    <header className="booking-result__mobile-header"><strong>Reservio</strong></header>
+    <header className="booking-result__header">
+      <Link className="booking-result__brand" to="/">Reservio</Link>
+      <Link className="booking-result__reservations-link" to="/my/reservations">我的預約<i className="bi bi-arrow-up-right" aria-hidden="true" /></Link>
+    </header>
     <section className="booking-result__content">
       <p className="booking-result__eyebrow">預約已送出</p>
       <h1 id="booking-result-title" ref={headingRef} tabIndex={-1}>已送出，等待店家確認</h1>

@@ -101,6 +101,6 @@ test('review and result expose focus, live feedback, and responsive safe-area ho
   assert.match(result, /role="status"/);
   assert.match(css, /booking-flow__submit-bar/);
   assert.match(css, /booking-result/);
-  assert.match(css, /navbar-custom-shadow:has\(~ \.booking-result\)/);
+  assert.match(css, /body:has\(\.booking-result\)/);
   assert.match(css, /safe-area-inset-bottom/);
 });

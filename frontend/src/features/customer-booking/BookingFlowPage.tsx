@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ApiError, api } from '../../api';
 import { isUnauthorizedError } from '../../sessionEvents';
 import { mapBookingCreateRequest } from './bookingApi';
@@ -130,9 +130,11 @@ export function BookingFlowPage() {
   if (result) return <BookingResultState result={result} />;
 
   return <main className="booking-flow">
-    <header className="booking-flow__mobile-header">
+    <header className="booking-flow__header">
       <button type="button" onClick={() => navigate(-1)} disabled={submitting}><i className="bi bi-chevron-left" aria-hidden="true" />返回</button>
-      <strong>建立預約</strong><span aria-hidden="true" />
+      <Link className="booking-flow__brand" to="/">Reservio</Link>
+      <strong className="booking-flow__mobile-title">建立預約</strong>
+      <Link className="booking-flow__reservations-link" to="/my/reservations">我的預約<i className="bi bi-arrow-up-right" aria-hidden="true" /></Link>
     </header>
     <div className="booking-flow__container">
       <BookingProgress step={step} />
