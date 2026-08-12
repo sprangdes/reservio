@@ -90,6 +90,14 @@ test('successful create result is safe, authoritative, PENDING-only and has no I
   assert.doesNotMatch(view, /localStorage|sessionStorage/);
 });
 
+test('successful create can fill omitted presentation fields from the immutable submitted draft', () => {
+  const result = normalizers.normalizeBookingCreateResult({ id: 100, status: 'PENDING' }, validDraft);
+  assert.deepEqual(result, { businessName: '森日髮廊', serviceName: '女士剪髮', date: '2026-08-15', startTime: '14:00', endTime: '15:00', status: 'PENDING', remark: '希望安排較安靜的位置。' });
+  assert.equal(normalizers.normalizeBookingCreateResult({ status: 'PENDING' }, validDraft), null);
+  assert.equal(normalizers.normalizeBookingCreateResult({ id: 100, status: 'CONFIRMED' }, validDraft), null);
+  assert.match(source('features/customer-booking/BookingFlowPage.tsx'), /normalizeBookingCreateResult\(responseData\(response\), snapshot\)/);
+});
+
 test('review and result expose focus, live feedback, and responsive safe-area hooks', () => {
   const review = source('features/customer-booking/BookingReview.tsx');
   const result = source('features/customer-booking/BookingResultState.tsx');

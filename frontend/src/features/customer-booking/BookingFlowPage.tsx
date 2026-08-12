@@ -102,7 +102,7 @@ export function BookingFlowPage() {
     try {
       const response = await api.createReservation(request, { signal: controller.signal });
       if (!mountedRef.current || controller.signal.aborted) return;
-      const normalized = normalizeBookingCreateResult(responseData(response));
+      const normalized = normalizeBookingCreateResult(responseData(response), snapshot);
       if (!normalized) {
         setSubmitError('暫時無法送出預約，請稍後再試。');
         return;
