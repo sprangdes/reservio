@@ -74,6 +74,9 @@ function BusinessSetupGuard({ children }: Readonly<{ children: JSX.Element }>) {
 
 function AuthRouteRedirect({ children }: Readonly<{ children: JSX.Element }>) {
   const { me, loading } = useAuth();
+  const location = useLocation();
+  // A successful LINE callback must consume its safe return context before the generic redirect runs.
+  if (new URLSearchParams(location.search).get('lineLogin') === 'success') return children;
   if (loading || !me) return children;
   return <Navigate to={resolvePostAuthDestination(me).path} replace />;
 }
@@ -153,7 +156,7 @@ export default function App() {
       <Route
         path="/login"
         element={
-          <AuthRouteRedirect><Layout><LoginPage /></Layout></AuthRouteRedirect>
+          <AuthRouteRedirect><LoginPage /></AuthRouteRedirect>
         }
       />
       <Route
