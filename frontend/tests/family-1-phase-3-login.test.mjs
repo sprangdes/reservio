@@ -36,6 +36,8 @@ test('login uses an isolated AuthShell, correct credential semantics and shared 
   const app = source('App.tsx');
   const login = source('pages/LoginPage.tsx');
   const shell = source('features/auth/AuthShell.tsx');
+  const header = source('components/SiteHeader.tsx');
+  const publicHeader = source('features/public-entry/PublicHeader.tsx');
   assert.match(app, /<AuthRouteRedirect><LoginPage \/><\/AuthRouteRedirect>/);
   assert.doesNotMatch(app, /<AuthRouteRedirect><Layout><LoginPage/);
   assert.match(login, /<AuthShell title="登入 Reservio"/);
@@ -46,7 +48,9 @@ test('login uses an isolated AuthShell, correct credential semantics and shared 
   assert.match(login, /<PasswordField[^>]*mode="current"/);
   assert.match(login, /autoComplete="current-password"/);
   assert.match(shell, /<main className="auth-shell__main"/);
-  assert.match(shell, /Reservio 首頁/);
+  assert.match(shell, /<SiteHeader className="auth-shell__header">/);
+  assert.match(publicHeader, /<SiteHeader className="public-entry__header">/);
+  assert.match(header, /Reservio 首頁/);
   assert.match(shell, /返回首頁/);
 });
 
