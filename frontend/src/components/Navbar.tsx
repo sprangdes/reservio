@@ -27,7 +27,7 @@ type ActiveSettingsPanel = 'preferred-businesses' | null;
 
 export default function Navbar() {
   const { me, setMe } = useAuth();
-  const { setSuccessMessage, setErrorMessage } = useToast();
+  const { setErrorMessage } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
@@ -88,7 +88,6 @@ export default function Navbar() {
       clearPasswordResetState();
       clearMerchantRegistrationDraft();
       setMe(null);
-      setSuccessMessage('您已成功登出。');
       navigate('/login');
     } catch {
       setErrorMessage('目前無法完成登出，請確認網路連線後再試。');

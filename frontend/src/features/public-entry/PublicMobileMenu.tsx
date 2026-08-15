@@ -1,6 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { Link } from 'react-router-dom';
 import { publicNavigationItems } from './publicNavigation';
+import LogoutButton from '../../components/LogoutButton';
 
 type PublicMobileMenuProps = {
   isCustomer: boolean;
@@ -74,6 +75,7 @@ export default function PublicMobileMenu({ isCustomer, open, onClose, triggerRef
             ))}
           </ul>
         </nav>
+        {isCustomer ? <LogoutButton className="public-entry__menu-logout" onLoggedOut={onClose}><span>登出</span><i className="bi bi-box-arrow-right" aria-hidden="true" /></LogoutButton> : null}
         {!isCustomer ? <Link className="public-entry__menu-merchant" to="/register-business" onClick={onClose}>建立商家帳號</Link> : null}
       </aside>
     </div>

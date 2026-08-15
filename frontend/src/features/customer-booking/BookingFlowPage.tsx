@@ -15,6 +15,7 @@ import { ServiceSelection } from './ServiceSelection';
 import type { BookingCreateResult } from './domain';
 import { normalizeBookingCreateResult } from './normalizers';
 import { useBookingFlow } from './useBookingFlow';
+import LogoutButton from '../../components/LogoutButton';
 
 type Step = 1 | 2 | 3;
 
@@ -135,6 +136,7 @@ export function BookingFlowPage() {
       <Link className="booking-flow__brand" to="/">Reservio</Link>
       <strong className="booking-flow__mobile-title">建立預約</strong>
       <Link className="booking-flow__reservations-link" to="/my/reservations">我的預約<i className="bi bi-arrow-up-right" aria-hidden="true" /></Link>
+      <LogoutButton className="booking-flow__logout"><i className="bi bi-box-arrow-right" aria-hidden="true" /><span>登出</span></LogoutButton>
     </header>
     <div className="booking-flow__container">
       <BookingProgress step={step} />
