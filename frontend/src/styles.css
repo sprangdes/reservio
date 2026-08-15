@@ -2204,3 +2204,6 @@ main {
 .auth-login__register-options { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: none; gap: .75rem; }
 .auth-login__register-options p { display: grid; justify-items: center; gap: .2rem; }
 .auth-login__register-options p + p { padding-top: 0; padding-left: .75rem; border-top: 0; border-left: 1px solid var(--auth-line); }
+
+/* The standalone login title needs breathing room before the first field. */
+.auth-shell__surface h1 + .auth-login { margin-top: 1.65rem; }
