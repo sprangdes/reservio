@@ -16,7 +16,7 @@ function loadModule(path) {
 test('public navigation provides only approved anonymous and customer routes', () => {
   const navigation = loadModule('features/public-entry/publicNavigation.ts');
   assert.deepEqual(navigation.publicNavigationItems(false), [
-    { label: '我要預約', to: '/reservation/new' },
+    { label: '我要預約', to: '/reservation/new', reservationLoginNotice: true },
     { label: '我是商家', to: '/register-business' },
     { label: '登入', to: '/login' },
     { label: '建立帳號', to: '/register', emphasis: 'primary' }
