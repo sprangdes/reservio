@@ -2207,3 +2207,15 @@ main {
 
 /* The standalone login title needs breathing room before the first field. */
 .auth-shell__surface h1 + .auth-login { margin-top: 1.65rem; }
+
+/* Keep the authentication header aligned with the public-entry navigation. */
+.auth-shell { padding-top: 0; }
+.auth-shell__header { width: min(100%, 78rem); min-height: 5.4rem; }
+.auth-shell__main { min-height: calc(100dvh - 5.4rem); }
+@media (max-width: 768px) { .auth-shell { padding-top: max(1rem, env(safe-area-inset-top)); }.auth-shell__header { min-height: 3.5rem; }.auth-shell__main { min-height: 0; } }
+
+/* Shared public and authentication navigation. */
+.site-header__inner { display: flex; width: min(100%, 78rem); min-height: 5.4rem; align-items: center; justify-content: space-between; gap: 2rem; margin: 0 auto; }
+.site-header__brand { display: inline-flex; min-height: 2.75rem; align-items: center; color: #084534; font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.7rem, 2.7vw, 2.25rem); font-weight: 700; letter-spacing: -.065em; line-height: 1; text-decoration: none; }
+.auth-shell__header { display: block; width: 100%; min-height: 0; margin: 0; }
+@media (max-width: 768px) { .site-header__inner { width: min(100% - 2rem, 42rem); min-height: calc(4.75rem + env(safe-area-inset-top)); padding-top: env(safe-area-inset-top); }.auth-shell__header .site-header__inner { min-height: 3.5rem; padding-top: 0; } }

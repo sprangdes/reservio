@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import { Link } from 'react-router-dom';
+import SiteHeader from '../../components/SiteHeader';
 import { publicNavigationItems } from './publicNavigation';
 import LogoutButton from '../../components/LogoutButton';
 
@@ -13,9 +14,7 @@ type PublicHeaderProps = {
 export default function PublicHeader({ isCustomer, menuOpen, onOpenMenu, triggerRef }: Readonly<PublicHeaderProps>) {
   const items = publicNavigationItems(isCustomer);
   return (
-    <header className="public-entry__header">
-      <div className="public-entry__container public-entry__header-inner">
-        <Link className="public-entry__brand" to="/" aria-label="Reservio 首頁">Reservio</Link>
+    <SiteHeader className="public-entry__header">
         <nav className="public-entry__desktop-nav" aria-label="主要導覽">
           {items.map((item) => <Link key={item.to} className={item.emphasis === 'primary' ? 'is-primary' : ''} to={item.to} state={item.reservationLoginNotice ? { reservationLoginNotice: true } : undefined}>{item.label}</Link>)}
           {isCustomer ? <LogoutButton className="public-entry__logout" /> : null}
@@ -31,7 +30,6 @@ export default function PublicHeader({ isCustomer, menuOpen, onOpenMenu, trigger
         >
           <i className="bi bi-list" aria-hidden="true" />
         </button>
-      </div>
-    </header>
+    </SiteHeader>
   );
 }
