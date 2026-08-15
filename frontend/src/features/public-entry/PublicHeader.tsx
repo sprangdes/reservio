@@ -1,6 +1,7 @@
 import type { RefObject } from 'react';
 import { Link } from 'react-router-dom';
 import { publicNavigationItems } from './publicNavigation';
+import LogoutButton from '../../components/LogoutButton';
 
 type PublicHeaderProps = {
   isCustomer: boolean;
@@ -17,6 +18,7 @@ export default function PublicHeader({ isCustomer, menuOpen, onOpenMenu, trigger
         <Link className="public-entry__brand" to="/" aria-label="Reservio 首頁">Reservio</Link>
         <nav className="public-entry__desktop-nav" aria-label="主要導覽">
           {items.map((item) => <Link key={item.to} className={item.emphasis === 'primary' ? 'is-primary' : ''} to={item.to}>{item.label}</Link>)}
+          {isCustomer ? <LogoutButton className="public-entry__logout" /> : null}
         </nav>
         <button
           ref={triggerRef}

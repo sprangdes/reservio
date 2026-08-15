@@ -7,6 +7,7 @@ import CancelReservationOverlay from './CancelReservationOverlay';
 import type { ReservationSummary } from './domain';
 import { ReservationEmptyState, ReservationErrorState, ReservationFilteredEmptyState, ReservationListSkeleton, ReservationStaleWarning } from './ReservationWorkspaceStates';
 import { useCustomerReservationsWorkspace } from './useCustomerReservationsWorkspace';
+import LogoutButton from '../../components/LogoutButton';
 
 function localNow(): Readonly<{ date: string; time: string }> {
   const now = new Date();
@@ -37,7 +38,10 @@ export default function MyReservationsWorkspace() {
       <header className="customer-reservation-workspace__topbar">
         <Link className="customer-reservation-workspace__brand" to="/">Reservio</Link>
         <strong className="customer-reservation-workspace__mobile-title">我的預約</strong>
-        <Link to="/reservation/new" className="customer-reservation-workspace__topbar-create"><i className="bi bi-plus-lg" aria-hidden="true" /><span>建立預約</span></Link>
+        <div className="customer-reservation-workspace__topbar-actions">
+          <Link to="/reservation/new" className="customer-reservation-workspace__topbar-create"><i className="bi bi-plus-lg" aria-hidden="true" /><span>建立預約</span></Link>
+          <LogoutButton className="customer-reservation-workspace__logout"><i className="bi bi-box-arrow-right" aria-hidden="true" /><span>登出</span></LogoutButton>
+        </div>
       </header>
       <div className="customer-reservation-workspace__container">
         <header className="customer-reservation-workspace__header">

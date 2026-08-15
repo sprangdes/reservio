@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatLocalDateZhTw, formatLocalTimeRange } from './bookingDates';
 import type { BookingCreateResult } from './domain';
+import LogoutButton from '../../components/LogoutButton';
 
 export function BookingResultState({ result }: Readonly<{ result: BookingCreateResult }>) {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ export function BookingResultState({ result }: Readonly<{ result: BookingCreateR
     <header className="booking-result__header">
       <Link className="booking-result__brand" to="/">Reservio</Link>
       <Link className="booking-result__reservations-link" to="/my/reservations">我的預約<i className="bi bi-arrow-up-right" aria-hidden="true" /></Link>
+      <LogoutButton className="booking-result__logout"><i className="bi bi-box-arrow-right" aria-hidden="true" /><span>登出</span></LogoutButton>
     </header>
     <section className="booking-result__content">
       <p className="booking-result__eyebrow">預約已送出</p>
