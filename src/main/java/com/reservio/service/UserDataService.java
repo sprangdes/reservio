@@ -66,6 +66,7 @@ public class UserDataService {
                 .category(category)
                 .phone(phone)
                 .address(address)
+                .slotInterval(30)
                 .user(user)
                 .build();
 
