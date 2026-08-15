@@ -31,9 +31,13 @@ export function useBookingFlow() {
     const request = businessGuard.current.begin();
     setBusinessState('loading');
     try {
-      const response = await api.getPreferredBusinesses({ signal: request.signal });
+      const preferredResponse = await api.getPreferredBusinesses({ signal: request.signal });
       if (!businessGuard.current.isCurrent(request)) return;
-      const rawItems = responseData(response);
+      const preferredItems = responseData(preferredResponse);
+      const rawItems = Array.isArray(preferredItems) && preferredItems.length > 0
+        ? preferredItems
+        : responseData(await api.businesses());
+      if (!businessGuard.current.isCurrent(request)) return;
       const items = Array.isArray(rawItems) ? rawItems.flatMap((value) => normalizeBusiness(value) ? [normalizeBusiness(value) as BookingBusiness] : []) : [];
       setBusinesses(items);
       setBusinessState(items.length ? 'ready' : 'empty');

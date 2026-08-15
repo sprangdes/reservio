@@ -28,6 +28,7 @@ import { resolveNotificationSettingsRoute } from './features/customer-notificati
 import { buildLoginPath, resolvePostAuthDestination } from './features/auth/authDestination';
 import PublicHomePage from './features/public-entry/PublicHomePage';
 import RouteFocusManager from './components/RouteFocusManager';
+import CustomerDashboardPage from './features/customer-dashboard/CustomerDashboardPage';
 
 function RequireAuth({ children }: Readonly<{ children: JSX.Element }>) {
   const { me, loading } = useAuth();
@@ -92,6 +93,9 @@ function BusinessAwareHome() {
   if (loading) return null;
   if (me?.role === 'ROLE_BUSINESS') {
     return <BusinessWorkspaceShell><OperationsOverviewPage /></BusinessWorkspaceShell>;
+  }
+  if (me?.role === 'ROLE_USER') {
+    return <Navigate to="/dashboard" replace />;
   }
   return <PublicHomePage />;
 }
@@ -198,6 +202,14 @@ export default function App() {
               <ForceChangePasswordPage />
             </ForceChangeRouteGuard>
           </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <Layout hideNavigation>
+            <RequireAuth><RequireCustomer><CustomerDashboardPage /></RequireCustomer></RequireAuth>
+          </Layout>
         }
       />
       <Route

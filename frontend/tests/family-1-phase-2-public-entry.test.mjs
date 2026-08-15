@@ -22,6 +22,7 @@ test('public navigation provides only approved anonymous and customer routes', (
     { label: '建立帳號', to: '/register', emphasis: 'primary' }
   ]);
   assert.deepEqual(navigation.publicNavigationItems(true), [
+    { label: '儀表板', to: '/dashboard' },
     { label: '前往預約', to: '/reservation/new', emphasis: 'primary' },
     { label: '我的預約', to: '/my/reservations' }
   ]);

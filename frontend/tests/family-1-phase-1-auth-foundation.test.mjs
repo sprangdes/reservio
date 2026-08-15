@@ -34,7 +34,7 @@ test('role compatibility and destination resolution preserve priority', () => {
   assert.equal(destination.isRoleCompatibleDestination(merchant, '/reservation/new'), false);
   assert.equal(destination.isRoleCompatibleDestination(customer, '/unknown'), false);
   assert.deepEqual(destination.resolvePostAuthDestination(customer, '/my/reservations'), { path: '/my/reservations', reason: 'return-to' });
-  assert.deepEqual(destination.resolvePostAuthDestination(customer, '/business/settings'), { path: '/reservation/new', reason: 'role-default' });
+  assert.deepEqual(destination.resolvePostAuthDestination(customer, '/business/settings'), { path: '/dashboard', reason: 'role-default' });
   assert.deepEqual(destination.resolvePostAuthDestination(merchant, '/reservation/new'), { path: '/', reason: 'role-default' });
   assert.deepEqual(destination.resolvePostAuthDestination(incompleteMerchant, '/reservation/manage'), { path: '/business/setup', reason: 'setup' });
   assert.deepEqual(destination.resolvePostAuthDestination({ ...merchant, mustChangePassword: true }, '/reservation/manage'), { path: '/force-change-password', reason: 'force-change' });

@@ -22,10 +22,10 @@ test('final cross-family guard destinations cover every user state without role 
   const merchant = { role: 'ROLE_BUSINESS', mustChangePassword: false, business: { id: 7 } };
   const incompleteMerchant = { role: 'ROLE_BUSINESS', mustChangePassword: false };
 
-  assert.deepEqual(destination.resolvePostAuthDestination(customer), { path: '/reservation/new', reason: 'role-default' });
+  assert.deepEqual(destination.resolvePostAuthDestination(customer), { path: '/dashboard', reason: 'role-default' });
   assert.deepEqual(destination.resolvePostAuthDestination(merchant), { path: '/', reason: 'role-default' });
   assert.deepEqual(destination.resolvePostAuthDestination(incompleteMerchant), { path: '/business/setup', reason: 'setup' });
-  assert.equal(destination.resolvePostAuthDestination(customer, '/business/settings/profile').path, '/reservation/new');
+  assert.equal(destination.resolvePostAuthDestination(customer, '/business/settings/profile').path, '/dashboard');
   assert.equal(destination.resolvePostAuthDestination(merchant, '/reservation/new').path, '/');
   assert.equal(destination.resolvePostAuthDestination({ ...customer, mustChangePassword: true }, '/reservation/new').path, '/force-change-password');
   assert.equal(destination.resolvePostAuthDestination({ ...merchant, mustChangePassword: true }, '/').path, '/force-change-password');

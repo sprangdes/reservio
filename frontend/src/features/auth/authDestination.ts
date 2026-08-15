@@ -21,6 +21,7 @@ const AUTH_LOOP_PATHS = new Set([
 ]);
 
 const CUSTOMER_PATHS = new Set([
+  '/dashboard',
   '/reservation/new',
   '/my/reservations',
   '/preferred-businesses',
@@ -109,7 +110,7 @@ export function roleDefaultDestination(user: AuthDestinationUser): PostAuthDesti
       ? { path: '/', reason: 'role-default' }
       : { path: '/business/setup', reason: 'setup' };
   }
-  return { path: '/reservation/new', reason: 'role-default' };
+  return { path: '/dashboard', reason: 'role-default' };
 }
 
 export function resolvePostAuthDestination(
