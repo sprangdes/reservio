@@ -16,6 +16,10 @@ body:has(.business-workspace) {
 
 /* Family 1 Phase 3 authentication surface; intentionally isolated from product shells. */
 .auth-shell { --auth-forest: #084534; --auth-forest-deep: #053629; --auth-paper: #fbf8f1; --auth-panel: #fffdf9; --auth-ink: #1d3028; --auth-muted: #66736c; --auth-line: #d8d5cd; --auth-focus: #c25b31; min-height: 100dvh; padding: max(1.8rem, env(safe-area-inset-top)) 1.25rem max(1.8rem, env(safe-area-inset-bottom)); background: radial-gradient(circle at 50% 20%, #fff 0, var(--auth-paper) 56rem); color: var(--auth-ink); font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif; }
+/* RouteFocusManager moves focus to the page title for screen readers; titles are
+   programmatically focusable only and should not receive the browser's default ring. */
+main h1[tabindex="-1"]:focus { outline: 0; }
+
 .auth-shell__skip-link { position: fixed; z-index: 110; top: .5rem; left: .5rem; transform: translateY(-150%); padding: .65rem .85rem; border-radius: .35rem; background: var(--auth-forest-deep); color: #fff !important; font-weight: 800; transition: transform .15s ease; }.auth-shell__skip-link:focus { transform: translateY(0); }
 .auth-shell__brand, .auth-shell__footer a { display: inline-flex; min-height: 2.75rem; align-items: center; }
 .auth-shell *, .auth-shell *::before, .auth-shell *::after { box-sizing: border-box; }.auth-shell a { color: inherit; text-decoration: none; }.auth-shell a:focus-visible, .auth-shell button:focus-visible, .auth-shell input:focus-visible { outline: 3px solid var(--auth-focus); outline-offset: 3px; }
