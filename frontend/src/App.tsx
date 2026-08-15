@@ -91,13 +91,11 @@ function ForceChangeRouteGuard({ children }: Readonly<{ children: JSX.Element }>
 function BusinessAwareHome() {
   const { me, loading } = useAuth();
   if (loading) return null;
+  if (!me) return <PublicHomePage />;
   if (me?.role === 'ROLE_BUSINESS') {
     return <BusinessWorkspaceShell><OperationsOverviewPage /></BusinessWorkspaceShell>;
   }
-  if (me?.role === 'ROLE_USER') {
-    return <Navigate to="/dashboard" replace />;
-  }
-  return <PublicHomePage />;
+  return <Navigate to={resolvePostAuthDestination(me).path} replace />;
 }
 
 function ReservationCenterRoute({ preset }: Readonly<{ preset: ReservationCenterPreset }>) {

@@ -51,11 +51,12 @@ test('global guard matrix keeps loading, force-change, setup and role priorities
   assert.match(app, /path="\*" element=\{<Navigate to="\/" replace \/>\}/);
 });
 
-test('root ownership remains public for anonymous and customers and workspace-only for merchants', () => {
+test('root ownership remains public only for anonymous users and routes signed-in users to their workspace', () => {
   const app = source('App.tsx');
   assert.match(app, /function BusinessAwareHome\(\)[\s\S]*if \(loading\) return null/);
+  assert.match(app, /if \(!me\) return <PublicHomePage \/>;/);
   assert.match(app, /me\?\.role === 'ROLE_BUSINESS'[\s\S]*BusinessWorkspaceShell><OperationsOverviewPage/);
-  assert.match(app, /return <PublicHomePage \/>/);
+  assert.match(app, /return <Navigate to=\{resolvePostAuthDestination\(me\)\.path\} replace \/>;/);
   assert.doesNotMatch(source('features/public-entry/PublicHomePage.tsx'), /api\.|ReservationNewPage|MyReservationsPage/);
 });
 

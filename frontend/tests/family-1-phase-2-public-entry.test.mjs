@@ -28,12 +28,13 @@ test('public navigation provides only approved anonymous and customer routes', (
   ]);
 });
 
-test('root route keeps merchant workspace while public customers and guests use the public entry surface', () => {
+test('root route reserves the public entry surface for guests and sends signed-in users to their workspace', () => {
   const app = source('App.tsx');
   assert.match(app, /if \(loading\) return null;/);
+  assert.match(app, /if \(!me\) return <PublicHomePage \/>;/);
   assert.match(app, /me\?\.role === 'ROLE_BUSINESS'/);
   assert.match(app, /<BusinessWorkspaceShell><OperationsOverviewPage/);
-  assert.match(app, /return <PublicHomePage \/>;/);
+  assert.match(app, /return <Navigate to=\{resolvePostAuthDestination\(me\)\.path\} replace \/>;/);
   assert.doesNotMatch(app, /return <Layout><HomePage/);
 });
 
