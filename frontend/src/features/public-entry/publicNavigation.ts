@@ -2,6 +2,7 @@ export type PublicNavigationItem = {
   label: string;
   to: string;
   emphasis?: 'primary' | 'merchant';
+  reservationLoginNotice?: boolean;
 };
 
 export function publicNavigationItems(isCustomer: boolean): PublicNavigationItem[] {
@@ -12,7 +13,7 @@ export function publicNavigationItems(isCustomer: boolean): PublicNavigationItem
         { label: '我的預約', to: '/my/reservations' }
       ]
     : [
-        { label: '我要預約', to: '/reservation/new' },
+        { label: '我要預約', to: '/reservation/new', reservationLoginNotice: true },
         { label: '我是商家', to: '/register-business' },
         { label: '登入', to: '/login' },
         { label: '建立帳號', to: '/register', emphasis: 'primary' }

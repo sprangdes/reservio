@@ -23,6 +23,15 @@ test('login return presentation exposes only factual approved customer contexts'
   assert.equal(presentation.customerLineReturnContext('/my/reservations'), '/my/reservations');
 });
 
+test('login shows the return notice only when continuing a new reservation', () => {
+  const login = source('pages/LoginPage.tsx');
+  const app = source('App.tsx');
+  assert.match(login, /reservationLoginNotice && returnPresentation\?\.path === '\/reservation\/new'/);
+  assert.match(app, /<Navigate to=\{buildLoginPath\(location\.pathname, location\.search\)\} state=\{location\.state\} replace \/>/);
+  assert.doesNotMatch(login, /登入你的 Reservio 帳號/);
+  assert.doesNotMatch(login, /登入後會依你的帳號類型前往對應的 Reservio 工作區/);
+});
+
 test('login uses an isolated AuthShell, correct credential semantics and shared PasswordField', () => {
   const app = source('App.tsx');
   const login = source('pages/LoginPage.tsx');

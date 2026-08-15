@@ -39,7 +39,7 @@ function RequireAuth({ children }: Readonly<{ children: JSX.Element }>) {
   }
 
   if (!me) {
-    return <Navigate to={buildLoginPath(location.pathname, location.search)} replace />;
+    return <Navigate to={buildLoginPath(location.pathname, location.search)} state={location.state} replace />;
   }
 
   return children;

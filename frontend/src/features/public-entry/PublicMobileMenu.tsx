@@ -68,7 +68,7 @@ export default function PublicMobileMenu({ isCustomer, open, onClose, triggerRef
           <ul className="public-entry__menu-links">
             {items.map((item) => (
               <li key={item.to}>
-                <Link className={item.emphasis === 'primary' ? 'is-primary' : ''} to={item.to} onClick={onClose}>
+                <Link className={item.emphasis === 'primary' ? 'is-primary' : ''} to={item.to} state={item.reservationLoginNotice ? { reservationLoginNotice: true } : undefined} onClick={onClose}>
                   <span>{item.label}</span><i className="bi bi-arrow-right" aria-hidden="true" />
                 </Link>
               </li>

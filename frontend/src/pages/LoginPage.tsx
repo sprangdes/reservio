@@ -140,9 +140,10 @@ export default function LoginPage() {
     }
   };
 
-  const contextBlock = returnPresentation
+  const reservationLoginNotice = (location.state as { reservationLoginNotice?: boolean } | null)?.reservationLoginNotice === true;
+  const contextBlock = reservationLoginNotice && returnPresentation?.path === '/reservation/new'
     ? <><i className="bi bi-calendar2-check" aria-hidden="true" /><div><strong>{returnPresentation.title}</strong><span>{returnPresentation.description}</span></div></>
-    : <><i className="bi bi-person-check" aria-hidden="true" /><div><strong>登入你的 Reservio 帳號</strong><span>登入後會依你的帳號類型前往對應的 Reservio 工作區。</span></div></>;
+    : null;
 
   return <AuthShell title="登入 Reservio" status={contextBlock} footer={<div className="auth-login__register-options"><p><span>還沒有客戶帳號？</span><Link to="/register">建立客戶帳號</Link></p><p><span>要管理商家？</span><Link to="/register-business">建立商家帳號</Link></p></div>}>
     {registered ? <p className="auth-shell__success" role="status">帳號已建立，請登入。</p> : null}
