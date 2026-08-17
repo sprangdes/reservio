@@ -13,6 +13,7 @@ import {
 import { clearMerchantRegistrationDraft } from '../features/auth/merchantRegistrationDraft';
 import { clearPasswordResetState } from '../features/auth/passwordResetState';
 import { clearReturnContext } from '../features/auth/returnContext';
+import { formatDateTimeToSeconds } from '../utils/time';
 
 interface NotificationItem {
   id: number;
@@ -277,7 +278,7 @@ export default function Navbar() {
                             <span className="notification-menu__title">{item.title}</span>
                             <span className="notification-menu__content">{item.content}</span>
                             <span className="notification-menu__time">
-                              {new Date(item.createdAt).toLocaleString('zh-TW')}
+                              {formatDateTimeToSeconds(item.createdAt)}
                             </span>
                           </button>
                         ))}
@@ -425,7 +426,7 @@ export default function Navbar() {
                         <span className="notification-menu__title">{item.title}</span>
                         <span className="notification-menu__content">{item.content}</span>
                         <span className="notification-menu__time">
-                          {new Date(item.createdAt).toLocaleString('zh-TW')}
+                          {formatDateTimeToSeconds(item.createdAt)}
                         </span>
                       </button>
                     ))}

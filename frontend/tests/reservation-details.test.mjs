@@ -18,7 +18,8 @@ function loadModule(relativePath, dependencies = {}) {
 }
 
 const status = loadModule('status.ts');
-const details = loadModule('details.ts', { './status': status });
+const time = loadModule('../../../utils/time.ts');
+const details = loadModule('details.ts', { './status': status, '../../../utils/time': time });
 const mappers = loadModule('data/reservationMappers.ts', { '../status': status });
 const drawer = source('ui/ReservationDetailsDrawer.tsx');
 const mobile = source('ui/ReservationDetailsPage.tsx');
@@ -36,6 +37,8 @@ test('details timeline is explicitly compact and only derives supported current-
   assert.equal(timeline[1].current, true);
   assert.equal(details.reservationMutationLabels.rejectCancellation, '駁回取消申請');
   assert.equal(details.reservationMutationTone('cancel'), 'destructive');
+  assert.equal(details.formatTimestampToSeconds('2026-07-24T10:00:00.123456'), '2026-07-24T10:00:00');
+  assert.equal(details.formatTimestampToSeconds('2026-07-24T10:00:00.123Z'), '2026-07-24T10:00:00Z');
 });
 
 test('details UI separates desktop drawer, mobile detail page, and partial-data notice without low-level API calls', () => {

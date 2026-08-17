@@ -1,4 +1,4 @@
-import { createReservationStatusTimeline } from '../details';
+import { createReservationStatusTimeline, formatTimestampToSeconds } from '../details';
 import { getReservationStatusPresentation } from '../status';
 import ReservationStatusBadge from './ReservationStatusBadge';
 import type { FieldValue, ReservationCenterItem } from '../types';
@@ -21,7 +21,8 @@ export function ReservationServiceSection({ item }: Readonly<{ item: Reservation
 
 export function ReservationTimeSection({ item }: Readonly<{ item: ReservationCenterItem }>) {
   const time: FieldValue<string> = item.startTime.value || item.endTime.value ? { value: `${item.startTime.value?.slice(0, 5) || '未提供'} – ${item.endTime.value?.slice(0, 5) || '未提供'}`, availability: 'derived' } : { availability: 'unsupported' };
-  return <section className="reservation-details__section" aria-labelledby="reservation-details-time"><h3 id="reservation-details-time"><i className="bi bi-calendar3" aria-hidden="true" />日期與時間</h3><dl><DetailRow label="預約日期" value={item.reservationDate} /><DetailRow label="預約時間" value={time} /><DetailRow label="時長" value={item.durationMinutes.value ? { value: `${item.durationMinutes.value} 分鐘`, availability: item.durationMinutes.availability } : item.durationMinutes} />{item.createdAt.availability !== 'unsupported' ? <DetailRow label="建立時間" value={item.createdAt} /> : null}{item.updatedAt.availability !== 'unsupported' ? <DetailRow label="更新時間" value={item.updatedAt} /> : null}</dl></section>;
+  const toSecondPrecision = (value: FieldValue<string>): FieldValue<string> => value.value ? { ...value, value: formatTimestampToSeconds(value.value) } : value;
+  return <section className="reservation-details__section" aria-labelledby="reservation-details-time"><h3 id="reservation-details-time"><i className="bi bi-calendar3" aria-hidden="true" />日期與時間</h3><dl><DetailRow label="預約日期" value={item.reservationDate} /><DetailRow label="預約時間" value={time} /><DetailRow label="時長" value={item.durationMinutes.value ? { value: `${item.durationMinutes.value} 分鐘`, availability: item.durationMinutes.availability } : item.durationMinutes} />{item.createdAt.availability !== 'unsupported' ? <DetailRow label="建立時間" value={toSecondPrecision(item.createdAt)} /> : null}{item.updatedAt.availability !== 'unsupported' ? <DetailRow label="更新時間" value={toSecondPrecision(item.updatedAt)} /> : null}</dl></section>;
 }
 
 export function ReservationRemarkSection({ item }: Readonly<{ item: ReservationCenterItem }>) {
@@ -38,7 +39,7 @@ export function ReservationReasonSection({ item }: Readonly<{ item: ReservationC
 
 export function ReservationStatusTimeline({ item }: Readonly<{ item: ReservationCenterItem }>) {
   const entries = createReservationStatusTimeline(item);
-  return <section className="reservation-details__section" aria-labelledby="reservation-details-timeline"><h3 id="reservation-details-timeline"><i className="bi bi-clock-history" aria-hidden="true" />目前狀態摘要</h3><p className="reservation-details__timeline-note">此為依目前資料推得的摘要，並非完整異動紀錄。</p><ol className="reservation-details__timeline">{entries.map((entry) => <li key={entry.key} className={entry.current ? 'is-current' : ''}><i className={`bi ${entry.current ? 'bi-record-circle' : 'bi-circle-fill'}`} aria-hidden="true" /><div><strong>{entry.label}</strong>{entry.timestamp ? <span>{entry.timestamp}</span> : null}</div></li>)}</ol></section>;
+  return <section className="reservation-details__section" aria-labelledby="reservation-details-timeline"><h3 id="reservation-details-timeline"><i className="bi bi-clock-history" aria-hidden="true" />目前狀態摘要</h3><p className="reservation-details__timeline-note">此為依目前資料推得的摘要，並非完整異動紀錄。</p><ol className="reservation-details__timeline">{entries.map((entry) => <li key={entry.key} className={entry.current ? 'is-current' : ''}><i className={`bi ${entry.current ? 'bi-record-circle' : 'bi-circle-fill'}`} aria-hidden="true" /><div><strong>{entry.label}</strong>{entry.timestamp ? <span>{formatTimestampToSeconds(entry.timestamp)}</span> : null}</div></li>)}</ol></section>;
 }
 
 export default function ReservationDetailsContent({ item }: Readonly<{ item: ReservationCenterItem }>) {

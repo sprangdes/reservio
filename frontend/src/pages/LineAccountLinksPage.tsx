@@ -3,6 +3,7 @@ import { api } from '../api';
 import { LineBusinessUnlinkDialog } from '../features/line/LineBusinessUnlinkDialog';
 import { mapLineBusinessUnlinkInput, normalizeLinkedLineBusinesses, type LinkedLineBusiness } from '../features/line/lineDomain';
 import { useToast } from '../state/ToastContext';
+import { formatDateTimeToSeconds } from '../utils/time';
 
 type LoadPhase = 'loading' | 'ready' | 'error';
 
@@ -11,10 +12,7 @@ const staleLoadError = '目前顯示的是先前載入的資料，部分狀態�
 const unlinkRefreshError = '解除綁定已送出，但目前無法確認最新清單。';
 
 function formatLinkedAt(value: string): string {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? '綁定日期暫時無法顯示'
-    : new Intl.DateTimeFormat('zh-TW', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+  return formatDateTimeToSeconds(value, '綁定日期暫時無法顯示');
 }
 
 function LineAccountLinksSkeleton() {
