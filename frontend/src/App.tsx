@@ -29,6 +29,7 @@ import { buildLoginPath, resolvePostAuthDestination } from './features/auth/auth
 import PublicHomePage from './features/public-entry/PublicHomePage';
 import RouteFocusManager from './components/RouteFocusManager';
 import CustomerDashboardPage from './features/customer-dashboard/CustomerDashboardPage';
+import GlobalDatePicker from './components/GlobalDatePicker';
 
 function RequireAuth({ children }: Readonly<{ children: JSX.Element }>) {
   const { me, loading } = useAuth();
@@ -156,6 +157,7 @@ export default function App() {
       <BusinessSetupGuard>
         <>
         <SessionTimeoutManager />
+        <GlobalDatePicker />
         <RouteFocusManager />
         <Routes>
       <Route

@@ -23,7 +23,7 @@ export function BookingDatePicker({ value, disabledDates, disabledState, onChang
     const maxDate = addLocalMonths(minDate, 3) || minDate;
     const picker = flatpickr(input, {
       dateFormat: 'Y-m-d', allowInput: true, minDate, maxDate, disable: disabledDates,
-      defaultDate: toFlatpickrDateValue(value), calendarClass: 'booking-flow__calendar',
+      defaultDate: toFlatpickrDateValue(value), calendarClass: 'app-date-picker',
       onChange: (_dates: unknown, dateValue: string) => {
         const localDate = fromFlatpickrDateValue(dateValue);
         if (localDate) {
