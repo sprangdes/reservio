@@ -49,7 +49,7 @@ function NavSection({ title, items }: Readonly<{ title: string; items: Navigatio
 export default function DesktopWorkspaceSidebar({ businessName }: Readonly<{ businessName?: string }>) {
   return <aside className="business-workspace__sidebar" aria-label="商家工作區導覽">
     <Link to="/" className="business-workspace__brand" aria-label="Reservio 營運概覽"><span>R</span>Reservio</Link>
-    <div className="business-workspace__identity"><span className="business-workspace__identity-mark"><i className="bi bi-flower1" aria-hidden="true" /></span><strong>{businessName || '商家工作區'}</strong><i className="bi bi-chevron-down" aria-hidden="true" /></div>
+    <div className="business-workspace__identity"><span className="business-workspace__identity-mark"><i className="bi bi-flower1" aria-hidden="true" /></span><strong>{businessName || '商家工作區'}</strong></div>
     <nav><NavSection title="日常營運" items={primaryItems} /><NavSection title="管理工具" items={managementItems} /><NavSection title="系統" items={systemItems} /></nav>
   </aside>;
 }
