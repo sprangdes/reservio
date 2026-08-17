@@ -561,6 +561,7 @@ main h1[tabindex="-1"]:focus { outline: 0; }
 .reservation-center-ui__view-switcher button:last-child { border-right: 0; }
 .reservation-center-ui__view-switcher a:hover, .reservation-center-ui__view-switcher button:hover { background: #f4f1ec; }
 .reservation-center-ui__view-switcher .is-active { color: #fff; background: var(--workspace-green); }
+.reservation-center-ui__view-switcher .is-active:hover { color: #fff; background: var(--workspace-green-deep); }
 .reservation-center-ui__toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: end; padding: 1rem; border: 1px solid var(--workspace-line); border-radius: .6rem; background: rgba(255,254,253,.66); }
 .reservation-center-ui__filters { display: grid; grid-template-columns: repeat(4, minmax(8rem, 1fr)) minmax(12rem, 1.4fr) auto; gap: .7rem; align-items: end; }
 .reservation-center-ui__filters label, .reservation-center-ui__sort { display: grid; gap: .3rem; color: var(--workspace-muted); font-size: .78rem; font-weight: 700; }
