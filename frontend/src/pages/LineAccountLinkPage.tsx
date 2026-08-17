@@ -4,6 +4,7 @@ import { api, API_BASE } from '../api';
 import { persistReturnContext } from '../features/auth/returnContext';
 import { lineSafeErrorMessage, normalizeLineAccountLinkRequest, parseAccountLinkRequestToken, validateLineAccountLinkHandoff, type LineAccountLinkRequest } from '../features/line/lineDomain';
 import { useAuth } from '../state/AuthContext';
+import { formatDateTimeToSeconds } from '../utils/time';
 
 type LoadPhase = 'loading' | 'ready' | 'invalid' | 'error';
 
@@ -14,8 +15,7 @@ const statusContent: Record<Exclude<LineAccountLinkRequest['state'], 'created' |
 };
 
 function formatExpiry(value: string): string {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '有效期限以商家 LINE 對話顯示為準' : new Intl.DateTimeFormat('zh-TW', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+  return formatDateTimeToSeconds(value, '有效期限以商家 LINE 對話顯示為準');
 }
 
 export default function LineAccountLinkPage() {

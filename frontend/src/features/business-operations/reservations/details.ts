@@ -1,5 +1,8 @@
 import { getReservationStatusPresentation } from './status';
 import type { ReservationAction, ReservationCenterItem } from './types';
+import { formatTimestampToSeconds } from '../../../utils/time';
+
+export { formatTimestampToSeconds } from '../../../utils/time';
 
 export type ReservationMutationAction = Extract<ReservationAction, 'confirm' | 'cancel' | 'approveCancellation' | 'rejectCancellation'>;
 export type ReservationTimelineSource = 'backend-supported' | 'safely-derived' | 'future-state';

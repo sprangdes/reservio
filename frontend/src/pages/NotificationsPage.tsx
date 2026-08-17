@@ -4,6 +4,7 @@ import { api } from '../api';
 import { useAuth } from '../state/AuthContext';
 import { useToast } from '../state/ToastContext';
 import { emitNotificationsChanged } from '../notificationEvents';
+import { formatDateTimeToSeconds } from '../utils/time';
 
 interface NotificationItem {
   id: number;
@@ -94,7 +95,7 @@ export default function NotificationsPage() {
             className={`customer-notifications-page__item ${item.read ? '' : 'is-unread'}`}
             onClick={() => void open(item)}>
             <span><strong>{item.title}</strong><small>{item.content}</small></span>
-            <time>{new Date(item.createdAt).toLocaleString('zh-TW')}</time>
+            <time>{formatDateTimeToSeconds(item.createdAt)}</time>
           </button>
         ))}
         {!loading && !error && items.length === 0 ? <div className="customer-notifications-page__empty">目前沒有通知</div> : null}

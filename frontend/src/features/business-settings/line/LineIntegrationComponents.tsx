@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { BusinessLineIntegrationHealth, BusinessLineIntegrationSettings, LineCredentialForm, LineHealthState } from '../../line/lineDomain';
 import { useModalFocusTrap } from '../../business-operations/reservations/ui/useModalFocusTrap';
+import { formatDateTimeToSeconds } from '../../../utils/time';
 
 const healthCopy: Record<LineHealthState['kind'], string> = { healthy: '正常', attention: '需要注意', unknown: '尚未確認', unavailable: '尚未提供' };
 const healthIcon: Record<LineHealthState['kind'], string> = { healthy: 'bi-check-circle-fill', attention: 'bi-exclamation-circle-fill', unknown: 'bi-question-circle', unavailable: 'bi-dash-circle' };
@@ -12,7 +13,7 @@ export function LineIntegrationSkeleton() {
 export function BusinessLineConfigurationSummary({ settings, health }: Readonly<{ settings: BusinessLineIntegrationSettings; health: BusinessLineIntegrationHealth | null }>) {
   const configured = settings.configured && Boolean(settings.credentials.channelSecretMasked && settings.credentials.channelAccessTokenMasked);
   const label = settings.enabled ? '已啟用' : settings.configured ? '已停用' : '尚未設定';
-  return <section className="line-integration__summary" aria-labelledby="line-configuration-summary"><div><i className={`bi ${settings.enabled ? 'bi-check-lg' : 'bi-pause-fill'}`} aria-hidden="true" /><span><strong id="line-configuration-summary">{label}</strong><small>{configured ? '憑證已儲存' : '尚未完成憑證設定'}</small></span></div><div><i className="bi bi-clock" aria-hidden="true" /><span><strong>最近檢查</strong><small>{health?.lastCheckedAt ? new Date(health.lastCheckedAt).toLocaleString('zh-TW') : '尚無最近檢查結果'}</small></span></div></section>;
+  return <section className="line-integration__summary" aria-labelledby="line-configuration-summary"><div><i className={`bi ${settings.enabled ? 'bi-check-lg' : 'bi-pause-fill'}`} aria-hidden="true" /><span><strong id="line-configuration-summary">{label}</strong><small>{configured ? '憑證已儲存' : '尚未完成憑證設定'}</small></span></div><div><i className="bi bi-clock" aria-hidden="true" /><span><strong>最近檢查</strong><small>{health?.lastCheckedAt ? formatDateTimeToSeconds(health.lastCheckedAt) : '尚無最近檢查結果'}</small></span></div></section>;
 }
 
 function LineHealthRow({ label, value, detail }: Readonly<{ label: string; value: LineHealthState; detail: string }>) {
