@@ -7,6 +7,7 @@ const isRecord = (value: unknown): value is RecordValue => Boolean(value) && typ
 const text = (value: unknown): string | null => typeof value === 'string' && value.trim() ? value.trim() : null;
 const identifier = (value: unknown): string | null => typeof value === 'string' && value.trim() ? value.trim() : typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? String(value) : null;
 const optionalText = (value: unknown): string | null => value == null || value === '' ? null : text(value);
+const isOptionalText = (value: unknown): boolean => value == null || typeof value === 'string';
 
 export function normalizeReservationSummary(value: unknown): ReservationSummary | null {
   if (!isRecord(value)) return null;
@@ -18,7 +19,7 @@ export function normalizeReservationSummary(value: unknown): ReservationSummary 
   const endTime = normalizeLocalTime(value.endTime);
   const remark = optionalText(value.remark);
   const cancelReason = optionalText(value.cancelReason);
-  if (!id || !businessName || !serviceName || !date || !isLocalDate(date) || !startTime || !endTime || (value.remark != null && remark === null) || (value.cancelReason != null && cancelReason === null)) return null;
+  if (!id || !businessName || !serviceName || !date || !isLocalDate(date) || !startTime || !endTime || !isOptionalText(value.remark) || !isOptionalText(value.cancelReason)) return null;
   return { id, businessId: identifier(value.businessId), businessName, serviceName, date, startTime, endTime, status: normalizeReservationStatus(value.status), remark, cancelReason };
 }
 
