@@ -8,7 +8,7 @@ export type PublicNavigationItem = {
 export function publicNavigationItems(isCustomer: boolean): PublicNavigationItem[] {
   return isCustomer
     ? [
-        { label: '儀表板', to: '/dashboard' },
+        { label: '概覽', to: '/dashboard' },
         { label: '前往預約', to: '/reservation/new', emphasis: 'primary' },
         { label: '我的預約', to: '/my/reservations' }
       ]

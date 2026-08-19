@@ -38,7 +38,7 @@ test('legacy routes remain available and preserve role-specific notification pre
   assert.match(app, /path="\/business\/info"/);
   assert.match(app, /<BusinessInfoPage \/>/);
   assert.match(app, /function NotificationSettingsCompatibility/);
-  assert.match(app, /<Layout><NotificationSettingsPage \/><\/Layout>/);
+  assert.match(app, /return <NotificationSettingsPage \/>;/);
   assert.match(app, /function LineIntegrationCompatibility/);
   assert.match(app, /path="\/business\/line-integration"/);
 });

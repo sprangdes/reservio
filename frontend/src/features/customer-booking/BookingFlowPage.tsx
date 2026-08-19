@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ApiError, api } from '../../api';
 import { isUnauthorizedError } from '../../sessionEvents';
 import { mapBookingCreateRequest } from './bookingApi';
@@ -15,7 +15,7 @@ import { ServiceSelection } from './ServiceSelection';
 import type { BookingCreateResult } from './domain';
 import { normalizeBookingCreateResult } from './normalizers';
 import { useBookingFlow } from './useBookingFlow';
-import LogoutButton from '../../components/LogoutButton';
+import CustomerWorkspaceHeader from '../customer-workspace/CustomerWorkspaceHeader';
 
 type Step = 1 | 2 | 3;
 
@@ -24,7 +24,6 @@ function responseData(value: unknown): unknown {
 }
 
 export function BookingFlowPage() {
-  const navigate = useNavigate();
   const [step, setStep] = useState<Step>(1);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -131,13 +130,7 @@ export function BookingFlowPage() {
   if (result) return <BookingResultState result={result} />;
 
   return <main className="booking-flow">
-    <header className="booking-flow__header">
-      <button type="button" onClick={() => navigate(-1)} disabled={submitting}><i className="bi bi-chevron-left" aria-hidden="true" />返回</button>
-      <Link className="booking-flow__brand" to="/">Reservio</Link>
-      <strong className="booking-flow__mobile-title">建立預約</strong>
-      <Link className="booking-flow__reservations-link" to="/my/reservations">我的預約<i className="bi bi-arrow-up-right" aria-hidden="true" /></Link>
-      <LogoutButton className="booking-flow__logout"><i className="bi bi-box-arrow-right" aria-hidden="true" /><span>登出</span></LogoutButton>
-    </header>
+    <CustomerWorkspaceHeader title="建立預約" />
     <div className="booking-flow__container">
       <BookingProgress step={step} />
       <div className="booking-flow__layout">
