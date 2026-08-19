@@ -40,6 +40,7 @@ test('verified, unverified, missing-email, malformed, loading, stale, and save-f
   assert.match(page, /NotificationSettingsSkeleton/);
   assert.match(page, /NotificationSettingsError/);
   assert.match(page, /NotificationSettingsStaleWarning/);
+  assert.match(page, /mounted\.current = true;/);
   assert.match(page, /目前顯示的是先前載入的設定，部分狀態可能尚未同步。/);
   assert.match(page, /form\.failSave\(message\)/);
 });

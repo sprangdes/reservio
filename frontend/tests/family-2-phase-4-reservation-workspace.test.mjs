@@ -33,8 +33,48 @@ test('Phase 4 workspace exposes one customer hierarchy with secondary filters an
   assert.match(workspace, /即將到來/);
   assert.match(workspace, /歷史預約/);
   assert.match(workspace, /ReservationFilters/);
+  assert.match(workspace, /CustomerWorkspaceHeader title="我的預約" active="reservations"/);
   assert.doesNotMatch(page, /<table/);
   assert.doesNotMatch(workspace, /\/reservation\/[^n]/);
+});
+
+test('customer account and reservation pages share the customer workspace navigation', () => {
+  const profile = source('pages/ProfilePage.tsx');
+  const dashboard = source('features/customer-dashboard/CustomerDashboardPage.tsx');
+  const booking = source('features/customer-booking/BookingFlowPage.tsx');
+  const bookingResult = source('features/customer-booking/BookingResultState.tsx');
+  const preferences = source('pages/PreferredBusinessesPage.tsx');
+  const notifications = source('pages/NotificationsPage.tsx');
+  const notificationSettings = source('features/customer-notifications/CustomerNotificationSettingsPage.tsx');
+  const header = source('features/customer-workspace/CustomerWorkspaceHeader.tsx');
+  const app = source('App.tsx');
+  assert.match(profile, /CustomerWorkspaceHeader title="帳號" active="profile"/);
+  assert.match(dashboard, /CustomerWorkspaceHeader title="概覽" active="dashboard"/);
+  assert.match(booking, /CustomerWorkspaceHeader title="建立預約"/);
+  assert.match(bookingResult, /CustomerWorkspaceHeader title="預約已送出"/);
+  assert.match(preferences, /CustomerWorkspaceHeader title="想預約店家"/);
+  assert.match(notifications, /CustomerWorkspaceHeader title="通知中心" active="notifications"/);
+  assert.match(notifications, /to="\/notifications\/settings"/);
+  assert.match(notifications, /getReservationStatusPresentation\(status\)\.label/);
+  assert.match(notificationSettings, /CustomerWorkspaceHeader title="通知設定" active="notifications"/);
+  assert.match(preferences, /customer-preferences-workspace/);
+  assert.match(header, /navigate\(-1\)/);
+  assert.doesNotMatch(dashboard, /customer-dashboard__topbar/);
+  assert.match(header, /to: '\/my\/reservations'/);
+  assert.match(header, /to: '\/profile'/);
+  assert.match(header, /to: '\/notifications'/);
+  assert.match(header, /to="\/reservation\/new"/);
+  assert.match(source('styles.css'), /\.customer-workspace-header \{ position: sticky; z-index: 30; top: 0;/);
+  assert.match(source('styles.css'), /body:has\(\.customer-dashboard\),/);
+  assert.match(source('styles.css'), /body:has\(\.customer-notifications-page\),/);
+  assert.match(source('styles.css'), /body:has\(\.customer-notification-settings\),/);
+  assert.match(source('styles.css'), /body:has\(\.customer-preferences-workspace\),/);
+  assert.match(source('styles.css'), /--system-orange: #dc693d/);
+  assert.doesNotMatch(source('styles.css'), /customer-workspace-header nav > a\[aria-current="page"\]/);
+  assert.match(source('styles.css'), /customer-notifications-page \{ padding-top: 0; \}/);
+  assert.match(app, /path="\/profile"[\s\S]*<RequireAuth><RequireCustomer><ProfilePage \/><\/RequireCustomer><\/RequireAuth>/);
+  assert.match(app, /path="\/dashboard"[\s\S]*<RequireAuth><RequireCustomer><CustomerDashboardPage \/><\/RequireCustomer><\/RequireAuth>/);
+  assert.match(app, /path="\/preferred-businesses"[\s\S]*<RequireAuth><RequireCustomer><PreferredBusinessesPage \/><\/RequireCustomer><\/RequireAuth>/);
 });
 
 test('loaded-page Strategy B grouping chooses only the nearest local future record and retains scheduler-lag status', () => {
@@ -62,6 +102,14 @@ test('normalization and status presentation expose safe customer fields and all 
   const row = source('features/customer-reservations/ReservationRow.tsx');
   assert.doesNotMatch(row, /reservation\.id|businessId|username|userId/);
   assert.match(source('features/customer-reservations/ReservationStatus.tsx'), /role="status"/);
+});
+
+test('reservation normalization keeps records when optional text is serialized as an empty string', () => {
+  const record = normalizers.normalizeReservationSummary({ ...dto(9, 'COMPLETED', '2026-08-19', '10:00:00'), remark: '', cancelReason: '   ' });
+  assert.equal(record?.id, '9');
+  assert.equal(record?.remark, null);
+  assert.equal(record?.cancelReason, null);
+  assert.equal(normalizers.normalizeReservationSummary({ ...dto(10, 'COMPLETED', '2026-08-19', '10:00:00'), remark: 3 }), null);
 });
 
 test('filters preserve supported dependencies and pagination uses the existing authoritative query with request cancellation', () => {
