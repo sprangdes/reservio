@@ -6,6 +6,7 @@ const source = (path) => readFileSync(new URL(`../src/${path}`, import.meta.url)
 const app = source('App.tsx');
 const navbar = source('components/Navbar.tsx');
 const page = source('features/customer-notifications/CustomerNotificationSettingsPage.tsx');
+const merchantNotifications = source('features/business-operations/MerchantNotificationsPage.tsx');
 const flow = source('features/customer-notifications/CustomerEmailVerificationFlow.tsx');
 const customerDomain = source('features/customer-notifications/customerNotificationPreferences.ts');
 const customerForm = source('features/customer-notifications/useCustomerNotificationForm.ts');
@@ -20,7 +21,12 @@ test('Family 5 retains one role-aware customer route, one merchant canonical rou
   assert.match(app, /merchant-compatibility/);
   assert.match(app, /<Layout><NotificationSettingsPage \/><\/Layout>/);
   assert.match(app, /path="\/notifications"/);
-  assert.match(app, /<Layout><RequireAuth><NotificationsPage \/><\/RequireAuth><\/Layout>/);
+  assert.match(app, /RoleAwareNotificationsRoute/);
+  assert.match(app, /<BusinessWorkspaceShell><MerchantNotificationsPage \/><\/BusinessWorkspaceShell>/);
+  assert.match(app, /<Layout><NotificationsPage \/><\/Layout>/);
+  assert.match(merchantNotifications, /api\.notifications/);
+  assert.match(merchantNotifications, /markAllNotificationsRead/);
+  assert.match(merchantNotifications, /reservationId=\$\{item\.reservationId\}/);
   for (const route of ['/line/account-link', '/settings/line-accounts', '/business/settings/integrations/line']) {
     assert.match(app, new RegExp(route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }

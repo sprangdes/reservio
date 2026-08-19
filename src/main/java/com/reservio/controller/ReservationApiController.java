@@ -103,6 +103,15 @@ public class ReservationApiController {
                 .build());
     }
 
+    @GetMapping("/reservations/business/{id}")
+    public ResponseEntity<ApiResponse<ReservationResponse>> getReservationForBusiness(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.<ReservationResponse>builder()
+                .success(true)
+                .message(OK.getMessage())
+                .data(toReservationResponse(reservationService.getReservationForCurrentBusiness(id)))
+                .build());
+    }
+
     /**
      * Create a new reservation.
      *

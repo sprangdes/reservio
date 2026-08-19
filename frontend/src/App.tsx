@@ -18,6 +18,7 @@ import LineAccountLinkPage from './pages/LineAccountLinkPage';
 import LineAccountLinksPage from './pages/LineAccountLinksPage';
 import ProfilePage from './pages/ProfilePage';
 import BusinessWorkspaceShell from './features/business-operations/BusinessWorkspaceShell';
+import MerchantNotificationsPage from './features/business-operations/MerchantNotificationsPage';
 import OperationsOverviewPage from './features/business-operations/OperationsOverviewPage';
 import ReservationCenterPage, { type ReservationCenterPreset } from './features/business-operations/ReservationCenterPage';
 import { useAuth } from './state/AuthContext';
@@ -147,6 +148,14 @@ function NotificationSettingsCompatibility() {
   return <RoleAwareNotificationSettingsRoute />;
 }
 
+function RoleAwareNotificationsRoute() {
+  const { me } = useAuth();
+  if (me?.role === 'ROLE_BUSINESS' && me.business) {
+    return <BusinessWorkspaceShell><MerchantNotificationsPage /></BusinessWorkspaceShell>;
+  }
+  return <Layout><NotificationsPage /></Layout>;
+}
+
 function LineIntegrationCompatibility() {
   return <RequireBusiness><Navigate to="/business/settings/integrations/line" replace /></RequireBusiness>;
 }
@@ -268,7 +277,7 @@ export default function App() {
       <Route path="/service/:id/edit" element={<RequireAuth><RequireBusiness><BusinessWorkspaceShell focused><ServiceEditorScaffold editing /></BusinessWorkspaceShell></RequireBusiness></RequireAuth>} />
       <Route
         path="/notifications"
-        element={<Layout><RequireAuth><NotificationsPage /></RequireAuth></Layout>}
+        element={<RequireAuth><RoleAwareNotificationsRoute /></RequireAuth>}
       />
       <Route
         path="/notifications/settings"

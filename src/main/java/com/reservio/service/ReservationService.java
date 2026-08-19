@@ -173,6 +173,17 @@ public class ReservationService {
         return reservationRepo.findAll(spec, pageable);
     }
 
+    @Transactional(readOnly = true)
+    public Reservation getReservationForCurrentBusiness(Long id) {
+        UserData actor = userDataService.getCurrentUser();
+        BusinessData businessData = actor.getBusinessData();
+        if (businessData == null) {
+            throw new IllegalStateException("非店家帳號無法查看商家預約");
+        }
+        return reservationRepo.findByIdAndBusiness(id, businessData)
+                .orElseThrow(() -> new IllegalArgumentException("找不到該店家的預約或無權限查看: " + id));
+    }
+
     public List<BusinessResponse> getReservedBusinesses() {
         UserData currentUser = userDataService.getCurrentUser();
         List<Reservation> customerReservations = reservationRepo.findAllByUser(currentUser);

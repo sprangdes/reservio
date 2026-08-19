@@ -201,6 +201,7 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(condition || {})
   }),
+  businessReservation: (id: string | number) => request(`/api/reservations/business/${id}`),
   todayReservations: () => request('/api/reservations/today'),
   weekReservations: () => request('/api/reservations/week'),
   monthReservations: () => request('/api/reservations/month'),
