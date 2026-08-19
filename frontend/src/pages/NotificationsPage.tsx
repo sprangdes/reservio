@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../state/AuthContext';
 import { useToast } from '../state/ToastContext';
 import { emitNotificationsChanged } from '../notificationEvents';
 import { formatDateTimeToSeconds } from '../utils/time';
+import CustomerWorkspaceHeader from '../features/customer-workspace/CustomerWorkspaceHeader';
+import { getReservationStatusPresentation } from '../features/customer-reservations/status';
 
 interface NotificationItem {
   id: number;
@@ -13,6 +15,10 @@ interface NotificationItem {
   content: string;
   read: boolean;
   createdAt: string;
+}
+
+function presentNotificationContent(content: string) {
+  return content.replace(/(目前狀態\s*[：:]\s*)([A-Z_]+)/g, (_match, prefix: string, status: string) => `${prefix}${getReservationStatusPresentation(status).label}`);
 }
 
 export default function NotificationsPage() {
@@ -82,10 +88,14 @@ export default function NotificationsPage() {
 
   return (
     <main className="customer-notifications-page">
+      <CustomerWorkspaceHeader title="通知中心" active="notifications" />
       <section className="customer-notifications-page__content" aria-labelledby="notifications-title">
       <header className="customer-notifications-page__header">
         <div><p>帳號通知</p><h1 id="notifications-title">通知中心</h1><span>查看預約狀態與帳號的重要更新。</span></div>
-        <button type="button" className="customer-notifications-page__read-all" disabled={pending || loading || items.length === 0} onClick={() => void markAllRead()}>{pending ? '處理中' : '全部標記已讀'}</button>
+        <div className="customer-notifications-page__actions">
+          <Link to="/notifications/settings">通知設定</Link>
+          <button type="button" className="customer-notifications-page__read-all" disabled={pending || loading || items.length === 0} onClick={() => void markAllRead()}>{pending ? '處理中' : '全部標記已讀'}</button>
+        </div>
       </header>
       {error ? <div className="customer-notifications-page__error" role="alert"><p>{error}</p><button type="button" disabled={loading} onClick={() => void load(page)}>重新載入</button></div> : null}
       <div className="customer-notifications-page__list" aria-busy={loading}>
@@ -94,7 +104,7 @@ export default function NotificationsPage() {
           <button key={item.id} type="button" disabled={pending}
             className={`customer-notifications-page__item ${item.read ? '' : 'is-unread'}`}
             onClick={() => void open(item)}>
-            <span><strong>{item.title}</strong><small>{item.content}</small></span>
+            <span><strong>{item.title}</strong><small>{presentNotificationContent(item.content)}</small></span>
             <time>{formatDateTimeToSeconds(item.createdAt)}</time>
           </button>
         ))}

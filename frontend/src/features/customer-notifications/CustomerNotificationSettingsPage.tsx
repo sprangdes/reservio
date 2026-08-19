@@ -23,6 +23,7 @@ import {
 } from './customerNotificationSettingsRoute';
 import { useCustomerNotificationForm } from './useCustomerNotificationForm';
 import CustomerEmailVerificationFlow from './CustomerEmailVerificationFlow';
+import CustomerWorkspaceHeader from '../customer-workspace/CustomerWorkspaceHeader';
 
 const emptyForm: CustomerNotificationFormValue = {
   emailStatusChanged: false,
@@ -63,7 +64,10 @@ function CustomerNotificationSettingsContent() {
   const mounted = useRef(true);
   const requestNumber = useRef(0);
 
-  useEffect(() => () => { mounted.current = false; }, []);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   const load = useCallback(async (preserveLocalEdits = false) => {
     const requestId = ++requestNumber.current;
@@ -234,14 +238,12 @@ function CustomerNotificationSettingsContent() {
 
 function CustomerNotificationPageFrame({ children }: Readonly<{ children: React.ReactNode }>) {
   return <main className="customer-notification-settings" aria-labelledby="customer-notification-settings-title">
+    <CustomerWorkspaceHeader title="通知設定" active="notifications" />
     <div className="customer-notification-settings__content">
-      <Link className="customer-notification-settings__back" to={CUSTOMER_NOTIFICATION_SETTINGS_BACK_TARGET} aria-label="返回個人資料">
-        <i className="bi bi-arrow-left" aria-hidden="true" />
-        <span>個人資料</span>
-      </Link>
       <header className="customer-notification-settings__header">
+        <p>帳號通知</p>
         <h1 id="customer-notification-settings-title">{customerNotificationSettingsRoute.title}</h1>
-        <p>管理目前帳號接收預約相關 Email 通知的方式。</p>
+        <span>管理目前帳號接收預約相關 Email 通知的方式。</span>
       </header>
       <section className="customer-notification-settings__scope" aria-label="帳號設定範圍說明">
         <i className="bi bi-info-circle" aria-hidden="true" />

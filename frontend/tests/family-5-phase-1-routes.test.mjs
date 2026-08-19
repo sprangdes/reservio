@@ -12,7 +12,7 @@ const styles = source('styles.css');
 test('Family 5 resolves the canonical customer notification route by authenticated role', () => {
   assert.match(app, /function RoleAwareNotificationSettingsRoute/);
   assert.match(app, /resolveNotificationSettingsRoute\(me\?\.role, Boolean\(me\?\.business\)\)/);
-  assert.match(app, /<Layout><NotificationSettingsPage \/><\/Layout>/);
+  assert.match(app, /return <NotificationSettingsPage \/>;/);
   assert.match(app, /<BusinessWorkspaceShell focused><SettingsScaffoldPage page="notifications" \/><\/BusinessWorkspaceShell>/);
   assert.match(app, /path="\/notifications\/settings"/);
   assert.match(app, /<RequireAuth><NotificationSettingsCompatibility \/><\/RequireAuth>/);
@@ -41,8 +41,7 @@ test('customer route keeps the Family 5 shell, one heading, and profile back tar
   assert.match(page, /通知設定/);
   assert.match(page, /管理目前帳號接收預約相關 Email 通知的方式。/);
   assert.match(page, /這些設定套用至目前帳號，不會依商家而變。/);
-  assert.match(page, /to=\{CUSTOMER_NOTIFICATION_SETTINGS_BACK_TARGET\}/);
-  assert.match(page, /aria-label="返回個人資料"/);
+  assert.match(page, /<CustomerWorkspaceHeader title="通知設定" active="notifications"/);
   assert.match(page, /<SettingsInfrastructure>/);
 });
 

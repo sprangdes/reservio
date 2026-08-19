@@ -7,6 +7,9 @@ const app = source('App.tsx');
 const navbar = source('components/Navbar.tsx');
 const page = source('features/customer-notifications/CustomerNotificationSettingsPage.tsx');
 const merchantNotifications = source('features/business-operations/MerchantNotificationsPage.tsx');
+const workspaceShell = source('features/business-operations/BusinessWorkspaceShell.tsx');
+const workspaceTopBar = source('features/business-operations/ui/WorkspaceTopBar.tsx');
+const mobileWorkspaceHeader = source('features/business-operations/ui/MobileWorkspaceHeader.tsx');
 const flow = source('features/customer-notifications/CustomerEmailVerificationFlow.tsx');
 const customerDomain = source('features/customer-notifications/customerNotificationPreferences.ts');
 const customerForm = source('features/customer-notifications/useCustomerNotificationForm.ts');
@@ -19,11 +22,11 @@ test('Family 5 retains one role-aware customer route, one merchant canonical rou
   assert.match(app, /path="\/business\/settings\/notifications"/);
   assert.match(app, /<RequireAuth><SettingsRoute page="notifications" \/><\/RequireAuth>/);
   assert.match(app, /merchant-compatibility/);
-  assert.match(app, /<Layout><NotificationSettingsPage \/><\/Layout>/);
+  assert.match(app, /return <NotificationSettingsPage \/>;/);
   assert.match(app, /path="\/notifications"/);
   assert.match(app, /RoleAwareNotificationsRoute/);
   assert.match(app, /<BusinessWorkspaceShell><MerchantNotificationsPage \/><\/BusinessWorkspaceShell>/);
-  assert.match(app, /<Layout><NotificationsPage \/><\/Layout>/);
+  assert.match(app, /return <NotificationsPage \/>;/);
   assert.match(merchantNotifications, /api\.notifications/);
   assert.match(merchantNotifications, /markAllNotificationsRead/);
   assert.match(merchantNotifications, /reservationId=\$\{item\.reservationId\}/);
@@ -36,6 +39,15 @@ test('Navbar uses the canonical destination and has no obsolete customer notific
   assert.match(navbar, /notificationSettingsDestinationFor\(me\?\.role\)/);
   assert.match(navbar, /to=\{notificationSettingsDestination\}/);
   assert.doesNotMatch(navbar, /NotificationSettingsPanel|setNotificationSettingsOpen|notificationSettingsOpen/);
+});
+
+test('merchant notification indicator reflects the shared unread count after notification changes', () => {
+  assert.match(workspaceShell, /api\.notificationUnreadCount\(\)/);
+  assert.match(workspaceShell, /NOTIFICATIONS_CHANGED_EVENT/);
+  assert.match(workspaceShell, /unreadCount=\{unreadCount\}/);
+  for (const header of [workspaceTopBar, mobileWorkspaceHeader]) {
+    assert.match(header, /unreadCount > 0 \? <span className="business-workspace__notification-dot" aria-hidden="true" \/> : null/);
+  }
 });
 
 test('customer save and verification preserve account-level data without exposing or prematurely mutating it', () => {
