@@ -736,13 +736,15 @@ main h1[tabindex="-1"]:focus { outline: 0; }
     .reservation-center-ui__filter-summary { min-height: 0; padding: .1rem 0 .75rem; }
     .reservation-center-ui__desktop-list, .reservation-center-ui__pagination { display: none; }
     .reservation-center-ui__mobile-list { display: grid; gap: .75rem; }
-    .reservation-mobile-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .6rem; padding: .9rem; border: 1px solid var(--workspace-line); border-radius: .65rem; background: var(--workspace-panel); box-shadow: 0 .3rem .9rem rgba(48,42,33,.045); }
+    .reservation-mobile-card { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: .65rem; padding: .9rem; border: 1px solid var(--workspace-line); border-radius: .65rem; background: var(--workspace-panel); box-shadow: 0 .3rem .9rem rgba(48,42,33,.045); }
     .reservation-mobile-card.is-selected { border-color: #78a68d; background: linear-gradient(135deg, #eff6f0, #fffefd 68%); box-shadow: inset .22rem 0 var(--workspace-green); }
-    .reservation-mobile-card__main { display: grid; min-width: 0; gap: .35rem; padding: 0; border: 0; background: transparent; color: var(--workspace-ink); text-align: left; }
-    .reservation-mobile-card__top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }.reservation-mobile-card__top strong { font-size: .94rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .reservation-mobile-card__customer { overflow: hidden; font-size: 1.1rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }.reservation-mobile-card__service, .reservation-mobile-card__date { color: var(--workspace-muted); font-size: .88rem; }.reservation-mobile-card__date { font-variant-numeric: tabular-nums; }
-    .reservation-mobile-card .reservation-action-menu { align-self: center; min-width: 7.3rem; }.reservation-mobile-card .reservation-action-menu__primary, .reservation-mobile-card .reservation-action-menu__select { display: block; min-width: 4.75rem; font-size: .84rem; }.reservation-mobile-card .reservation-action-menu__toggle { display: grid; width: 2.35rem; min-height: 2.65rem; }.reservation-mobile-card .reservation-action-menu__options { right: 0; }.reservation-mobile-card .reservation-action-menu__options button:first-child { min-height: 2.75rem; }
-    .reservation-mobile-card .reservation-action-menu { grid-row: 1 / span 2; grid-column: 2; }
+    .reservation-mobile-card__main { display: grid; grid-template-columns: auto auto minmax(0, 1fr); min-width: 0; align-items: center; gap: .65rem; padding: 0; border: 0; background: transparent; color: var(--workspace-ink); text-align: left; }
+    .reservation-mobile-card__time, .reservation-mobile-card__customer, .reservation-mobile-card__service { min-width: 0; font-size: .9rem; line-height: 1.4; white-space: nowrap; }
+    .reservation-mobile-card__time { color: var(--workspace-green); font-variant-numeric: tabular-nums; }
+    .reservation-mobile-card__customer { overflow: hidden; font-weight: 800; text-overflow: ellipsis; }
+    .reservation-mobile-card__service { overflow: hidden; color: var(--workspace-muted); text-overflow: ellipsis; }
+    .reservation-mobile-card > .reservation-status { justify-self: start; margin-right: .35rem; }
+    .reservation-mobile-card .reservation-action-menu { align-self: center; min-width: 4.4rem; }.reservation-mobile-card .reservation-action-menu__primary, .reservation-mobile-card .reservation-action-menu__select { display: block; min-width: 4.4rem; font-size: .84rem; }.reservation-mobile-card .reservation-action-menu__toggle { display: grid; width: 2.35rem; min-height: 2.65rem; }.reservation-mobile-card .reservation-action-menu__options { right: 0; }.reservation-mobile-card .reservation-action-menu__options button:first-child { min-height: 2.75rem; }
     .reservation-center-ui__load-more { display: flex; justify-content: center; gap: .7rem; margin: 1.1rem 0 .4rem; color: #9b3329; font-size: .86rem; }.reservation-center-ui__load-more button { min-width: 8.5rem; min-height: 2.8rem; padding: .45rem .8rem; border: 1px solid var(--workspace-green); border-radius: .4rem; background: #fff; color: var(--workspace-green); font-weight: 800; }.reservation-center-ui__load-more button:disabled { opacity: .65; }.reservation-center-ui__end-of-results { display: block; margin: 1.2rem 0; color: var(--workspace-muted); text-align: center; font-size: .9rem; }
     .reservation-center-ui__selection { flex-wrap: wrap; }.reservation-center-ui__selection span:nth-child(2) { width: calc(100% - 2.5rem); }.reservation-center-ui__selection button { position: absolute; right: 2rem; }
     .reservation-center-ui__error { grid-template-columns: auto minmax(0,1fr); }.reservation-center-ui__error button { grid-column: 1 / -1; width: 100%; }
@@ -822,6 +824,29 @@ main h1[tabindex="-1"]:focus { outline: 0; }
 
 @media (max-width: 768px) {
   .business-workspace .operations-overview-ui { max-width: none; }.operations-overview-ui__header { align-items: start; margin-bottom: 1.25rem; }.operations-overview-ui__header h1 { font-size: 2.1rem; }.operations-overview-ui__header span { max-width: 19rem; font-size: .96rem; line-height: 1.55; }.operations-overview-ui__reservation-link { display: none; }.operations-overview-ui__stale { align-items: start; flex-wrap: wrap; font-size: .83rem; }.operations-overview-ui__stale button { margin-left: 1.6rem; }.operations-overview-ui__layout { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "pending" "side" "agenda" "secondary"; gap: .9rem; }.operations-overview-ui__side, .operations-overview-ui__secondary { gap: .9rem; }.operations-overview__panel { border-radius: .7rem; }.operations-overview__panel > header { min-height: 3.8rem; padding: .75rem .95rem; }.operations-overview__pending header span { display: none; }.operations-overview__work-item { grid-template-columns: minmax(0, 1fr) auto; gap: .45rem .6rem; min-height: 6.25rem; padding: .8rem .95rem; }.operations-overview__work-main { grid-template-columns: 1fr; grid-template-rows: auto auto auto; grid-column: 1; gap: .14rem; }.operations-overview__work-time { grid-row: auto; color: var(--workspace-muted); font-size: .82rem; }.operations-overview__work-item .reservation-status { grid-column: 1; }.operations-overview__work-action, .operations-overview__work-more { grid-column: 2; grid-row: 1 / span 2; min-width: 4.7rem; min-height: 2.75rem; }.operations-overview__next-content { grid-template-columns: auto minmax(0, 1fr) auto; padding: .95rem; }.operations-overview__next-content .reservation-status { grid-column: 2 / span 2; justify-self: start; }.operations-overview__next-content > i { grid-column: 3; grid-row: 1; }.operations-overview__summary { display: none; }.operations-overview__agenda ol { padding: .15rem .95rem .55rem; }.operations-overview__agenda li { grid-template-columns: 4.6rem minmax(0, 1fr); gap: .45rem; min-height: 4rem; }.operations-overview__agenda .reservation-status { grid-column: 2; justify-self: start; font-size: .78rem; }.operations-overview__alerts > p, .operations-overview__alerts > a { min-height: 3.3rem; padding: .75rem .95rem; }.operations-overview__notifications ul { padding: .3rem .95rem .65rem; }.operations-overview__section-error { margin: .65rem .95rem; }.operations-overview__skeleton { padding: .85rem .95rem; }
+}
+
+/* Mobile overview cards keep appointment information distributed by meaning. */
+@media (max-width: 768px) {
+  .operations-overview__work-item { grid-template-columns: minmax(0, 1fr) auto auto; gap: .65rem; min-height: 4.65rem; }
+  .operations-overview__work-main { grid-template-columns: auto auto minmax(0, 1fr); grid-template-rows: auto; grid-row: 1; gap: .65rem; align-items: center; }
+  .operations-overview__work-time { grid-row: auto; align-self: center; color: var(--workspace-green); font-size: .9rem; white-space: nowrap; }
+  .operations-overview__work-main strong, .operations-overview__work-main small { min-width: 0; font-size: .9rem; line-height: 1.4; }
+  .operations-overview__work-main small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .operations-overview__work-item .reservation-status { grid-column: 2; grid-row: 1; justify-self: end; margin-right: .35rem; white-space: nowrap; }
+  .operations-overview__work-action, .operations-overview__work-more { grid-column: 3; grid-row: 1; min-width: 4.4rem; }
+  .operations-overview__next-content { grid-template-columns: auto minmax(0, 1fr) auto auto; gap: .75rem; }
+  .operations-overview__next-content .reservation-status { grid-column: 3; grid-row: 1; justify-self: end; }
+  .operations-overview__next-content > i { grid-column: 4; grid-row: 1; }
+  .operations-overview__next-content > span { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: .65rem; }
+  .operations-overview__next-content > strong, .operations-overview__next-content b, .operations-overview__next-content small { min-width: 0; font-size: .9rem; line-height: 1.4; }
+  .operations-overview__next-content small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .operations-overview__agenda li { grid-template-columns: 6.25rem minmax(0, 1fr) auto; gap: .65rem; }
+  .operations-overview__agenda li > span { white-space: nowrap; }
+  .operations-overview__agenda .reservation-status { grid-column: 3; grid-row: 1; align-self: center; justify-self: end; margin-right: .35rem; }
+  .operations-overview__agenda li button { grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto; align-items: center; gap: .65rem; }
+  .operations-overview__agenda li > span, .operations-overview__agenda li strong, .operations-overview__agenda li small { font-size: .9rem; line-height: 1.4; }
+  .operations-overview__agenda li small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 main {
