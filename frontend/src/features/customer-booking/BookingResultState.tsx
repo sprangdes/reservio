@@ -1,19 +1,15 @@
 import { useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { formatLocalDateZhTw, formatLocalTimeRange } from './bookingDates';
 import type { BookingCreateResult } from './domain';
-import LogoutButton from '../../components/LogoutButton';
+import CustomerWorkspaceHeader from '../customer-workspace/CustomerWorkspaceHeader';
 
 export function BookingResultState({ result }: Readonly<{ result: BookingCreateResult }>) {
   const navigate = useNavigate();
   const headingRef = useRef<HTMLHeadingElement | null>(null);
   useEffect(() => { headingRef.current?.focus(); }, []);
   return <main className="booking-result" aria-labelledby="booking-result-title">
-    <header className="booking-result__header">
-      <Link className="booking-result__brand" to="/">Reservio</Link>
-      <Link className="booking-result__reservations-link" to="/my/reservations">我的預約<i className="bi bi-arrow-up-right" aria-hidden="true" /></Link>
-      <LogoutButton className="booking-result__logout"><i className="bi bi-box-arrow-right" aria-hidden="true" /><span>登出</span></LogoutButton>
-    </header>
+    <CustomerWorkspaceHeader title="預約已送出" />
     <section className="booking-result__content">
       <p className="booking-result__eyebrow">預約已送出</p>
       <h1 id="booking-result-title" ref={headingRef} tabIndex={-1}>已送出，等待店家確認</h1>

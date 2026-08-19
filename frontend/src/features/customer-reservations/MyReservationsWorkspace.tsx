@@ -7,7 +7,7 @@ import CancelReservationOverlay from './CancelReservationOverlay';
 import type { ReservationSummary } from './domain';
 import { ReservationEmptyState, ReservationErrorState, ReservationFilteredEmptyState, ReservationListSkeleton, ReservationStaleWarning } from './ReservationWorkspaceStates';
 import { useCustomerReservationsWorkspace } from './useCustomerReservationsWorkspace';
-import LogoutButton from '../../components/LogoutButton';
+import CustomerWorkspaceHeader from '../customer-workspace/CustomerWorkspaceHeader';
 
 function localNow(): Readonly<{ date: string; time: string }> {
   const now = new Date();
@@ -35,17 +35,11 @@ export default function MyReservationsWorkspace() {
 
   return (
     <main className="customer-reservation-workspace">
-      <header className="customer-reservation-workspace__topbar">
-        <Link className="customer-reservation-workspace__brand" to="/">Reservio</Link>
-        <strong className="customer-reservation-workspace__mobile-title">我的預約</strong>
-        <div className="customer-reservation-workspace__topbar-actions">
-          <Link to="/reservation/new" className="customer-reservation-workspace__topbar-create"><i className="bi bi-plus-lg" aria-hidden="true" /><span>建立預約</span></Link>
-          <LogoutButton className="customer-reservation-workspace__logout"><i className="bi bi-box-arrow-right" aria-hidden="true" /><span>登出</span></LogoutButton>
-        </div>
-      </header>
+      <CustomerWorkspaceHeader title="我的預約" active="reservations" />
       <div className="customer-reservation-workspace__container">
         <header className="customer-reservation-workspace__header">
           <div><h1>我的預約</h1><p>在這裡查看與管理你的所有預約狀態。</p></div>
+          <Link to="/reservation/new" className="customer-reservation-workspace__create"><i className="bi bi-plus-lg" aria-hidden="true" />建立預約</Link>
         </header>
         {initialLoading ? <ReservationListSkeleton /> : null}
         {initialError ? <ReservationErrorState onRetry={workspace.retry} /> : null}

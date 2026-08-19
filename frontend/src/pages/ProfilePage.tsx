@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, api } from '../api';
 import { useAuth } from '../state/AuthContext';
+import CustomerWorkspaceHeader from '../features/customer-workspace/CustomerWorkspaceHeader';
 
 export default function ProfilePage() {
   const { me, loading, refresh } = useAuth();
@@ -50,14 +51,15 @@ export default function ProfilePage() {
   };
 
   if (loading) {
-    return <main className="customer-profile-page"><p className="customer-profile-page__state">讀取個人資料中…</p></main>;
+    return <main className="customer-profile-page"><CustomerWorkspaceHeader title="帳號" active="profile" /><p className="customer-profile-page__state">讀取個人資料中…</p></main>;
   }
   if (me?.role !== 'ROLE_USER') {
-    return <main className="customer-profile-page"><p className="customer-profile-page__state is-warning">只有客戶帳號可以修改個人資料。</p></main>;
+    return <main className="customer-profile-page"><CustomerWorkspaceHeader title="帳號" active="profile" /><p className="customer-profile-page__state is-warning">只有客戶帳號可以修改個人資料。</p></main>;
   }
 
   return (
     <main className="customer-profile-page">
+      <CustomerWorkspaceHeader title="帳號" active="profile" />
       <section className="customer-profile-page__content" aria-labelledby="profile-title">
           <header><p>帳號設定</p><h1 id="profile-title" tabIndex={-1}>修改我的資料</h1><span>更新你的顯示名稱與聯絡 Email。</span></header>
           {success ? <p className="customer-profile-page__message is-success" role="status">{success}</p> : null}

@@ -24,7 +24,7 @@ test('canonical merchant routes, compatibility routes, and guards remain present
   assert.match(app, /BusinessSetupGuard/);
   assert.match(app, /RequireBusiness/);
   assert.match(app, /BusinessWorkspaceShell><BusinessInfoPage/);
-  assert.match(app, /<Layout><NotificationSettingsPage \/><\/Layout>/);
+  assert.match(app, /return <NotificationSettingsPage \/>;/);
 });
 
 test('legacy business info is an accessible compatibility hub, not another writable editor', () => {

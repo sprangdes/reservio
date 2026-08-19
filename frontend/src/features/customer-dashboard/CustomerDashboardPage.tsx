@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api';
-import LogoutButton from '../../components/LogoutButton';
 import { useAuth } from '../../state/AuthContext';
 import { isLocalDate } from '../customer-booking/bookingDates';
 import type { ReservationSummary } from '../customer-reservations/domain';
 import { normalizeReservationPage } from '../customer-reservations/normalizers';
 import { getReservationStatusPresentation } from '../customer-reservations/status';
+import CustomerWorkspaceHeader from '../customer-workspace/CustomerWorkspaceHeader';
 
 type DashboardState = 'loading' | 'ready' | 'error';
 
@@ -55,10 +55,7 @@ export default function CustomerDashboardPage() {
   const status = upcoming ? getReservationStatusPresentation(upcoming.status) : null;
 
   return <main className="customer-dashboard">
-    <header className="customer-dashboard__topbar">
-      <Link to="/dashboard" className="customer-dashboard__brand">Reservio</Link>
-      <nav aria-label="客戶導覽"><Link to="/dashboard" aria-current="page">儀表板</Link><Link to="/my/reservations">我的預約</Link><Link className="customer-dashboard__new-link" to="/reservation/new"><i className="bi bi-plus-lg" aria-hidden="true" />建立預約</Link><LogoutButton className="customer-dashboard__logout"><i className="bi bi-box-arrow-right" aria-hidden="true" /><span>登出</span></LogoutButton></nav>
-    </header>
+    <CustomerWorkspaceHeader title="概覽" active="dashboard" showBack={false} />
     <section className="customer-dashboard__content" aria-labelledby="customer-dashboard-title">
       <header className="customer-dashboard__intro"><p>我的 Reservio</p><h1 id="customer-dashboard-title">{greeting}，今天想預約什麼服務？</h1><span>從這裡掌握下一筆預約，或快速開始新的安排。</span></header>
       <section className="customer-dashboard__primary" aria-labelledby="next-reservation-title">

@@ -141,7 +141,7 @@ function RoleAwareNotificationSettingsRoute() {
   if (resolveNotificationSettingsRoute(me?.role, Boolean(me?.business)) === 'merchant-compatibility') {
     return <BusinessWorkspaceShell focused><SettingsScaffoldPage page="notifications" /></BusinessWorkspaceShell>;
   }
-  return <Layout><NotificationSettingsPage /></Layout>;
+  return <NotificationSettingsPage />;
 }
 
 function NotificationSettingsCompatibility() {
@@ -153,7 +153,7 @@ function RoleAwareNotificationsRoute() {
   if (me?.role === 'ROLE_BUSINESS' && me.business) {
     return <BusinessWorkspaceShell><MerchantNotificationsPage /></BusinessWorkspaceShell>;
   }
-  return <Layout><NotificationsPage /></Layout>;
+  return <NotificationsPage />;
 }
 
 function LineIntegrationCompatibility() {
@@ -216,15 +216,13 @@ export default function App() {
       <Route
         path="/dashboard"
         element={
-          <Layout hideNavigation>
-            <RequireAuth><RequireCustomer><CustomerDashboardPage /></RequireCustomer></RequireAuth>
-          </Layout>
+          <RequireAuth><RequireCustomer><CustomerDashboardPage /></RequireCustomer></RequireAuth>
         }
       />
       <Route
         path="/reservation/new"
         element={
-          <Layout hideNavigation>
+          <Layout hideNavigation hideFooter>
             <RequireAuth>
               <RequireCustomer><ReservationNewPage /></RequireCustomer>
             </RequireAuth>
@@ -234,7 +232,7 @@ export default function App() {
       <Route
         path="/my/reservations"
         element={
-          <Layout hideNavigation>
+          <Layout hideNavigation hideFooter>
             <RequireAuth>
               <RequireCustomer><MyReservationsPage /></RequireCustomer>
             </RequireAuth>
@@ -244,9 +242,7 @@ export default function App() {
       <Route
         path="/preferred-businesses"
         element={
-          <Layout>
-            <RequireAuth><RequireCustomer><PreferredBusinessesPage /></RequireCustomer></RequireAuth>
-          </Layout>
+          <RequireAuth><RequireCustomer><PreferredBusinessesPage /></RequireCustomer></RequireAuth>
         }
       />
       <Route
@@ -286,7 +282,7 @@ export default function App() {
       <Route
         path="/business/setup"
         element={
-          <Layout>
+          <Layout hideFooter>
             <RequireAuth><RequireBusinessSetup><BusinessSetupPage /></RequireBusinessSetup></RequireAuth>
           </Layout>
         }
@@ -306,12 +302,12 @@ export default function App() {
       <Route path="/business/settings/account" element={<RequireAuth><SettingsRoute page="account" /></RequireAuth>} />
       <Route
         path="/line/account-link"
-        element={<Layout><LineAccountLinkPage /></Layout>}
+        element={<Layout hideFooter><LineAccountLinkPage /></Layout>}
       />
       <Route
         path="/settings/line-accounts"
         element={
-          <Layout>
+          <Layout hideFooter>
             <RequireAuth><RequireCustomer><LineAccountLinksPage /></RequireCustomer></RequireAuth>
           </Layout>
         }
@@ -319,9 +315,7 @@ export default function App() {
       <Route
         path="/profile"
         element={
-          <Layout>
-            <RequireAuth><RequireCustomer><ProfilePage /></RequireCustomer></RequireAuth>
-          </Layout>
+          <RequireAuth><RequireCustomer><ProfilePage /></RequireCustomer></RequireAuth>
         }
       />
       <Route
