@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { api } from '../../api';
 import { useAuth } from '../../state/AuthContext';
 import { defaultReservationFilter } from './reservations/query';
+import { mapReservationItem, unwrapReservationResponse } from './reservations/data/reservationMappers';
 import { useReservationCenter } from './reservations/hooks/useReservationCenter';
 import ReservationDesktopList from './reservations/ui/ReservationDesktopList';
 import ReservationFilterControls, { ReservationFilterSummary } from './reservations/ui/ReservationFilterControls';
@@ -41,13 +42,21 @@ function useBusinessServices() {
 
 export default function ReservationCenterPage({ preset }: Readonly<{ preset: ReservationCenterPreset }>) {
   const { search } = useLocation();
-  const calendarFromUrl = new URLSearchParams(search).get('view') === 'calendar';
+  const searchParams = new URLSearchParams(search);
+  const calendarFromUrl = searchParams.get('view') === 'calendar';
+  const targetReservationId = searchParams.get('reservationId');
   const services = useBusinessServices();
   const controller = useReservationCenter({ preset });
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [confirmationAction, setConfirmationAction] = useState<ReservationMutationAction | null>(null);
+  const openedReservationIdRef = useRef<string | null>(null);
   const meta = presetMeta[preset];
   useEffect(() => { setCalendarOpen(calendarFromUrl); }, [calendarFromUrl, preset]);
+  useEffect(() => {
+    if (controller.loadState.phase === 'idle' || controller.loadState.phase === 'initial-loading' || !targetReservationId || openedReservationIdRef.current === targetReservationId) return;
+    openedReservationIdRef.current = targetReservationId;
+    void api.businessReservation(targetReservationId).then((response) => controller.select(mapReservationItem(unwrapReservationResponse(response)))).catch(() => undefined);
+  }, [controller.loadState.phase, controller.select, targetReservationId]);
   const applyFilter = (filter: ReservationFilter) => controller.setQuery({ filter });
   const removeFilter = (key: keyof ReservationFilter, value?: ReservationStatusKey) => {
     const filter = { ...controller.query.filter };
