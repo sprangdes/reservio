@@ -46,7 +46,7 @@ test('Family 6 keeps one canonical merchant route and a guarded compatibility re
   assert.match(app, /<BusinessSetupGuard>/);
   assert.match(app, /<RequireAuth><SettingsRoute page="line" \/><\/RequireAuth>/);
   assert.match(app, /<Layout hideFooter><LineAccountLinkPage \/><\/Layout>/);
-  assert.match(app, /<Layout>\s*<RequireAuth>\s*<RequireCustomer>\s*<LineAccountLinksPage \/>/);
+  assert.match(app, /<Layout hideFooter>\s*<RequireAuth>\s*<RequireCustomer>\s*<LineAccountLinksPage \/>/);
 });
 
 test('merchant integration normalization separates configuration and health without mutation', () => {
