@@ -25,7 +25,7 @@ test('account summary derives only email verification and forced password status
   assert.deepEqual(domain.accountSummary({ ...identity, mustChangePassword: true }), { status: 'attention', text: '需要完成強制密碼變更' });
   assert.equal(domain.accountSummary(null).status, 'unavailable');
 });
-test('merchant account page stays read-only, links only to supported account notifications, and preserves password boundary', () => {
+test('merchant account page stays read-only, omits unsupported placeholders, and preserves password boundary', () => {
   const page = source('AccountSettingsPage.tsx'); const profile = readFileSync(new URL('../src/pages/ProfilePage.tsx', import.meta.url), 'utf8'); const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
-  assert.match(page, /\/business\/settings\/notifications/); assert.match(page, /商家帳號目前不提供個人資料編輯/); assert.match(page, /一般密碼變更與登入裝置管理目前不支援/); assert.doesNotMatch(page, /api\.|forceChangePassword|localStorage|sessionStorage/); assert.match(profile, /ROLE_USER/); assert.match(app, /path="\/force-change-password"/); assert.match(app, /mustChangePassword/);
+  assert.match(page, /\/business\/settings\/notifications/); assert.doesNotMatch(page, /商家帳號目前不提供個人資料編輯/); assert.doesNotMatch(page, /一般密碼變更與登入裝置管理目前不支援/); assert.doesNotMatch(page, /設定範圍說明/); assert.doesNotMatch(page, /api\.|forceChangePassword|localStorage|sessionStorage/); assert.match(profile, /ROLE_USER/); assert.match(app, /path="\/force-change-password"/); assert.match(app, /mustChangePassword/);
 });

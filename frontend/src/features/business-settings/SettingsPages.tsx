@@ -23,7 +23,7 @@ const copy: Record<'landing' | 'profile' | 'booking' | 'hours' | 'notifications'
   hours: { title: '營業時間', description: '管理每週營業時間與指定日期調整。' },
   notifications: { title: '通知與溝通', description: '管理商家帳號的 Email 通知與驗證狀態。' },
   line: { title: 'LINE 整合', description: '設定 LINE Messaging API、Webhook 與 Rich Menu。' },
-  account: { title: '帳號與安全', description: '帳號與安全目前僅顯示系統已支援的資訊。' },
+  account: { title: '帳號與安全', description: '查看目前帳號的身分、Email 驗證與安全狀態。' },
   serviceNew: { title: '新增服務', description: '建立可供顧客預約的服務。' },
   serviceEdit: { title: '編輯服務', description: '更新服務名稱、時長與啟用狀態。' }
 };

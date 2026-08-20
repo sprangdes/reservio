@@ -76,9 +76,9 @@ test('settings guard remains compatible with the existing BrowserRouter shell', 
   assert.match(guardSource, /if \(decision === 'confirm'\) setDestination\(target\)/);
 });
 
-test('shared settings UI exposes accessible error, dialog, unavailable, and sticky-save semantics', () => {
+test('shared settings UI exposes accessible error, dialog, and sticky-save semantics without placeholder notices', () => {
   const components = source('components/UnsavedChangesDialog.tsx'); const saveBar = source('components/StickySaveBar.tsx'); const field = source('components/SettingsField.tsx'); const states = source('components/SettingsStates.tsx');
-  assert.match(components, /role="alertdialog"/); assert.match(components, /useModalFocusTrap/); assert.match(components, /尚未儲存變更/); assert.match(saveBar, /請修正錯誤欄位後即可儲存/); assert.match(field, /aria-describedby/); assert.match(states, /尚未提供/); assert.match(states, /role={stale \? 'status' : 'alert'}/);
+  assert.match(components, /role="alertdialog"/); assert.match(components, /useModalFocusTrap/); assert.match(components, /尚未儲存變更/); assert.match(saveBar, /請修正錯誤欄位後即可儲存/); assert.match(field, /aria-describedby/); assert.doesNotMatch(states, /尚未提供/); assert.match(states, /role={stale \? 'status' : 'alert'}/);
 });
 
 test('sticky save UI stays hidden until the form has an unsaved or actionable state', () => {

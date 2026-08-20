@@ -43,10 +43,8 @@ test('legacy routes remain available and preserve role-specific notification pre
   assert.match(app, /path="\/business\/line-integration"/);
 });
 
-test('Family 4 capability defaults are production-safe and cannot transport or persist preview data', () => {
-  assert.match(config, /VITE_BUSINESS_SETTINGS_PREVIEW === 'true'/);
-  assert.match(config, /multipleBusinessHourIntervals: 'unavailable'/);
-  assert.match(config, /lineLiveHealth: 'unavailable'/);
-  assert.match(config, /accountDeletion: 'unavailable'/);
+test('Family 4 route config contains only active settings destinations', () => {
+  assert.doesNotMatch(config, /preview|VITE_BUSINESS_SETTINGS_PREVIEW/);
+  assert.doesNotMatch(config, /settingsCapabilities/);
   assert.doesNotMatch(config, /fetch\(|\/api\/|localStorage|sessionStorage/);
 });
