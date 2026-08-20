@@ -36,6 +36,8 @@ main h1[tabindex="-1"]:focus { outline: 0; }
 @media (prefers-reduced-motion: reduce) { .auth-shell *, .auth-shell *::before, .auth-shell *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
 .auth-shell .auth-login .input-group { position: relative; display: block; }.auth-shell .auth-login .input-group > .form-control { width: 100% !important; padding-right: 4.1rem; border-radius: .35rem !important; }.auth-shell .auth-login .input-group > .btn { position: absolute; top: 0; right: 0; z-index: 1; width: 3.4rem !important; height: 3.4rem; border: 0; background: transparent; }
 
+.auth-shell__login-prompt { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; margin: 0; }
+
 /* Family 1 registration surfaces */
 .auth-shell__surface--wide { width: min(100%, 46rem); }
 .auth-registration { display: grid; gap: 1.1rem; margin-top: 1.7rem; }
