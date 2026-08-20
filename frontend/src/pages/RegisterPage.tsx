@@ -59,7 +59,7 @@ export default function RegisterPage() {
     saveMerchantRegistrationDraft({ username: form.username, email: form.email });
   };
 
-  return <AuthShell title="建立客戶帳號" description="建立帳號後，即可登入並開始預約。" footer={<><span>已有帳號？</span><Link to="/login">登入</Link></>}>
+  return <AuthShell title="建立客戶帳號" description="建立帳號後，即可登入並開始預約。" footer={<p className="auth-shell__login-prompt"><span>已有帳號？</span><Link to="/login">登入</Link></p>}>
     <div className="auth-registration">
       <AccountTypeChoice selected="customer" merchantState={{ registrationIdentity: { username: form.username, email: form.email } }} onMerchantSelect={transferToMerchant} disabled={pending} />
       {requestError ? <AuthErrorMessage id="customer-registration-error">{requestError}</AuthErrorMessage> : null}

@@ -86,7 +86,7 @@ export default function RegisterBusinessPage() {
     }
   };
 
-  return <AuthShell variant="wide" title="建立商家帳號" description="建立帳號時會同時建立商家資料，完成後即可登入並開始管理預約。" status={<><i className="bi bi-shop" aria-hidden="true" /><div><strong>商家帳號</strong><span>預約管理與商家資料使用同一組登入資訊。</span></div></>} footer={<><span>已有帳號？</span><Link to="/login">登入</Link></>}>
+  return <AuthShell variant="wide" title="建立商家帳號" description="建立帳號時會同時建立商家資料，完成後即可登入並開始管理預約。" status={<><i className="bi bi-shop" aria-hidden="true" /><div><strong>商家帳號</strong><span>預約管理與商家資料使用同一組登入資訊。</span></div></>} footer={<p className="auth-shell__login-prompt"><span>已有帳號？</span><Link to="/login">登入</Link></p>}>
     <div className="auth-registration auth-registration--merchant">
       <AccountTypeChoice selected="merchant" customerState={{ registrationIdentity: { username: form.username, email: form.email } }} onCustomerSelect={switchToCustomer} disabled={pending} />
       <Link className="auth-registration__switch" to="/register" state={{ registrationIdentity: { username: form.username, email: form.email } }} onClick={switchToCustomer}>只想預約服務？建立客戶帳號</Link>
