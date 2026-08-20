@@ -1,0 +1,2 @@
+import type { ReactNode } from 'react';
+export default function SettingsSection({ title, description, children }: Readonly<{ title: string; description?: string; children: ReactNode }>) { return <section className="business-settings__section" aria-labelledby={`settings-section-${title}`}><header><h2 id={`settings-section-${title}`}>{title}</h2>{description ? <p>{description}</p> : null}</header>{children}</section>; }

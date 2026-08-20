@@ -1,153 +1,85 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import { useToast } from '../state/ToastContext';
+import AccountTypeChoice from '../features/auth/AccountTypeChoice';
+import AuthShell from '../features/auth/AuthShell';
+import { AuthErrorMessage, AuthStatusMessage } from '../features/auth/AuthMessages';
+import PasswordField from '../features/auth/PasswordField';
+import { normalizeAuthError } from '../features/auth/authErrors';
+import { saveMerchantRegistrationDraft } from '../features/auth/merchantRegistrationDraft';
+import { customerRegistrationPayload, registrationIdentity, validateCustomerRegistration, type CustomerRegistrationForm } from '../features/auth/registrationDomain';
+
+const initialForm = (state: unknown): CustomerRegistrationForm => {
+  const identity = registrationIdentity(state);
+  return { username: identity?.username ?? '', email: identity?.email ?? '', password: '', confirmPassword: '' };
+};
 
 export default function RegisterPage() {
-  const { setErrorMessage } = useToast();
-  const [form, setForm] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    isBusiness: false
-  });
-  const [localError, setLocalError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
+  const location = useLocation();
   const navigate = useNavigate();
+  const [form, setForm] = useState<CustomerRegistrationForm>(() => initialForm(location.state));
+  const [errors, setErrors] = useState<Partial<Record<keyof CustomerRegistrationForm, string>>>({});
+  const [requestError, setRequestError] = useState('');
+  const [pending, setPending] = useState(false);
+  const submitting = useRef(false);
 
-  const handleChange = (event: { target: { name: string; value: string; type: string; checked: boolean } }) => {
-    const { name, value, type, checked } = event.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+  const update = (field: keyof CustomerRegistrationForm, value: string) => {
+    setForm((current) => ({ ...current, [field]: value }));
+    setErrors((current) => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
   };
 
-  const handleSubmit = async (event: { preventDefault: () => void }) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setLocalError('');
+    if (submitting.current) return;
+    const validation = validateCustomerRegistration(form);
+    setErrors(validation);
+    setRequestError('');
+    if (Object.keys(validation).length > 0) return;
 
-    if (form.password !== form.confirmPassword) {
-      setPasswordError('兩次輸入的密碼不一致');
-      return;
-    }
-
-    if (form.isBusiness) {
-      sessionStorage.setItem('businessRegisterDraft', JSON.stringify({
-        username: form.username,
-        email: form.email,
-        password: form.password
-      }));
-      navigate('/register-business');
-      return;
-    }
-
+    submitting.current = true;
+    setPending(true);
     try {
-      await api.register({ username: form.username, email: form.email, password: form.password });
-      navigate('/login?registered=1');
-    } catch (err) {
-      setLocalError(err.message);
-      setErrorMessage(err.message);
+      await api.register(customerRegistrationPayload(form));
+      setForm((current) => ({ ...current, password: '', confirmPassword: '' }));
+      navigate('/login?registered=1', { replace: true });
+    } catch (error) {
+      setForm((current) => ({ ...current, password: '', confirmPassword: '' }));
+      setRequestError(normalizeAuthError(error, 'customer-registration').message);
+      setPending(false);
+      submitting.current = false;
     }
   };
 
-  return (
-    <main>
-      <div className="container my-5">
-        <div className="row justify-content-center">
-          <div className="col-md-6">
-            <div className="card shadow-sm border-0">
-              <div className="card-header bg-gradient text-white text-white-strong p-4 text-center">
-                <h4 className="mb-0 fw-bold">建立您的使用者帳號</h4>
-                <p className="mb-0 mt-2 opacity-75">加入 Reservio，開始您的智慧預約體驗</p>
-              </div>
-              <div className="card-body p-4">
-                {localError ? <div className="alert alert-danger shadow-sm mb-4">{localError}</div> : null}
-                <form onSubmit={handleSubmit}>
-                  <div className="mb-3">
-                    <label htmlFor="username" className="form-label">使用者名稱</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="username"
-                      name="username"
-                      value={form.username}
-                      onChange={handleChange}
-                      placeholder="請輸入您的名稱"
-                      required
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="email" className="form-label">電子郵件</label>
-                    <input
-                      type="email"
-                      className="form-control"
-                      id="email"
-                      name="email"
-                      value={form.email}
-                      onChange={handleChange}
-                      placeholder="example@mail.com"
-                      required
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="password" className="form-label">密碼</label>
-                    <input
-                      type="password"
-                      className="form-control"
-                      id="password"
-                      name="password"
-                      value={form.password}
-                      onChange={handleChange}
-                      placeholder="請設定您的密碼"
-                      required
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="confirmPassword" className="form-label">確認密碼</label>
-                    <input
-                      type="password"
-                      className={`form-control ${passwordError ? 'is-invalid' : ''}`}
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      value={form.confirmPassword}
-                      onChange={(event: { target: { name: string; value: string; type: string; checked: boolean } }) => {
-                        handleChange(event);
-                        setPasswordError('');
-                      }}
-                      placeholder="請再次輸入密碼"
-                      required
-                    />
-                    {passwordError ? (
-                      <div id="passwordError" className="text-danger small mt-1">
-                        <i className="bi bi-exclamation-circle"></i> {passwordError}
-                      </div>
-                    ) : null}
-                  </div>
-                  <div className="mb-3 form-check">
-                    <input
-                      type="checkbox"
-                      className="form-check-input"
-                      id="isBusiness"
-                      name="isBusiness"
-                      checked={form.isBusiness}
-                      onChange={handleChange}
-                    />
-                    <label className="form-check-label" htmlFor="isBusiness">我要成為商家 </label>
-                  </div>
-                  <div className="d-grid mt-4">
-                    <button type="submit" className="btn btn-gradient btn-lg fw-bold shadow-sm">確認註冊</button>
-                  </div>
-                </form>
-              </div>
-              <div className="card-footer text-center py-3">
-                <small className="text-muted">已經有帳號了？ <Link to="/login" className="text-primary text-decoration-none fw-bold">立即登入</Link></small>
-              </div>
-            </div>
-          </div>
+  const transferToMerchant = () => {
+    saveMerchantRegistrationDraft({ username: form.username, email: form.email });
+  };
+
+  return <AuthShell title="建立客戶帳號" description="建立帳號後，即可登入並開始預約。" footer={<p className="auth-shell__login-prompt"><span>已有帳號？</span><Link to="/login">登入</Link></p>}>
+    <div className="auth-registration">
+      <AccountTypeChoice selected="customer" merchantState={{ registrationIdentity: { username: form.username, email: form.email } }} onMerchantSelect={transferToMerchant} disabled={pending} />
+      {requestError ? <AuthErrorMessage id="customer-registration-error">{requestError}</AuthErrorMessage> : null}
+      <form className="auth-registration__form" onSubmit={handleSubmit} noValidate aria-describedby={requestError ? 'customer-registration-error' : undefined}>
+        <div className="auth-registration__field">
+          <label htmlFor="register-username">使用者名稱</label>
+          <input id="register-username" type="text" value={form.username} onChange={(event) => update('username', event.target.value)} autoComplete="username" disabled={pending} aria-invalid={Boolean(errors.username)} aria-describedby={errors.username ? 'register-username-error' : undefined} />
+          {errors.username ? <span id="register-username-error" className="auth-registration__field-error">{errors.username}</span> : null}
         </div>
-      </div>
-    </main>
-  );
+        <div className="auth-registration__field">
+          <label htmlFor="register-email">電子郵件</label>
+          <input id="register-email" type="email" value={form.email} onChange={(event) => update('email', event.target.value)} autoComplete="email" inputMode="email" disabled={pending} aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'register-email-error' : undefined} />
+          {errors.email ? <span id="register-email-error" className="auth-registration__field-error">{errors.email}</span> : null}
+        </div>
+        <PasswordField id="register-password" label="密碼" value={form.password} onChange={(value) => update('password', value)} mode="new" autoComplete="new-password" error={errors.password} disabled={pending} required />
+        <PasswordField id="register-confirm-password" label="確認密碼" value={form.confirmPassword} onChange={(value) => update('confirmPassword', value)} mode="new" autoComplete="new-password" error={errors.confirmPassword} disabled={pending} required />
+        <button className="auth-registration__submit" type="submit" disabled={pending}>{pending ? '建立中…' : '建立客戶帳號'}</button>
+        {pending ? <AuthStatusMessage>正在建立客戶帳號…</AuthStatusMessage> : null}
+      </form>
+      <p className="auth-registration__support">建立成功後，請登入你的帳號。</p>
+    </div>
+  </AuthShell>;
 }

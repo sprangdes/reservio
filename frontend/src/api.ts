@@ -1,6 +1,17 @@
 import { UnauthorizedError, emitSessionActivity, emitSessionExpired } from './sessionEvents';
+import type { LineApiResponse, LineCredentialUpdateRequest } from './features/line/lineDomain';
 
 export const API_BASE = '';
+
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message = 'Request failed') {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
 
 type Primitive = string | number | boolean;
 export type QueryParams = Record<string, Primitive | null | undefined>;
@@ -52,9 +63,9 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
   }
 
   const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
     credentials: 'include',
-    headers,
-    ...options
+    headers
   });
 
   if (response.status === 204) {
@@ -70,7 +81,7 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
 
   if (!response.ok) {
     const message = data?.message || 'Request failed';
-    throw new Error(message);
+    throw new ApiError(response.status, message);
   }
   emitSessionActivity();
   return data as T;
@@ -128,23 +139,23 @@ export const api = {
   markNotificationRead: (id: string | number) => request(`/api/notifications/${id}/read`, { method: 'POST' }),
   markAllNotificationsRead: () => request('/api/notifications/read-all', { method: 'POST' }),
   notificationPreferences: () => request('/api/notifications/preferences'),
-  lineIntegrationSettings: () => request('/api/integrations/line/settings'),
-  saveLineIntegrationSettings: (payload: unknown) => request('/api/integrations/line/settings', {
+  lineIntegrationSettings: () => request<LineApiResponse<unknown>>('/api/integrations/line/settings'),
+  saveLineIntegrationSettings: (payload: LineCredentialUpdateRequest) => request<LineApiResponse<unknown>>('/api/integrations/line/settings', {
     method: 'PUT',
     body: JSON.stringify(payload)
   }),
-  disableLineIntegration: () => request('/api/integrations/line/settings/disable', { method: 'POST' }),
-  rotateLineWebhookKey: () => request('/api/integrations/line/settings/rotate-webhook-key', { method: 'POST' }),
-  lineIntegrationStatus: () => request('/api/integrations/line/status'),
-  testLineIntegrationConnection: () => request('/api/integrations/line/test-connection', { method: 'POST' }),
-  provisionLineRichMenu: () => request('/api/integrations/line/rich-menu', { method: 'POST' }),
+  disableLineIntegration: () => request<LineApiResponse<unknown>>('/api/integrations/line/settings/disable', { method: 'POST' }),
+  rotateLineWebhookKey: () => request<LineApiResponse<unknown>>('/api/integrations/line/settings/rotate-webhook-key', { method: 'POST' }),
+  lineIntegrationStatus: () => request<LineApiResponse<unknown>>('/api/integrations/line/status'),
+  testLineIntegrationConnection: () => request<LineApiResponse<unknown>>('/api/integrations/line/test-connection', { method: 'POST' }),
+  provisionLineRichMenu: () => request<LineApiResponse<unknown>>('/api/integrations/line/rich-menu', { method: 'POST' }),
   lineAccountLinkStatus: (requestToken: string) =>
-    request(`/api/line/account-links/${encodeURIComponent(requestToken)}`),
+    request<LineApiResponse<unknown>>(`/api/line/account-links/${encodeURIComponent(requestToken)}`),
   confirmLineAccountLink: (requestToken: string) =>
-    request(`/api/line/account-links/${encodeURIComponent(requestToken)}/confirm`, {
+    request<LineApiResponse<unknown>>(`/api/line/account-links/${encodeURIComponent(requestToken)}/confirm`, {
       method: 'POST'
     }),
-  linkedLineBusinesses: () => request('/api/line/account-links'),
+  linkedLineBusinesses: () => request<LineApiResponse<unknown>>('/api/line/account-links'),
   unlinkLineBusiness: (lineCustomerId: string | number) =>
     request(`/api/line/account-links/${lineCustomerId}`, { method: 'DELETE' }),
   updateNotificationPreferences: (payload: unknown) => request('/api/notifications/preferences', {
@@ -162,32 +173,35 @@ export const api = {
   dashboard: () => request('/api/dashboard'),
   businesses: () => request('/api/businesses'),
   businessesByCategory: (category: string) => request(`/api/businesses/${encodeURIComponent(category)}`),
-  getPreferredBusinesses: () => request('/api/preferred-businesses'),
+  getPreferredBusinesses: (options: RequestInit = {}) => request('/api/preferred-businesses', options),
   setPreferredBusinesses: (payload: unknown) => request('/api/preferred-businesses', {
     method: 'POST',
     body: JSON.stringify(payload)
   }),
-  businessServices: (id: string | number) => request(`/api/businesses/${id}/services`),
-  disabledDates: (businessId: string | number) => request(`/api/reservations/disabled-dates?businessId=${businessId}`),
-  slots: (date: string, duration: string | number, businessId: string | number) =>
-    request(`/api/reservations/slots?date=${date}&duration=${duration}&businessId=${businessId}`),
-  createReservation: (payload: unknown) => request('/api/reservations', {
+  businessServices: (id: string | number, options: RequestInit = {}) => request(`/api/businesses/${id}/services`, options),
+  disabledDates: (businessId: string | number, options: RequestInit = {}) => request(`/api/reservations/disabled-dates?businessId=${businessId}`, options),
+  slots: (date: string, duration: string | number, businessId: string | number, options: RequestInit = {}) =>
+    request(`/api/reservations/slots?date=${date}&duration=${duration}&businessId=${businessId}`, options),
+  createReservation: (payload: unknown, options: RequestInit = {}) => request('/api/reservations', {
     method: 'POST',
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    ...options
   }),
   cancelReservation: (id: string | number, payload?: unknown) => request(`/api/reservations/${id}/cancel`, {
     method: 'POST',
     body: JSON.stringify(payload || {})
   }),
-  customerReservations: (params?: QueryParams, condition?: unknown) => request(`/api/reservations/customer/query${buildQuery(params)}`, {
+  customerReservations: (params?: QueryParams, condition?: unknown, options: RequestInit = {}) => request(`/api/reservations/customer/query${buildQuery(params)}`, {
     method: 'POST',
-    body: JSON.stringify(condition || {})
+    body: JSON.stringify(condition || {}),
+    ...options
   }),
-  customerReservedBusinesses: () => request('/api/reservations/customer/reserved-businesses'),
+  customerReservedBusinesses: (options: RequestInit = {}) => request('/api/reservations/customer/reserved-businesses', options),
   businessReservations: (params?: QueryParams, condition?: unknown) => request(`/api/reservations/business/query${buildQuery(params)}`, {
     method: 'POST',
     body: JSON.stringify(condition || {})
   }),
+  businessReservation: (id: string | number) => request(`/api/reservations/business/${id}`),
   todayReservations: () => request('/api/reservations/today'),
   weekReservations: () => request('/api/reservations/week'),
   monthReservations: () => request('/api/reservations/month'),

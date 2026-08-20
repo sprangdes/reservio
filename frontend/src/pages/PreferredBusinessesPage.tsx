@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useToast } from '../state/ToastContext';
+import CustomerWorkspaceHeader from '../features/customer-workspace/CustomerWorkspaceHeader';
+import ToastContainer from '../components/ToastContainer';
 
 type Business = {
   id: number;
@@ -100,26 +101,27 @@ export function PreferredBusinessesPanel({ onCancel, onSaved }: Readonly<Preferr
     }
   };
 
-  let categoryContent = <div className="alert alert-warning mb-0">目前沒有可用的商家分類</div>;
+  let categoryContent = <div className="preferred-businesses-panel__state is-warning">目前沒有可用的商家分類</div>;
   if (categoryLoading) {
-    categoryContent = <div className="text-center py-4 text-muted">載入分類店家中...</div>;
+    categoryContent = <div className="preferred-businesses-panel__state">載入分類店家中...</div>;
   } else if (activeBusinesses.length === 0 && categories.length > 0) {
-    categoryContent = <div className="alert alert-light border mb-0">此分類目前沒有店家</div>;
+    categoryContent = <div className="preferred-businesses-panel__state">此分類目前沒有店家</div>;
   } else if (categories.length > 0) {
     categoryContent = (
-      <div className="row g-3">
+      <div className="row g-3 preferred-businesses-panel__list">
         {activeBusinesses.map((business) => {
           const checked = selectedIds.includes(Number(business.id));
           return (
             <div className="col-md-6" key={business.id}>
               <button
                 type="button"
+                aria-pressed={checked}
                 className={`card h-100 w-100 text-start border shadow-sm preferred-business-card ${checked ? 'preferred-business-card--selected' : 'border-light'}`}
                 onClick={() => toggleBusiness(Number(business.id))}
               >
                 <div className="card-body d-flex justify-content-between align-items-center">
-                  <div className="fw-bold">{business.name}</div>
-                  {checked ? <span className="badge preferred-business-card__badge">已選取</span> : null}
+                  <span className="fw-bold">{business.name}</span>
+                  <span className="preferred-business-card__selection"><i className={`bi ${checked ? 'bi-check-lg' : 'bi-plus-lg'}`} aria-hidden="true" />{checked ? '已選取' : '加入偏好'}</span>
                 </div>
               </button>
             </div>
@@ -130,11 +132,14 @@ export function PreferredBusinessesPanel({ onCancel, onSaved }: Readonly<Preferr
   }
 
   return (
-    <>
-      <p className="text-muted mb-4">選取後，建立預約時只顯示你想預約的店家。</p>
+    <div className="preferred-businesses-panel">
+      <div className="preferred-businesses-panel__intro">
+        <p>選取後，建立預約時只顯示你想預約的店家。</p>
+        <strong aria-live="polite">已選擇 {selectedIds.length} 間</strong>
+      </div>
       <div className="settings-panel-section">
         {loading ? (
-          <div className="text-center py-5 text-muted">載入中...</div>
+          <div className="preferred-businesses-panel__state">載入中...</div>
         ) : (
           <>
             <div className="preferred-category-tabs mb-4" role="tablist" aria-label="店家分類">
@@ -156,39 +161,35 @@ export function PreferredBusinessesPanel({ onCancel, onSaved }: Readonly<Preferr
           </>
         )}
       </div>
-      <div className="d-flex justify-content-between align-items-center mt-4">
+      <div className="preferred-businesses-panel__actions">
         {onCancel ? (
-          <button type="button" className="btn btn-link text-muted text-decoration-none" onClick={onCancel}>
-            取消
+          <button type="button" className="preferred-businesses-panel__cancel" onClick={onCancel}>
+            返回
           </button>
         ) : <span />}
-        <button type="button" className="btn btn-gradient fw-bold px-4" onClick={handleSave} disabled={loading || categoryLoading || saving}>
+        <button type="button" className="btn btn-gradient fw-bold px-4 preferred-businesses-panel__save" onClick={handleSave} disabled={loading || categoryLoading || saving}>
           {saving ? '儲存中...' : '儲存設定'}
         </button>
       </div>
-    </>
+    </div>
   );
 }
 
 export default function PreferredBusinessesPage() {
-  const navigate = useNavigate();
-
   return (
-    <main>
-      <div className="container my-5">
-        <div className="row justify-content-center">
-          <div className="col-lg-10">
-            <div className="card shadow-sm border-0">
-              <div className="card-header bg-gradient text-white text-white-strong p-4">
-                <h4 className="mb-0 fw-bold"><i className="bi bi-bookmark-heart me-2"></i>管理想預約店家</h4>
-              </div>
-              <div className="card-body p-4">
-                <PreferredBusinessesPanel onCancel={() => navigate(-1)} />
-              </div>
-            </div>
-          </div>
+    <main className="customer-preferences-workspace">
+      <CustomerWorkspaceHeader title="想預約店家" />
+      <section className="customer-preferences-workspace__content" aria-labelledby="preferred-businesses-title">
+        <header className="customer-preferences-workspace__header">
+          <p>預約偏好</p>
+          <h1 id="preferred-businesses-title">管理想預約店家</h1>
+          <span>選擇你想在建立預約時優先看到的店家。</span>
+        </header>
+        <div className="customer-preferences-workspace__panel">
+          <PreferredBusinessesPanel />
         </div>
-      </div>
+      </section>
+      <ToastContainer />
     </main>
   );
 }

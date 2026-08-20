@@ -1,5 +1,5 @@
 import React from 'react';
-import * as bootstrap from 'bootstrap';
+import { Dropdown, Toast } from 'bootstrap';
 import flatpickr from 'flatpickr';
 import { MandarinTraditional } from 'flatpickr/dist/l10n/zh-tw';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -12,7 +12,7 @@ import { AuthProvider } from './state/AuthContext';
 import { ToastProvider } from './state/ToastContext';
 import './styles.css';
 
-(globalThis as any).bootstrap = bootstrap;
+(globalThis as any).bootstrap = { Dropdown, Toast };
 (globalThis as any).flatpickr = flatpickr;
 flatpickr.localize(MandarinTraditional);
 

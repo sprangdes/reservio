@@ -1,0 +1,8 @@
+import { layoutCalendarEvents } from '../calendar';
+import ReservationCalendarEvent from './ReservationCalendarEvent';
+import type { ReservationCalendarEvent as CalendarEvent } from '../types';
+
+export default function ReservationAgenda({ events, selectedId, onSelect, nowMinutes, showCurrentTime }: Readonly<{ events: CalendarEvent[]; selectedId?: string | number; onSelect: (event: CalendarEvent) => void; nowMinutes: number; showCurrentTime: boolean }>) {
+  const layouts = layoutCalendarEvents(events);
+  return <section className="reservation-calendar__agenda" aria-label="當日預約日程"><div className="reservation-calendar__agenda-axis" aria-hidden="true">{Array.from({ length: 13 }, (_, index) => <span key={index} style={{ top: `${(index / 12) * 100}%` }}>{String(index + 8).padStart(2, '0')}:00</span>)}</div><div className="reservation-calendar__agenda-events">{showCurrentTime && nowMinutes >= 480 && nowMinutes <= 1200 ? <span className="reservation-calendar__now-line reservation-calendar__now-line--agenda" style={{ top: `${((nowMinutes - 480) / 720) * 100}%` }}><b>現在</b></span> : null}{layouts.length ? layouts.map(({ event, column, columns }) => { const start = Math.max(event.startMinutes ?? 480, 480); const end = Math.min(event.endMinutes ?? start + 15, 1200); const top = ((start - 480) / 720) * 100; const height = Math.max(((end - start) / 720) * 100, 9); return <div key={event.id} className="reservation-calendar__agenda-event" style={{ top: `${top}%`, height: `${height}%`, left: `calc(${(column / columns) * 100}% + .55rem)`, width: `calc(${100 / columns}% - 1.1rem)` }}><ReservationCalendarEvent event={event} selected={String(selectedId) === String(event.id)} onSelect={onSelect} /></div>; }) : <p>此日期目前沒有預約資料。</p>}</div></section>;
+}

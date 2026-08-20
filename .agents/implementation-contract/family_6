@@ -1,0 +1,493 @@
+# Family 6 Redesign Contract
+
+## 1. Executive summary
+
+Family 6 包含兩個獨立但互相依賴的 LINE 概念：
+
+- 商家 LINE 整合：每個商家一組 LINE Messaging API channel、Webhook 與 Rich Menu。
+- 客戶帳號綁定：某商家的 LINE 客戶身分，可連結至一個 Reservio 客戶帳號，以移轉該商家的既有 LINE 預約。
+
+不可合併為單一「LINE 設定」頁。商家使用營運型設定頁；客戶使用身分／安全導向的受邀綁定流程與已綁定商家管理頁。
+
+## 2. Repository areas inspected
+
+- `frontend/src/App.tsx`
+- `frontend/src/api.ts`
+- `frontend/src/pages/LineIntegrationPage.tsx`
+- `frontend/src/pages/LineAccountLinkPage.tsx`
+- `frontend/src/pages/LineAccountLinksPage.tsx`
+- `frontend/src/components/Navbar.tsx`
+- `frontend/src/state/AuthContext.tsx`
+- `frontend/src/features/business-settings/**`
+- `frontend/src/features/business-operations/**`
+- `frontend/src/styles.css`
+- `src/main/java/com/reservio/line/**`
+- `src/main/java/com/reservio/config/SecurityConfig.java`
+- `src/main/java/com/reservio/config/LineOAuth2AuthenticationSuccessHandler.java`
+- LINE controller、service、entity、repository 與測試。
+
+## 3. Current Family 6 route map
+
+| Route | Status | Purpose | Guard / shell |
+|---|---|---|---|
+| `/business/settings/integrations/line` | Canonical | 商家設定 LINE Messaging API、Webhook、連線檢查與 Rich Menu | Auth → password/setup guard → business guard → BusinessWorkspaceShell + Family 4 focused settings shell |
+| `/business/line-integration` | Compatibility alias | 同上；目前 Navbar 與 workspace sidebar 仍指向此路由 | Auth → business guard → 同一 Family 4 LINE editor |
+| `/line/account-link?request=…` | Canonical deep-link landing | LINE 對話中建立的一次性帳號綁定請求之確認與跳轉 | 無前端 RequireAuth；password/setup guard 仍全域生效；共用 `Layout` |
+| `/settings/line-accounts` | Canonical | 列出目前登入帳號已綁定的商家 LINE 客戶關聯，並解除綁定 | Auth → 共用 `Layout` |
+
+未發現其他前端 LINE 相容路由。`LineIntegrationPage.tsx` 為舊式獨立頁實作，未由 `App.tsx` 掛載。
+
+## 4. Confirmed backend LINE contracts
+
+### 商家整合 API
+
+| Method / endpoint | Request | Response `data` | Scope |
+|---|---|---|---|
+| `GET /api/integrations/line/settings` | — | `{ configured, enabled, channelId, channelSecretMasked, accessTokenMasked, webhookUrl }` | 目前登入者的商家 |
+| `PUT /api/integrations/line/settings` | `{ channelId, channelSecret, accessToken, enabled }` | 同 settings response | 目前登入者的商家 |
+| `POST /api/integrations/line/settings/disable` | — | settings response | 目前登入者的商家 |
+| `POST /api/integrations/line/settings/rotate-webhook-key` | — | settings response | 目前登入者的商家 |
+| `GET /api/integrations/line/status` | — | `{ configured, enabled, webhookReady, webhookMessage, tokenValid, tokenMessage, richMenuReady, richMenuMessage, richMenuId, checkedAt }` | 目前登入者的商家 |
+| `POST /api/integrations/line/test-connection` | — | status response | 目前登入者的商家 |
+| `POST /api/integrations/line/rich-menu` | — | status response | 目前登入者的商家 |
+
+商家 API 沒有 OAuth「connect」或刪除憑證 API。現有能力是輸入／保存憑證、啟用、停用、輪替 webhook key、測試與建立／更新 Rich Menu。
+
+### 客戶綁定 API
+
+| Method / endpoint | Request | Response | Scope |
+|---|---|---|---|
+| `GET /api/line/account-links/{requestToken}` | request token path parameter | `{ businessName, status, expiresAt }` | 公開讀取；不回傳 LINE ID 或 target user |
+| `POST /api/line/account-links/{requestToken}/confirm` | — | `{ redirectUrl }` | 已登入、具有 LINE Login session、且為 `ROLE_USER` |
+| `GET /api/line/account-links` | — | `[{ lineCustomerId, businessId, businessName, linkedAt }]` | 已登入帳號 |
+| `DELETE /api/line/account-links/{lineCustomerId}` | — | `204 No Content` | 目前登入帳號只能解除自己的連結 |
+
+綁定請求不是由一般設定頁建立。它由 LINE webhook conversation / Rich Menu「綁定帳號」流程建立，包含 10 分鐘有效、單次使用的 request token。
+
+## 5. Confirmed frontend LINE architecture
+
+- `api.ts` 為唯一 API adapter；LINE payload 現多數為 `unknown`。
+- 商家設定已有 `normalizeLineSettings`、`normalizeLineStatus`、欄位驗證、stale 表示、dirty form 與 settings overview refresh。
+- 客戶綁定與已綁定商家管理仍是 page-local state；無 normalization、無結構化 stale/error state、無對話框元件。
+- 無全域 query cache；商家設定以 page-local fetch 加 `refreshSettingsOverviewSection('lineSettings')` 刷新 Family 4 overview。
+- 客戶帳號資料未在連結／解除連結後刷新 AuthContext；依目前 DTO，亦不需要它來顯示連結清單。
+
+## 6. Current merchant integration UX
+
+- Shell：Family 4 focused merchant settings shell，桌面有商家設定次導覽，行動版有 focused header。
+- Hierarchy：頁首、連線狀態、憑證設定、Webhook、操作、停用區、sticky save bar。
+- Actions：保存憑證、複製 webhook URL、輪替 webhook key、測試連線、建立／更新 Rich Menu、停用。
+- Status：已啟用／已停用／尚未設定；Webhook、Token、Rich Menu 最近檢查結果。
+- Errors：設定和狀態錯誤分開；保有設定資料時顯示 stale。
+- Loading：共用 Family 4 skeleton。
+- Success：toast。
+- Responsive：設定殼在窄螢幕改為 focused mobile shell，儲存列固定底部、確認 dialog 改底部 sheet。
+- Accessibility：已有 h1、狀態文字、欄位 label、錯誤 focus、對話框 focus trap、Escape、dialog 語意。
+- Technical debt：單檔壓縮實作、舊 `LineIntegrationPage` 重複、Navbar/sidebar 仍走 compatibility route、狀態語意把「設定完成」與「實際可用」混合。
+- UX problems：憑證與運作狀態資訊密度高；Webhook key 輪替與停用的影響容易被忽略；Rich Menu 是實際支援功能但沒有清楚說明其影響；不存在「不確定」與「最近檢查失敗」的明確恢復路徑。
+
+## 7. Current account-link UX
+
+- `/line/account-link` 是來自 LINE 對話 deep link 的受邀綁定確認頁，不是一般「新增 LINE 帳號」頁，也不是 OAuth callback page。
+- 讀取 `request` query parameter，載入其 business name、status、expiresAt。
+- `CREATED` 時：
+  - 未登入、非 `ROLE_USER` 或沒有 LINE Login session：跳轉 `/api/auth/line/user`。
+  - 已以 LINE 登入的 `ROLE_USER`：呼叫 confirm，瀏覽器導向 backend 回傳的 LINE bot account-link URL。
+- `AWAITING_LINE`、`COMPLETED`、`FAILED`、`EXPIRED` 均被粗略顯示為「已使用或已過期」。
+- 成功並非由此頁直接完成。LINE webhook callback 接收 `result`、`nonce`、LINE user ID 後完成綁定。
+- 無輪詢、無 callback-result screen、無回復／返回路徑、無 request query 清除。
+- 目前 `sessionStorage.reservio.returnTo` 記錄此帶 token URL，LoginPage 會安全檢查 path 再回導。
+- 行動版僅 Bootstrap container/card，沒有 Family 6 專屬 mobile flow。
+- Accessibility 僅有基本按鈕與連結，缺 h1、structured loading、live error、明確過期／失敗 recovery。
+
+## 8. Current linked-account management UX
+
+- Shell：共用 customer `Layout`。
+- 呈現：每一筆為「商家名稱、綁定時間、解除綁定」。
+- 支援多筆「已綁定商家」關聯。
+- 沒有一般使用者可在此頁啟動的 link action；入口來自每個商家的 LINE 對話／Rich Menu。
+- Empty：資訊 alert。
+- Loading：純文字。
+- Error：toast，頁面可能顯示空清單，造成「載入失敗」與「確實未綁定」混淆。
+- Unlink：browser-native `window.confirm`；成功後全量重新載入。
+- 無 stale、retry、inline error、復原說明、影響說明或焦點管理。
+- 綁定資料是 account-wide 的跨商家清單，不受 merchant workspace business switching 影響。
+
+## 9. Family boundary with Family 4 and Family 5
+
+- Family 4：擁有商家 workspace、商家設定 shell、次導覽、overview refresh、focused mobile shell。Family 6 僅在其中提供商家 LINE integration content。
+- Family 5：擁有 Email notification preferences、Email verification、帳號通知偏好。
+- Family 6：擁有 LINE Messaging API integration、LINE Login association、LINE customer-to-account linking、linked-business association management。
+- 不把客戶 LINE 連結放入 Email／通知設定；不把商家憑證放入 customer profile。
+
+## 10. Route and role architecture
+
+| Route | Access | Back / exit | Mobile |
+|---|---|---|---|
+| `/business/settings/integrations/line` | `ROLE_BUSINESS` 且已完成 business setup | `/business/settings`；workspace sidebar / settings navigation | Family 4 focused header，返回設定總覽 |
+| `/business/line-integration` | 同上 | 應保留為 compatibility redirect 或 render canonical route | 應避免被主導覽當作主要 URL |
+| `/line/account-link?request=` | request status 可公開讀；confirm 僅 LINE Login 的 `ROLE_USER` | 回 LINE / 登入後回原 request；失敗時返回 LINE 對話或清楚結束 | 專注單欄 flow |
+| `/settings/line-accounts` | authenticated；產品 UI 僅 customer role 顯示入口 | account menu / profile | 單欄 list、dialog bottom sheet |
+
+全域 forced-password-change 與 business setup guards 已生效。`/line/account-link` 未 RequireAuth 是正確的登入啟動需求，但 confirm endpoint 必須維持身分與 LINE Login authority 驗證。
+
+## 11. Merchant LINE integration redesign contract
+
+- 保持 canonical URL、BusinessWorkspaceShell、Family 4 settings secondary navigation。
+- 頁面順序：
+  1. h1 與用途說明。
+  2. 整合摘要：未設定／已停用／已啟用，加最近檢查時間。
+  3. 連線健康：Webhook、access token、Rich Menu。
+  4. 憑證設定。
+  5. Webhook configuration 與 copy / rotate。
+  6. 操作：test connection、provision/update Rich Menu。
+  7. 停用整合的高風險區。
+- 僅使用已確認狀態：未設定、已設定但停用、已啟用、最近檢查成功／失敗／未取得、Rich Menu ready / not ready。
+- 不宣稱持續監控、OAuth connect、webhook 管理平台、訊息偏好或 channel identity discovery。
+- 保存設定為主要 CTA；已設定且啟用時操作 CTA 退為次要。
+- 停用必須保留確認：說明會停止 LINE 相關通知與功能、憑證仍保留、可日後重新啟用。
+- Webhook key rotation 必須保留確認：舊 URL 立即失效、商家必須到 LINE Developers Console 更新。
+- 不存在「disconnect／刪除憑證」後端能力；不得設計此 CTA。
+
+## 12. Account-link redesign contract
+
+- 定位為「來自 LINE 的一次性綁定確認與交接」。
+- 結構：
+  1. Reservio account context。
+  2. 商家名稱與「將同步該商家既有 LINE 預約」說明。
+  3. 綁定狀態與有效期限。
+  4. LINE Login / confirm action。
+  5. 隱私說明：不顯示 LINE user ID；綁定僅影響此商家的 LINE 客戶關聯。
+  6. 失敗、過期、取消與返回 LINE 的明確結束狀態。
+- 不在此頁顯示 raw request token、nonce、linkToken、LINE internal ID。
+- `CREATED`、`AWAITING_LINE`、`COMPLETED`、`FAILED`、`EXPIRED` 必須分別呈現；現有 API 已足夠判斷，唯 `COMPLETED` 後 client 必須重新讀 status。
+- 無現有輪詢需求；綁定完成由 LINE webhook 非同步處理。若改做完成確認，採使用者主動「重新檢查狀態」，不得假設即時完成。
+- confirm 取得 `redirectUrl` 後為離站／深連結交接；應以可辨識文字說明將前往 LINE 完成確認。
+
+## 13. Linked-account management redesign contract
+
+- 定位為「已連結的商家 LINE 預約關聯」，不是多個個人 LINE Login account manager。
+- 架構應是可呈現多個商家的 list，因 backend 已支援同一 Reservio user 的多筆 `LineCustomer` 關聯。
+- 每筆僅顯示：商家名稱、綁定時間、解除綁定；不要顯示 `lineCustomerId`、`businessId` 或 LINE user ID。
+- Empty state：說明尚未從任何商家 LINE 對話完成帳號綁定；提供如何從商家 LINE 官方帳號啟動綁定的指引，不提供不存在的「新增」API。
+- 頁首加入「綁定由商家 LINE 對話發起」說明，避免使用者誤以為此頁可搜尋／添加 LINE identity。
+- Unlink 使用自訂確認 dialog，不使用 browser confirm。
+- 成功後 authoritative list reload；若 reload 失敗，顯示「解除已送出，清單暫時無法確認」並保留 stale data。
+
+## 14. Merchant/account LINE relationship model
+
+- 概念相關但後端實體不同：
+  - `BusinessLineChannel`：一商家一組 channel、密文 credentials、Webhook key、Rich Menu metadata。
+  - `LineCustomer`：某商家中的 LINE messaging user；`business_id + line_user_id` 唯一。
+  - `LineAccountLink`：一次性綁定請求，持有 hashed request/nonce、encrypted LINE link token、target user。
+- 商家 channel 是業務層級；客戶連結是帳號層級、但按商家分區。
+- 同一 Reservio `ROLE_USER` 可連結多個商家 LINE customer。
+- 同一商家中，一個 Reservio user 不能綁定第二個 LINE customer。
+- 同一商家中的一個 LINE customer 不能同時連結另一個 Reservio user。
+- repository 證據未確認同一 LINE Login identity 是否可跨不同 role 的多個 Reservio accounts；`UserData` lookup 以 `lineUserId + role` 進行。不可宣稱跨角色唯一。
+- 不共用一個角色分支巨大元件；可共用 API request、status/error primitives、dialog/focus primitive。
+
+## 15. Domain models
+
+- Backend DTO layer：
+  - `LineChannelSettingsResponse`
+  - `LineIntegrationStatusResponse`
+  - `LineAccountLinkStatusResponse`
+  - `LineAccountLinkConfirmResponse`
+  - `LinkedLineBusinessResponse`
+- Frontend normalized domain：
+  - `BusinessLineIntegrationSettings`
+  - `BusinessLineIntegrationHealth`
+  - `LineAccountLinkRequest`
+  - `LinkedLineBusiness`
+- View state：
+  - merchant dirty form、credential reveal、operation pending、settings/status error、stale flag、confirmation kind。
+  - account-link request loading/status/error、external handoff pending。
+  - linked-business list loading/error/stale/unlink pending/selected item。
+- Page component 不可接收 raw `unknown`；延續 merchant normalization pattern，為 account-link/list 建立 immutable normalizers。
+
+## 16. Capability model
+
+| Capability | Status |
+|---|---|
+| Save business LINE channel credentials | Enabled |
+| Enable / disable business integration | Enabled |
+| Rotate business webhook key | Enabled |
+| Test LINE connection | Enabled |
+| Provision/update Rich Menu | Enabled |
+| Start customer account link from customer settings | Unavailable |
+| Confirm existing account-link request | Enabled，僅 LINE Login `ROLE_USER` |
+| List linked businesses | Enabled |
+| Unlink linked business association | Enabled |
+| Multiple linked business associations | Enabled |
+| Multiple LINE customer identities in the same business for one account | Unavailable |
+| Delete merchant credentials / true disconnect | Unavailable |
+| Live connection monitoring | Unavailable |
+
+## 17. API and mutation behavior
+
+- Save:
+  - 驗證 channel ID；啟用前必須已有或提交 secret/token。
+  - pending 時禁止重複提交。
+  - success 後重新取得 settings/status，刷新 Family 4 overview。
+  - refresh 失敗：保留已提交表單與 stale/unconfirmed message。
+- Disable:
+  - 必須確認。
+  - success 後以 response 更新 settings，重新取 status，刷新 overview。
+- Rotate webhook key:
+  - 必須確認。
+  - success 後使用 response 更新 webhook URL，再取 status。
+- Test connection / provision Rich Menu:
+  - 使用已保存設定；不可使用未保存輸入。
+  - pending 時禁用操作。
+  - success 以 status response 為 authoritative。
+- Account-link confirm:
+  - 無 form payload。
+  - API success 後立即 external navigation。
+  - backend callback 完成後才 authoritative；不做 client polling。
+- Unlink:
+  - 確認、pending lock、`DELETE` 成功後 refetch list。
+  - unlink 立即清除關聯；歷史 LINE reservations 不會移回原 synthetic LINE user。
+
+## 18. Loading/error/stale/empty states
+
+- Merchant loading：保留 shell，使用反映最後幾何的 skeleton；不可顯示假 disconnected。
+- Merchant initial error：保留 heading 與 retry；不可退化成未設定。
+- Merchant stale：保留最後有效設定／status，標記「可能已過期／尚未確認」及 retry。
+- Account-link loading：固定上下文 skeleton，避免文字跳動。
+- Account-link error：區分缺少 request、找不到 request、expired、used/completed、failed、需 LINE Login。
+- Linked accounts loading：list skeleton。
+- Linked accounts initial error：頁面內 retry，不顯示 false empty state。
+- Linked accounts stale：保留有效清單，加未確認提示與 retry。
+- Empty 僅用於 API 成功且清單為空。
+
+## 19. Confirmation behavior
+
+| Action | Dialog |
+|---|---|
+| 停用 LINE 整合 | 「停用 LINE 整合？」；說明功能與通知停止、憑證保留；取消／停用整合 |
+| 重新產生 webhook key | 「重新產生 Webhook 金鑰？」；說明目前 URL 立即失效；取消／重新產生 |
+| 解除某商家 LINE 綁定 | 「解除與 {businessName} 的 LINE 綁定？」；說明不會把既有轉移的預約移回，但未來 LINE 關聯停止；取消／解除綁定 |
+
+全部需 aria title/description、focus trap、Escape（pending 時不可關閉）、背景不可操作、完成後回復觸發控制項焦點。
+
+## 20. Desktop information architecture
+
+- Merchant：workspace primary nav → 商家設定 → secondary nav「整合」→ LINE integration operational page；最大內容寬度維持可讀的約 42–58rem，避免 dashboard card sprawl。
+- Customer：account menu → LINE 帳號綁定 → linked-business association list。
+- Deep link：LINE conversation → `/line/account-link?request=` → LINE Login（如需）→ confirm → LINE bot account-link dialog。
+- Navbar 與 `DesktopWorkspaceSidebar` 應改連 canonical merchant URL；compatibility URL 僅保留外部舊書籤。
+
+## 21. Mobile information architecture
+
+- Merchant：Family 4 focused header；單欄狀態、設定、Webhook、操作、危險區；固定 save bar 需避開 safe area。
+- Account-link：單欄、清楚 business context、單一主要 CTA、可安全換行商家名稱與錯誤。
+- Linked accounts：單欄關聯列；每列 action 不可壓縮；解除綁定 dialog 為 safe-area aware bottom sheet。
+- 390px：44px target、無水平溢位、read-only webhook URL 可截斷／複製而不推寬。
+- 768px：維持單欄或鬆散雙區，不壓成 desktop grid。
+- 1024px：merchant 使用 workspace/settings shell；customer 繼續 shared shell。
+- 1440px：限制內容寬度，不做裝飾性 integration dashboard。
+
+## 22. Component inventory
+
+| Component | Responsibility |
+|---|---|
+| `LineIntegrationEditor` | 商家頁 orchestration、form、mutations、overview refresh |
+| `BusinessLineIntegrationSummary` | settings enabled/configured 與 last-check context |
+| `BusinessLineIntegrationHealth` | Webhook/token/Rich Menu health |
+| `BusinessLineCredentialsSection` | channel credential form 與 validation |
+| `BusinessLineWebhookSection` | webhook URL copy / rotate confirmation entry |
+| `BusinessLineOperations` | test / Rich Menu actions |
+| `BusinessLineIntegrationDialog` | disable / rotate confirmation |
+| `LineAccountLinkPage` | token request lookup、LINE Login gate、external confirm handoff |
+| `LineAccountLinkState` | CREATED/AWAITING_LINE/COMPLETED/FAILED/EXPIRED presentation |
+| `LinkedLineBusinessesPage` | account-wide list orchestration |
+| `LinkedLineBusinessRow` | safe business metadata and unlink entry |
+| `LineUnlinkDialog` | unlink confirmation |
+| `LineLoadState` / `LineErrorState` | shared skeleton/error/stale primitives，非 role-aware domain component |
+
+共用元件只共享 presentation、normalization utility、dialog/accessibility behavior；商家 domain 與 customer domain 保持分離。
+
+## 23. Responsive contract
+
+- 所有可互動控制項行動版最小 44px。
+- 商家 secret/token 的 reveal control 仍有可讀 label。
+- 長 webhook URL、商家名稱、日期不得造成 horizontal overflow。
+- 1440px 不超過既有 Family 4 content constraints。
+- `prefers-reduced-motion` 下 skeleton/transition 降低或停止。
+- 行動版 dialog 使用底部 sheet；桌面居中 dialog。
+
+## 24. Accessibility contract
+
+- 每 route 一個 h1；區段用邏輯 h2。
+- 健康狀態必須有文字與 icon，不以顏色為唯一資訊。
+- 所有 loading、save、test、unlink 結果使用適當 `role=status` / live region。
+- 失敗訊息包含可採取行動，不洩漏 raw backend detail。
+- dialog 完整 title、description、focus trap、focus restoration、keyboard 操作。
+- disabled control 必須有可理解原因文字。
+- 外站 LINE handoff 必須明示「將前往 LINE」。
+- webhook URL 的複製功能需有 keyboard feedback。
+- QR flow 不存在；不設計 QR 或替代方案。
+
+## 25. Security/privacy contract
+
+- Merchant frontend 可接收：channel ID、masked secret、masked token、含高熵 webhook key 的 webhook URL。
+- Merchant frontend 不可接收：plaintext channel secret、plaintext access token、stored ciphertext、LINE link token、nonce。
+- backend 以 cipher 儲存 channel secret、access token、account-link token；controller response 僅回 masked credentials。
+- request token 出現在 `/line/account-link?request=` URL；它雖只儲存 hash、且 10 分鐘單次使用，仍屬敏感 bearer-like value。
+- 現況將完整 token URL 存入 `sessionStorage` 作 returnTo；重構應只在必要時保存、完成／終止後移除，且避免送入 analytics、log、error tracking、referrer。
+- confirm URL 內包含 LINE linkToken、nonce，由 backend 回傳後立即 external navigation；不可記錄、顯示或保留。
+- LINE webhook endpoint 的 key 可被商家看見並複製，需在 UI 明示此 URL 僅供 LINE Developers Console 使用；rotate 是 security-sensitive。
+- CSRF：前端非 GET mutation 會取得並加上 `X-XSRF-TOKEN`；backend webhook 與 OAuth endpoints 為特別排除範圍。
+- backend 已驗證 LINE Login authority、ROLE_USER、request expiry、nonce、business、LINE user identity 與單一商家關聯。
+- returnTo 已有 `/` 開頭且拒絕 `//` 的 frontend allowlist；應集中為共享 safe-return helper。
+- 無後端 evidence 顯示 unlink／disable 需要 re-authentication；不得在本 Family 實作中假設已有。
+- API error 映射應避免顯示 LINE identifier、raw provider error、token 或 webhook key。
+- `lineCustomerId`、`businessId` 為內部識別；不得在 UI、analytics 或易取得的錯誤內容中展示。
+
+## 26. Cache/refresh behavior
+
+- 無 global query client。
+- 商家：
+  - save/disable/rotate 後 reload settings + status。
+  - test/provision 以回傳 status 更新。
+  - 每次 settings mutation 後呼叫 `refreshSettingsOverviewSection('lineSettings')`。
+- 客戶：
+  - unlink 後 reload `GET /api/line/account-links`。
+  - account-link completion 不可假設 frontend 即時已完成；管理頁下次讀取為 authoritative。
+- AuthContext：
+  - 現有 response 不含 linked-business list；連結／解除連結不需 refresh AuthContext。
+  - LINE Login 完成後 LoginPage 已重新取得 user context；這是 confirm 的前置條件。
+- 若 reload 失敗，保留最後成功資料並標記 stale/unconfirmed。
+
+## 27. Unsupported/omitted features
+
+- 商家 OAuth connect/disconnect。
+- 刪除商家 channel credentials。
+- LINE notification preference management。
+- LINE messaging preference management。
+- Multiple LINE identities for one customer within the same business。
+- Customer settings 內直接新增任意 LINE link。
+- Customer-facing LINE chat management。
+- Rich menu editor、broadcast、bot management、webhook configuration UI。
+- Channel secret/access token editing以外的 provider console management。
+- Per-business LINE identity selector。
+- LINE notification history。
+- Live health monitoring。
+- QR code flow。
+
+## 28. Test strategy
+
+- Routing：三個 canonical route、legacy merchant alias、auth guard、business guard、setup guard、forced-password guard、returnTo safe handling。
+- Normalization：merchant existing connected/disconnected/malformed source immutability；新增 account-link/list malformed response coverage。
+- Merchant：save、disable、rotate、test、Rich Menu、pending lock、authoritative reload、stale refresh failure。
+- Account-link：missing request、CREATED、AWAITING_LINE、COMPLETED、FAILED、EXPIRED、LINE Login required、confirm handoff。
+- Account management：empty、linked list、unlink confirmation、unlink failure、reload failure、multi-business list。
+- Accessibility：heading、status text、live states、dialog roles、Escape、focus restoration、keyboard action。
+- Security：no plaintext token/secret rendering、request query cleanup、safe return navigation、no raw exception leakage。
+- Regression：Family 4 settings overview/navigation/focused shell；Family 5 notification pages；`/profile`；reservation flows；`/force-change-password`；Navbar；notification list。
+
+目前無 Family 6 frontend tests。現有 backend protection tests 包含：
+
+- `LineIntegrationControllerTest`
+- `LineAccountLinkControllerTest`
+- `LineChannelSettingsServiceTest`
+- `LineAccountLinkServiceTest`
+- `LineReservationIntegrationTest`
+- `LineWebhookControllerTest`
+- `LineWebhookIngestionServiceTest`
+- `LineWebhookWorkerTest`
+- `LineRichMenuServiceTest`
+- `LineCredentialCipherTest`
+- `LineAccountLinkTokenServiceTest`
+- `LineAuthServiceTest`
+
+## 29. Regression boundaries
+
+- Family 4 merchant settings route ownership、secondary nav、overview refresh、mobile focused shell。
+- Family 5 Email notification preferences / verification 不改 route、不併入 LINE。
+- Login LINE OAuth flow、safe returnTo、session expiry。
+- LINE reservation conversation、webhook ingestion、Rich Menu assignment。
+- customer profile、reservation、notifications 與 password-change guard。
+
+## 30. Implementation phases
+
+### Phase 1 — Route and domain foundation
+
+- Scope：canonical/legacy navigation cleanup、typed account-link/list adapters、safe return/query lifecycle。
+- Dependencies：現有 `api.ts`、App guards、Family 4 settings architecture。
+- Deliverables：normalized customer LINE domain、status mapping、route tests。
+- Deferred：visual styling overhaul。
+- Validation：canonical links、legacy access、malformed DTO tests。
+- Exit：所有 Family 6 page components 不直接消費 raw `unknown`。
+
+### Phase 2 — Merchant LINE integration
+
+- Scope：merchant information hierarchy、operational state separation、confirmation/recovery refinement。
+- Dependencies：Phase 1、existing editor and overview refresh.
+- Deliverables：structured summary/health/form/operations boundaries。
+- Deferred：後端不支援的 disconnect/delete credentials。
+- Validation：save/disable/rotate/test/Rich Menu/stale/a11y。
+- Exit：設定與健康狀態不再互相誤導。
+
+### Phase 3 — Account-link flow
+
+- Scope：focused request-token lifecycle、all backend states、LINE Login handoff、安全 query cleanup。
+- Dependencies：Phase 1、OAuth return behavior。
+- Deliverables：stateful account-link screen、recovery and retry/refresh behavior。
+- Deferred：輪詢或新 callback route。
+- Validation：CREATED through EXPIRED state matrix、safe external handoff。
+- Exit：使用者能理解是否尚待 LINE、完成、失敗或過期。
+
+### Phase 4 — Linked-account management
+
+- Scope：account-wide linked-business list、empty/error/stale、unlink dialog。
+- Dependencies：Phase 1。
+- Deliverables：authoritative list refresh、accessible confirmation。
+- Deferred：customer-side add-link action，因後端不存在。
+- Validation：empty/list/unlink/failure/multiple business associations。
+- Exit：載入失敗不會偽裝成空清單。
+
+### Phase 5 — Regression and validation
+
+- Scope：390/768/1024/1440 behavior、a11y、security regression、Family 4/5 regression。
+- Dependencies：Phases 1–4。
+- Deliverables：route/component/security tests。
+- Validation：full frontend/backend relevant suite。
+- Exit：所有 Family 6 routes、legacy entry、LINE reservation prompt 均可回歸驗證。
+
+## 31. Known limitations
+
+- 商家整合不是 provider OAuth connect flow；商家需手動輸入 credentials。
+- customer account-link 無 client-visible webhook completion signal。
+- `/line/account-link` status endpoint 是公開的 bearer token lookup。
+- current frontend has no Family 6 test coverage.
+- current Navbar/sidebar still point to merchant compatibility route.
+- `/settings/line-accounts` has no direct initiation mechanism by design/backend limitation.
+- account-link list uses business association records，不是個人 LINE identity 清單。
+
+## 32. Open technical decisions
+
+- compatibility URL 是否立即改為 redirect 至 canonical URL，或短期保留 render alias；功能事實已確認，僅 migration policy 未定。
+- successful/failed account-link webhook callback 後，是否在 deep-link page 提供使用者主動 refresh；現有後端沒有 browser callback。
+- request token 是否在登入 returnTo 中以完整 URL 保存，或改為僅保存 allowlisted path/query 並於完成後立即清除。
+- unlink/disable 是否需新增後端 re-authentication；現有 evidence 不支援。
+- `LineAccountLinkStatusResponse` 是否擴充安全、使用者可理解的 failure category；現有僅 generic status。
+
+## 33. Final recommended design/implementation sequence
+
+1. 將 merchant navigation 指向 `/business/settings/integrations/line`，保留 `/business/line-integration` compatibility。
+2. 為客戶連結與清單建立 typed normalization/state model。
+3. 保留並重組 merchant editor 為 operational integration page。
+4. 重做 `/line/account-link` 為 request-token focused security flow。
+5. 重做 `/settings/line-accounts` 為已綁定商家管理頁，不新增不存在的 link action。
+6. 以 Family 4 shell、共用狀態／dialog primitives 實作，不與 Family 5 合併。
+7. 補足 routing、mutation、accessibility、security 與 regression tests。
+
+- 已檢查上述 repository areas。
+- 已確認 Family 6 routes、角色界線、API、後端資料模型與現有測試。
+- 商家 LINE integration 為 business-level；客戶 LINE association 為 account-level、per-business 關聯。
+- 已確認不支援 QR flow、商家 OAuth connect/disconnect、customer settings 直接新增連結、同商家多 LINE customer association。
+- 未修改任何檔案。
+- 未實作程式碼。
+- 未產生圖片。

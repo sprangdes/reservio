@@ -51,6 +51,7 @@ public class ServiceItemService {
         ServiceItem item = ServiceItem.builder()
                 .name(name)
                 .duration(duration)
+                .active(false)
                 .business(businessData)
                 .build();
         return serviceItemRepo.save(item);

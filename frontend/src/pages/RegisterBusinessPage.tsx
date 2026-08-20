@@ -1,147 +1,149 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import { useToast } from '../state/ToastContext';
+import AccountTypeChoice from '../features/auth/AccountTypeChoice';
+import AuthShell from '../features/auth/AuthShell';
+import { AuthErrorMessage, AuthStatusMessage } from '../features/auth/AuthMessages';
+import PasswordField from '../features/auth/PasswordField';
+import { normalizeAuthError } from '../features/auth/authErrors';
+import { clearMerchantRegistrationDraft, loadMerchantRegistrationDraft, saveMerchantRegistrationDraft } from '../features/auth/merchantRegistrationDraft';
+import { merchantRegistrationPayload, normalizeBusinessCategories, registrationIdentity, validateMerchantRegistration, type MerchantRegistrationForm } from '../features/auth/registrationDomain';
 
-function getErrorMessage(err: unknown, fallback: string): string {
-  if (err instanceof Error && err.message) {
-    return err.message;
-  }
-  return fallback;
-}
+type CategoryState = 'idle' | 'loading' | 'ready' | 'error';
+
+const emptyForm: MerchantRegistrationForm = { username: '', email: '', password: '', businessName: '', category: '', phone: '', address: '' };
 
 export default function RegisterBusinessPage() {
-  const { setErrorMessage } = useToast();
-  const [categories, setCategories] = useState([]);
-  const [form, setForm] = useState({
-    username: '',
-    email: '',
-    password: '',
-    businessName: '',
-    category: '',
-    phone: '',
-    address: ''
-  });
-  const [localError, setLocalError] = useState('');
+  const location = useLocation();
   const navigate = useNavigate();
+  const [categories, setCategories] = useState<string[]>([]);
+  const [categoryState, setCategoryState] = useState<CategoryState>('idle');
+  const [form, setForm] = useState<MerchantRegistrationForm>(emptyForm);
+  const [errors, setErrors] = useState<Partial<Record<keyof MerchantRegistrationForm, string>>>({});
+  const [requestError, setRequestError] = useState('');
+  const [pending, setPending] = useState(false);
+  const submitting = useRef(false);
 
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const res = await api.businessCategories();
-        const items = Array.isArray(res.data) ? res.data : [];
-        setCategories(items);
-      } catch (err) {
-        setLocalError(getErrorMessage(err, '載入服務類別失敗'));
-      }
-    };
-    void loadCategories();
-  }, []);
-
-  useEffect(() => {
-    const draft = sessionStorage.getItem('businessRegisterDraft');
-    if (draft) {
-      try {
-        const parsed = JSON.parse(draft);
-        setForm((prev) => ({ ...prev, ...parsed }));
-      } catch {
-        // ignore
-      }
-    }
-  }, []);
-
-  const handleChange = (event: { target: { name: string; value: string } }) => {
-    const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (event: { preventDefault: () => void }) => {
-    event.preventDefault();
-    setLocalError('');
-
+  const loadCategories = useCallback(async () => {
+    setCategoryState('loading');
     try {
-      await api.registerBusiness(form);
-      sessionStorage.removeItem('businessRegisterDraft');
-      navigate('/login?registered=1');
-    } catch (err) {
-      const message = getErrorMessage(err, '商家註冊失敗');
-      setLocalError(message);
-      setErrorMessage(message);
+      const response = await api.businessCategories();
+      const values = normalizeBusinessCategories(response.data);
+      setCategories(values);
+      setCategoryState('ready');
+      setForm((current) => values.includes(current.category) ? current : { ...current, category: '' });
+    } catch {
+      setCategories([]);
+      setCategoryState('error');
+    }
+  }, []);
+
+  useEffect(() => {
+    const draft = loadMerchantRegistrationDraft();
+    const identity = registrationIdentity(location.state);
+    setForm((current) => ({ ...current, ...draft, ...identity, password: '' }));
+    void loadCategories();
+  }, [loadCategories, location.state]);
+
+  useEffect(() => {
+    saveMerchantRegistrationDraft({ username: form.username, email: form.email, businessName: form.businessName, category: form.category, phone: form.phone, address: form.address });
+  }, [form.username, form.email, form.businessName, form.category, form.phone, form.address]);
+
+  const update = (field: keyof MerchantRegistrationForm, value: string) => {
+    setForm((current) => ({ ...current, [field]: value }));
+    setErrors((current) => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const switchToCustomer = () => {
+    clearMerchantRegistrationDraft();
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (submitting.current) return;
+    const validation = validateMerchantRegistration(form, categories);
+    setErrors(validation);
+    setRequestError('');
+    if (Object.keys(validation).length > 0 || categoryState !== 'ready') return;
+
+    submitting.current = true;
+    setPending(true);
+    try {
+      await api.registerBusiness(merchantRegistrationPayload(form));
+      setForm((current) => ({ ...current, password: '' }));
+      clearMerchantRegistrationDraft();
+      navigate('/login?registered=1', { replace: true });
+    } catch (error) {
+      setForm((current) => ({ ...current, password: '' }));
+      setRequestError(normalizeAuthError(error, 'merchant-registration').message);
+      setPending(false);
+      submitting.current = false;
     }
   };
 
-  return (
-    <main>
-      <div className="container my-5">
-        <div className="row justify-content-center">
-          <div className="col-md-8 col-lg-6">
-            <div className="card shadow-sm border-0">
-              <div className="card-header bg-gradient text-white text-white-strong p-4 text-center">
-                <h4 className="mb-0 fw-bold"><i className="bi bi-shop me-2"></i>成為 Reservio 合作商家</h4>
-                <p className="mb-0 mt-2 opacity-75">讓智慧預約助您的事業一臂之力</p>
-              </div>
-
-              <div className="card-body p-4">
-                {localError ? (
-                  <div className="alert alert-danger shadow-sm mb-4">
-                    <i className="bi bi-exclamation-circle-fill me-2"></i>
-                    {localError}
-                  </div>
-                ) : null}
-
-                <form onSubmit={handleSubmit}>
-                  <h5 className="fw-bold mb-3 border-bottom pb-2">管理員資訊</h5>
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label htmlFor="username" className="form-label">名稱</label>
-                      <input type="text" className="form-control" id="username" name="username" value={form.username} onChange={handleChange} placeholder="登入帳號" required />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label htmlFor="email" className="form-label">電子郵件</label>
-                      <input type="email" className="form-control" id="email" name="email" value={form.email} onChange={handleChange} placeholder="聯絡用 Email" required />
-                    </div>
-                  </div>
-
-                  <h5 className="fw-bold mb-3 border-bottom pb-2">商家基本資料</h5>
-                  <div className="mb-3">
-                    <label htmlFor="businessName" className="form-label">商家名稱</label>
-                    <input type="text" className="form-control" id="businessName" name="businessName" value={form.businessName} onChange={handleChange} placeholder="例如： Reservio 咖啡館" required />
-                  </div>
-
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label htmlFor="category" className="form-label">服務類別</label>
-                      <select className="form-select" id="category" name="category" value={form.category} onChange={handleChange} required>
-                        <option value="" disabled>請選擇</option>
-                        {categories.map((item) => (
-                          <option key={item} value={item}>{item}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label htmlFor="phone" className="form-label">商家電話</label>
-                      <input type="tel" className="form-control" id="phone" name="phone" value={form.phone} onChange={handleChange} placeholder="02-12345678" required />
-                    </div>
-                  </div>
-
-                  <div className="mb-3">
-                    <label htmlFor="address" className="form-label">商家地址</label>
-                    <input type="text" className="form-control" id="address" name="address" value={form.address} onChange={handleChange} placeholder="請輸入完整服務地址" required />
-                  </div>
-
-                  <div className="d-grid mt-4">
-                    <button type="submit" className="btn btn-gradient btn-lg fw-bold shadow-sm">完成商家註冊並進入管理後台</button>
-                  </div>
-                </form>
-              </div>
-
-              <div className="card-footer text-center py-3">
-                <small className="text-muted">想改以客戶身份註冊？ <Link to="/register" className="text-primary text-decoration-none fw-bold">返回一般註冊</Link></small>
-              </div>
+  return <AuthShell variant="wide" title="建立商家帳號" description="建立帳號時會同時建立商家資料，完成後即可登入並開始管理預約。" status={<><i className="bi bi-shop" aria-hidden="true" /><div><strong>商家帳號</strong><span>預約管理與商家資料使用同一組登入資訊。</span></div></>} footer={<p className="auth-shell__login-prompt"><span>已有帳號？</span><Link to="/login">登入</Link></p>}>
+    <div className="auth-registration auth-registration--merchant">
+      <AccountTypeChoice selected="merchant" customerState={{ registrationIdentity: { username: form.username, email: form.email } }} onCustomerSelect={switchToCustomer} disabled={pending} />
+      <Link className="auth-registration__switch" to="/register" state={{ registrationIdentity: { username: form.username, email: form.email } }} onClick={switchToCustomer}>只想預約服務？建立客戶帳號</Link>
+      {requestError ? <AuthErrorMessage id="merchant-registration-error">{requestError}</AuthErrorMessage> : null}
+      <form className="auth-registration__form" onSubmit={handleSubmit} noValidate aria-describedby={requestError ? 'merchant-registration-error' : undefined}>
+        <fieldset className="auth-registration__group" disabled={pending}>
+          <legend>帳號資料</legend>
+          <div className="auth-registration__grid">
+            <div className="auth-registration__field">
+              <label htmlFor="merchant-username">使用者名稱</label>
+              <input id="merchant-username" type="text" value={form.username} onChange={(event) => update('username', event.target.value)} autoComplete="username" aria-invalid={Boolean(errors.username)} aria-describedby={errors.username ? 'merchant-username-error' : undefined} />
+              {errors.username ? <span id="merchant-username-error" className="auth-registration__field-error">{errors.username}</span> : null}
+            </div>
+            <div className="auth-registration__field">
+              <label htmlFor="merchant-email">電子郵件</label>
+              <input id="merchant-email" type="email" value={form.email} onChange={(event) => update('email', event.target.value)} autoComplete="email" inputMode="email" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'merchant-email-error' : undefined} />
+              {errors.email ? <span id="merchant-email-error" className="auth-registration__field-error">{errors.email}</span> : null}
             </div>
           </div>
-        </div>
-      </div>
-    </main>
-  );
+          <PasswordField id="merchant-password" label="密碼" value={form.password} onChange={(value) => update('password', value)} mode="new" autoComplete="new-password" error={errors.password} disabled={pending} required />
+        </fieldset>
+
+        <fieldset className="auth-registration__group auth-registration__group--business" disabled={pending}>
+          <legend>商家資料</legend>
+          <div className="auth-registration__field">
+            <label htmlFor="merchant-business-name">商家名稱</label>
+            <input id="merchant-business-name" type="text" value={form.businessName} onChange={(event) => update('businessName', event.target.value)} autoComplete="organization" aria-invalid={Boolean(errors.businessName)} aria-describedby={errors.businessName ? 'merchant-business-name-error' : undefined} />
+            {errors.businessName ? <span id="merchant-business-name-error" className="auth-registration__field-error">{errors.businessName}</span> : null}
+          </div>
+          <div className="auth-registration__grid">
+            <div className="auth-registration__field">
+              <label htmlFor="merchant-category">類別</label>
+              <select id="merchant-category" value={form.category} onChange={(event) => update('category', event.target.value)} disabled={pending || categoryState !== 'ready'} aria-invalid={Boolean(errors.category)} aria-describedby={`${categoryState === 'loading' ? 'merchant-category-status' : categoryState === 'error' ? 'merchant-category-error' : ''}${errors.category ? ' merchant-category-field-error' : ''}`.trim() || undefined}>
+                <option value="">{categoryState === 'loading' ? '載入商家類別中…' : '請選擇類別'}</option>
+                {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+              </select>
+              {categoryState === 'loading' ? <span id="merchant-category-status" className="auth-registration__hint" role="status">正在載入商家類別…</span> : null}
+              {categoryState === 'error' ? <span id="merchant-category-error" className="auth-registration__category-error" role="alert">暫時無法載入商家類別。 <button type="button" onClick={() => void loadCategories()} disabled={pending}>重新載入</button></span> : null}
+              {errors.category ? <span id="merchant-category-field-error" className="auth-registration__field-error">{errors.category}</span> : null}
+            </div>
+            <div className="auth-registration__field">
+              <label htmlFor="merchant-phone">電話</label>
+              <input id="merchant-phone" type="tel" value={form.phone} onChange={(event) => update('phone', event.target.value)} autoComplete="tel" aria-invalid={Boolean(errors.phone)} aria-describedby={errors.phone ? 'merchant-phone-error' : undefined} />
+              {errors.phone ? <span id="merchant-phone-error" className="auth-registration__field-error">{errors.phone}</span> : null}
+            </div>
+          </div>
+          <div className="auth-registration__field">
+            <label htmlFor="merchant-address">地址</label>
+            <input id="merchant-address" type="text" value={form.address} onChange={(event) => update('address', event.target.value)} autoComplete="street-address" aria-invalid={Boolean(errors.address)} aria-describedby={errors.address ? 'merchant-address-error' : undefined} />
+            {errors.address ? <span id="merchant-address-error" className="auth-registration__field-error">{errors.address}</span> : null}
+          </div>
+        </fieldset>
+
+        <button className="auth-registration__submit" type="submit" disabled={pending || categoryState !== 'ready'}>{pending ? '建立中…' : '建立商家帳號'}</button>
+        {pending ? <AuthStatusMessage>正在建立商家帳號…</AuthStatusMessage> : null}
+      </form>
+      <p className="auth-registration__support">建立成功後，請登入你的商家帳號。</p>
+    </div>
+  </AuthShell>;
 }
