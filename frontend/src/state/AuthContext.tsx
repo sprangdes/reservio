@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from 'react';
 import { api } from '../api';
 
-interface AuthUser {
+export interface AuthUser {
   role?: string;
   username?: string;
   email?: string;
@@ -23,7 +23,7 @@ interface AuthUser {
 interface AuthContextValue {
   me: AuthUser | null;
   loading: boolean;
-  refresh: () => Promise<void>;
+  refresh: () => Promise<AuthUser | null>;
   setMe: (user: AuthUser | null) => void;
 }
 
@@ -37,12 +37,15 @@ export function AuthProvider({ children }: Readonly<AuthProviderProps>) {
   const [me, setMe] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (): Promise<AuthUser | null> => {
     try {
       const res = (await api.me()) as { data?: AuthUser };
-      setMe(res?.data ?? null);
+      const user = res?.data ?? null;
+      setMe(user);
+      return user;
     } catch {
       setMe(null);
+      return null;
     } finally {
       setLoading(false);
     }

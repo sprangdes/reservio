@@ -1,0 +1,762 @@
+# Family 2 Implementation Contract
+
+## 1. Executive implementation summary
+
+Family 2 remains two customer-only routes:
+
+- `/reservation/new`: internal booking states `selection → dateTime → review → submitting → result`
+- `/my/reservations`: operational reservation workspace with status-aware cancellation
+
+No code, files, or images are changed by this contract.
+
+## 2. Repository/backend re-verification
+
+Current frontend:
+
+- `/reservation/new` is a monolithic `ReservationNewPage.tsx`; it currently allows business users, loads all businesses for them, uses Flatpickr, submits then navigates home.
+- `/my/reservations` is a filter-first table/mobile-card page; business users redirect only after the page has mounted.
+- `api.ts` currently throws plain `Error`, losing HTTP status; Family 2 needs a safe typed `ApiError` boundary in Phase 1.
+- `Layout` provides customer `Navbar`, footer, and toast container.
+- Shared focus trapping exists at `features/business-operations/reservations/ui/useModalFocusTrap.ts`.
+- Existing merchant reservation-center architecture is not reusable as customer composition.
+
+Verified backend:
+
+| Capability | Contract |
+|---|---|
+| Preferred businesses | `GET /api/preferred-businesses`, authenticated |
+| Services | `GET /api/businesses/{businessId}/services`; returns `id`, `name`, `duration`, `active` |
+| Disabled dates | `GET /api/reservations/disabled-dates?businessId=` |
+| Slots | `GET /api/reservations/slots?date=&duration=&businessId=`; returns `time`, `available` |
+| Create | `POST /api/reservations`, `201`; status is always `PENDING` |
+| Customer list | `POST /api/reservations/customer/query?page=&size=&sortBy=&sortDir=` |
+| Reserved-business filter list | `GET /api/reservations/customer/reserved-businesses` |
+| Cancel | `POST /api/reservations/{id}/cancel` |
+
+Backend booking behavior:
+
+- Uses authenticated current user.
+- Locks the business row during creation.
+- Resolves the service by business plus service name.
+- Validates active service and revalidates availability.
+- Calculates persisted `endTime` server-side from service duration.
+- Returns `400` for invalid input and `409` for availability/state conflicts.
+- Schedules `PENDING`, `CONFIRMED`, and `CANCEL_REQUESTED` reservations to `COMPLETED` every five minutes after end time.
+- Enforces cancellation ownership with `findByIdAndUser`.
+
+Backend authorization gap:
+
+- Spring Security currently requires authentication for Family 2 APIs, not `ROLE_USER`.
+- The frontend must enforce customer-only route composition, but this is not backend role authorization. Backend role enforcement remains a future hardening item.
+
+## 3. Final route ownership
+
+| Route | Owner | Contract |
+|---|---|---|
+| `/reservation/new` | Customer | One route; internal booking states only |
+| `/my/reservations` | Customer | One operational workspace; no detail route |
+| `/reservation/manage` | Merchant | Unchanged merchant reservation center |
+| `/reservation/today/manage` | Merchant | Unchanged |
+| `/reservation/pending/manage` | Merchant | Unchanged |
+
+No customer detail, history-only, reschedule, rebook, edit, payment, or receipt route is created.
+
+## 4. Final guard/role architecture
+
+Add a route-level `RequireCustomer` after `RequireAuth` and before either Family 2 page mounts.
+
+- `ROLE_USER` → render customer route.
+- `ROLE_BUSINESS` → redirect with `replace` to `/`.
+- Anonymous → existing `RequireAuth` redirects to `/login?returnTo=<encoded internal path>`.
+- Password-reset guard remains outermost and wins first.
+- Business-setup guard remains outermost for incomplete business accounts and wins before customer-route redirect.
+- `returnTo` accepts only the existing safe internal-path rules; never external URLs.
+- Merchant reservation routes retain `RequireAuth` plus existing merchant route ownership.
+
+## 5. Customer shell architecture
+
+- Desktop booking/reservations use existing customer `Layout`/`Navbar`, not `BusinessWorkspaceShell`.
+- Booking may visually de-emphasize global navigation but does not use merchant controls.
+- Mobile booking uses a feature-owned focused header: explicit `返回`, centered `建立預約`.
+- Mobile result uses a focused Reservio result header.
+- Mobile reservations uses the normal customer product header.
+- Footer behavior follows current customer shell; no bottom navigation is introduced.
+
+## 6. Booking route state machine
+
+| State | Owned/preserved data | API / transition |
+|---|---|---|
+| `initializing` | Empty draft; no fake selection | Load preferred businesses |
+| `initialError` | Empty draft | Retry preferred businesses |
+| `selection` | Business, services, service selection | Select business/service; advance only when complete |
+| `serviceLoading` | Selected business preserved | Load services and disabled dates independently |
+| `serviceError` | Business preserved | `重新載入服務` |
+| `serviceEmpty` | Business preserved | `此店家目前沒有可預約的服務。` |
+| `dateTime` | Business/service/date/remark preserved | Load slots after valid service/date |
+| `availabilityLoading` | Business/service/date/remark preserved | Local slot skeleton |
+| `availabilityError` | Same data preserved | `重新載入時段` |
+| `availabilityEmpty` | Same data preserved; slot cleared | Neutral no-availability state |
+| `review` | Full draft | Back to date/time or submit |
+| `submitting` | Immutable draft snapshot | Disable mutation and route-progress actions |
+| `slotConflict` | Business/service/date/remark preserved; slot cleared | Reload slots, focus availability message |
+| `submitError` | Full draft preserved | Correct field or retry |
+| `result` | Normalized server-safe result only | View reservations or home |
+| `authHandoff` | No durable draft | Safe login redirect; remount starts clean |
+
+## 7. Booking draft model
+
+```ts
+type BookingDraft = Readonly<{
+  business: { id: string; name: string } | null;
+  service: { id: string; name: string; durationMinutes: number } | null;
+  date: string | null;              // YYYY-MM-DD, opaque schedule-local value
+  startTime: string | null;         // HH:mm
+  estimatedEndTime: string | null;  // client review-only
+  remark: string;
+}>;
+```
+
+- Updates are immutable reducers/functions.
+- IDs remain internal and never render.
+- `estimatedEndTime` is client display only; server response replaces it on success.
+- No staff, price, customer contact fields, payment, policy, multiple services, or timezone metadata.
+
+## 8. Business-selection architecture
+
+- Customer booking loads only `GET /api/preferred-businesses`.
+- Initial error: `暫時無法載入預約資訊，請稍後再試。` with `重新載入`.
+- Empty preferred list is factual and does not invent business discovery.
+- Selecting a new business clears service, date, disabled dates, selected slot, estimated end, availability state, and service errors.
+- Services and disabled dates start after business selection.
+- A monotonic request generation plus `AbortController` prevents stale responses from committing.
+
+## 9. Service-selection architecture
+
+Normalize each service as:
+
+```ts
+{ id: string; name: string; durationMinutes: number; active: boolean }
+```
+
+- Render only `active === true`.
+- Service selection clears date, slot, estimated end, availability result/error.
+- The UI stores service ID for local identity but submits the backend-supported title/name.
+- Empty: `此店家目前沒有可預約的服務。`
+- Failure preserves business and exposes `重新載入服務`.
+
+## 10. Date architecture
+
+- Date values are strict `YYYY-MM-DD` strings.
+- Use local calendar-part helpers; never parse date-only strings through `new Date("YYYY-MM-DD")`.
+- Booking window: local calendar today through `addLocalMonths(today, 3)`.
+- Disabled date strings pass through a Flatpickr adapter boundary.
+- Flatpickr remains the existing dependency/global integration; no dependency is added.
+- Adapter owns create/destroy, date selection callback, disabled updates, keyboard validation, focus return, and invalid-date messaging.
+- No timezone label, conversion, UTC claim, or browser-local equivalence claim is shown.
+
+## 11. Slot architecture
+
+Normalize slot response:
+
+```ts
+type BookingSlot = Readonly<{ startTime: string; available: boolean }>;
+```
+
+Fetch only when business, active service, valid date, and duration exist.
+
+- Render radio-grid controls, never a `<select>`.
+- Available slots are selectable.
+- Unavailable slots are disabled with `目前不可預約`.
+- Selection uses text, icon/radio state, border, and color.
+- Changing business/service/date clears selection.
+- No hold, lock, countdown, waitlist, or capacity claim.
+
+## 12. Async/race handling
+
+Use one local request-control pattern without a query library:
+
+- Each independently reloadable resource has `AbortController` plus monotonically increasing request generation.
+- Commit data/error/loading state only if the generation remains current and the component is mounted.
+- Abort on dependency changes and unmount.
+- Resources: preferred businesses, services, disabled dates, slots, reservation query, reserved-business filters, service filter options.
+- Reservation query keeps previous successful rows while refresh is pending.
+- Abort is not rendered as an error.
+
+## 13. Review architecture
+
+Review contains exactly:
+
+- Date
+- Start/end time
+- Business
+- Service
+- Duration
+- Optional `備註（選填）`
+
+Copy:
+
+> 送出時會再次確認時段；成功送出後將等待店家確認。
+
+Date/time is the strongest fact. The desktop summary remains compact; mobile shows compact context once. No duplicated full facts table, contact fields, policy, price, staff, or payment.
+
+## 14. Submit/request mapping
+
+Use a pure mapper from immutable draft:
+
+```ts
+{
+  businessId: Number(draft.business.id),
+  reservationDate: draft.date,
+  startTime: draft.startTime,
+  endTime: draft.estimatedEndTime, // compatibility only; backend recalculates authoritative end time
+  title: draft.service.name,
+  remark: draft.remark
+}
+```
+
+- Submit only from valid review state.
+- Capture one immutable request snapshot.
+- Disable duplicate submit while pending.
+- `400`: retain draft; show safe validation message near relevant step.
+- `401`: session handoff.
+- `409`: slot-conflict recovery.
+- `500`/network: retain draft; show safe retry action.
+- No navigation on mutation failure.
+
+## 15. Booking error/conflict recovery
+
+`409` recovery is mandatory:
+
+1. Preserve business, service, date, and remark.
+2. Clear selected start/end time.
+3. Move to date/time state.
+4. Reload slots for the same business/service/date.
+5. Announce: `剛才選擇的時段已無法預約，已為你重新整理可用時段。`
+6. Focus the availability message with `tabIndex={-1}`.
+7. Do not re-submit automatically.
+
+## 16. PENDING result architecture
+
+After `201`, remain at `/reservation/new` in client-held `result` state.
+
+Display:
+
+- `預約已送出`
+- `已送出，等待店家確認`
+- `等待店家確認`
+- Business
+- Service
+- Date
+- Server response start/end time
+- Remark only when present
+
+Actions:
+
+- `查看我的預約` → `/my/reservations`
+- `返回首頁` → `/`
+
+No ID, username, user ID, business ID, timestamp identifier, green confirmed check, or “預約完成” wording.
+
+## 17. Result reload/re-entry behavior
+
+There is no detail endpoint or result persistence contract.
+
+- Browser refresh/re-entry at `/reservation/new` starts a clean booking flow.
+- Do not reconstruct a result from guessed state, session storage, URL data, or query parameters.
+- If the user needs status after refresh, they use `我的預約`.
+
+## 18. Reservation data-query strategy
+
+Lock strategy **B: classify only authoritative records fetched by the current paged customer query**.
+
+- One paged `POST /api/reservations/customer/query`.
+- No hidden future/history endpoint assumption.
+- Current page response is normalized, then sectioned locally.
+- Page controls page through the same generic query.
+- UI copy/documentation must not imply the complete account history or globally exhaustive upcoming set is resident.
+- Pagination can move records between visible sections; this is a known backend limitation.
+
+## 19. Reservation domain model
+
+```ts
+type ReservationSummary = Readonly<{
+  id: string; // mutation-only, never rendered
+  businessId: string | null; // filter-only, never rendered
+  businessName: string;
+  serviceName: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: ReservationStatusKey;
+  remark: string | null;
+  cancelReason: string | null;
+}>;
+```
+
+Raw backend DTOs are normalized before page state. Leaf components receive only `ReservationSummary` and presentation/capability data.
+
+## 20. Reservation status normalization
+
+| Backend | Customer label | Category |
+|---|---|---|
+| `PENDING` | 等待店家確認 | Attention / pending |
+| `CONFIRMED` | 已確認 | Confirmed |
+| `CANCEL_REQUESTED` | 取消申請處理中 | Attention / processing |
+| `CANCELLED` | 已取消 | Terminal destructive |
+| `COMPLETED` | 已完成 | Terminal complete |
+
+Every status uses icon plus text; color is supplemental only. Unknown/malformed status normalizes to an internal `UNKNOWN` safe-neutral presentation and has no actions.
+
+## 21. Next-reservation architecture
+
+From the currently fetched normalized page:
+
+- Eligible: future schedule-local tuple `(date, startTime)` and status `PENDING` or `CONFIRMED`.
+- Compute by lexical date/time comparison using local calendar/time strings, not `Date` parsing.
+- Pick earliest eligible record in the loaded page.
+- Show date/time, business, service, status, and allowed cancellation action.
+- If no eligible loaded record exists, omit the section rather than inventing one.
+
+## 22. Attention/upcoming/history architecture
+
+- `需要留意`: at minimum loaded `CANCEL_REQUESTED` records, ordered by schedule tuple.
+- `即將到來`: remaining loaded future `PENDING`/`CONFIRMED` records after removing the displayed next record.
+- `歷史預約`: loaded `COMPLETED`/`CANCELLED`; also surface past nonterminal records with their real status if scheduler lag has not yet completed them.
+- Scheduler lag is never normalized into a new status.
+- History rows are informational; no chevrons, links, drill-in, rebook, edit, or detail action.
+
+## 23. Pagination/filter architecture
+
+- Filters are collapsed by default under `篩選與搜尋`.
+- Desktop: secondary disclosure near history/pagination, not top-level page architecture.
+- Mobile: same progressive disclosure after history.
+- Supported draft controls: date range, business, dependent service, status, keyword, sort.
+- Applying/clearing/changing sort resets page to `0`.
+- Business change clears draft service before loading new options.
+- Business/service filter option loads use request generations.
+- Paging remains numbered/previous/next; no infinite scrolling.
+- Empty after an applied filter is a filtered-empty state, not account-empty.
+
+## 24. Loading/error/empty/stale architecture
+
+Booking:
+
+- Initial skeleton mirrors progress, task plane, and summary; no fake values.
+- Service/availability loading is local to its section.
+- Availability empty: `這一天目前沒有可預約的時段。`
+- Availability error preserves valid context and offers `重新載入時段`.
+- Submit failure preserves draft.
+
+Reservations:
+
+- Initial load: reservation skeleton; never show false empty.
+- Initial error: `暫時無法取得預約資料，請稍後再試。` + `重新載入`.
+- Successful empty: `目前還沒有預約。` + `建立預約`.
+- Refresh failure with prior rows: `目前顯示的是先前載入的資料，部分狀態可能尚未同步。` + `重新載入`.
+- While stale, navigation, filters, pagination, and permitted cancellation open actions remain enabled; duplicate mutation remains blocked only by active mutation state.
+
+## 25. Cancellation capability model
+
+```ts
+canCancelReservation(status) =>
+  status === 'PENDING' || status === 'CONFIRMED';
+
+requiresCancellationReason(status) =>
+  status === 'CONFIRMED';
+```
+
+All other statuses have no cancellation action. No generic policy engine.
+
+## 26. PENDING cancellation flow
+
+- Open explicit confirmation before mutation.
+- Title: `取消這筆預約？`
+- Copy: `這筆預約尚未由店家確認。取消後將立即標記為已取消。`
+- No reason field.
+- Actions: `返回`, `取消預約`.
+- API response transitions `PENDING → CANCELLED`.
+
+## 27. CONFIRMED cancellation-request flow
+
+- Open explicit confirmation.
+- Title: `送出取消申請？`
+- Copy: `此預約已由店家確認。送出後，店家需要處理你的取消申請；在店家確認前，預約狀態會顯示為「取消申請處理中」。`
+- `取消原因` is required, trimmed, and associated with inline validation.
+- Actions: `返回`, `送出取消申請`.
+- API response transitions `CONFIRMED → CANCEL_REQUESTED`.
+
+## 28. Cancellation mutation/refetch architecture
+
+1. Store selected normalized reservation and opener element.
+2. Open dialog/sheet.
+3. Validate required reason.
+4. Disable duplicate mutation.
+5. Call current cancel API with `{ cancelReason }` only for `CONFIRMED`.
+6. Treat successful HTTP response as mutation success.
+7. Refresh authoritative current query.
+8. Reconcile sections from refreshed normalized data.
+9. Close only after safe mutation success.
+10. Announce outcome through live feedback.
+11. Restore focus according to the focus contract.
+
+## 29. Mutation success + refresh-failure handling
+
+If cancellation succeeds but list refresh fails:
+
+- Close confirmation.
+- Preserve previously loaded rows as stale/unconfirmed.
+- Show success outcome separately from stale warning.
+- Never state the old visible status is current.
+- Do not repeat cancellation automatically.
+- Provide `重新載入`.
+- Focus moves to the stale status region, then the explicit reload action remains reachable.
+
+## 30. Desktop dialog architecture
+
+Reuse/adapt `useModalFocusTrap`, not browser modal APIs.
+
+- Centered `role="alertdialog"` with labelled title and description.
+- Backdrop plus application background made inert and `aria-hidden`.
+- Escape/backdrop close only when not pending.
+- Pending mutation prevents close.
+- `CONFIRMED` reason textarea remains labelled and error-associated.
+- Final destructive action uses restrained red.
+- Return action is neutral.
+
+## 31. Mobile bottom-sheet architecture
+
+- Same content semantics as desktop.
+- Sheet overlays the exact currently rendered `我的預約` page; it does not render an alternate reservations composition.
+- Drag handle is decorative; no unimplemented drag interaction requirement.
+- Focus trap, inert background, Escape behavior, pending-close prevention, and focus restoration match desktop.
+- Internal scrolling and bottom safe-area padding preserve textarea/action reachability with software keyboard.
+- No `window.confirm` or `window.alert`.
+
+## 32. Desktop Proven implementation mapping
+
+| Proven frame | Responsibility |
+|---|---|
+| Booking service/business | `BookingFlowPage`, progress, task plane, persistent `BookingContextSummary` |
+| Booking date/time | Flatpickr adapter, calendar surface, `BookingTimeSlots`, availability note |
+| Booking review | `BookingReview`, review facts, remark, submit bar |
+| PENDING result | `BookingResultState` |
+| My reservations | `MyReservationsPage`, operational sections, secondary filters, pagination |
+| Cancellation | `CancelReservationDialog` over same workspace |
+
+At `1024px+`, booking uses constrained two-plane task/context layout. Reservations use operational rows, not the current dense Bootstrap table.
+
+## 33. Mobile Proven implementation mapping
+
+- Frames 1–3: focused header, compact progress labels, inline context, 16–20px gutters, 44px controls, sticky safe-area actions.
+- Result: focused Reservio result shell.
+- Reservations: normal customer mobile shell and stacked factual cards.
+- History: informational rows only; no chevrons.
+- Cancellation: bottom sheet over the same Frame 5-style reservation workspace.
+
+## 34. 390/768/1024/1440 responsive contract
+
+| Breakpoint | Booking | Reservations |
+|---|---|---|
+| 390px | One column; slot grid two columns only when readable, otherwise one; full-width actions | Stacked operational cards |
+| 768px | Wider focused column; no desktop summary sidebar; progress remains compact | Wider rows/cards; no dense table |
+| 1024px | Customer desktop shell; dominant task plane plus narrow factual summary | Operational horizontal rows |
+| 1440px | Constrained max width roughly 1100–1200px; no dashboard sprawl | Constrained workspace; filters remain secondary |
+
+## 35. Component/file architecture
+
+Adapt to current `src/features/*` convention.
+
+```text
+src/features/customer-booking/
+  domain.ts
+  normalizers.ts
+  bookingDraft.ts
+  bookingDates.ts
+  bookingApi.ts
+  useBookingFlow.ts
+  BookingFlowPage.tsx
+  BookingProgress.tsx
+  BusinessSelection.tsx
+  ServiceSelection.tsx
+  BookingDatePicker.tsx
+  BookingTimeSlots.tsx
+  BookingReview.tsx
+  BookingContextSummary.tsx
+  BookingResultState.tsx
+  BookingSubmitBar.tsx
+
+src/features/customer-reservations/
+  domain.ts
+  normalizers.ts
+  capabilities.ts
+  query.ts
+  useCustomerReservations.ts
+  MyReservationsWorkspace.tsx
+  NextReservation.tsx
+  AttentionReservations.tsx
+  UpcomingReservations.tsx
+  ReservationHistory.tsx
+  ReservationRow.tsx
+  ReservationStatus.tsx
+  ReservationFilters.tsx
+  CancelReservationDialog.tsx
+  CancelReservationSheet.tsx
+```
+
+Route adapters:
+
+- `pages/ReservationNewPage.tsx` becomes a thin adapter to `BookingFlowPage`.
+- `pages/MyReservationsPage.tsx` becomes a thin adapter to `MyReservationsWorkspace`.
+
+## 36. API/domain normalization boundaries
+
+Pure normalizers accept `unknown`, do not mutate source, reject/skip malformed rows safely, and isolate IDs.
+
+Required normalizers:
+
+- `normalizeBusiness`
+- `normalizeService`
+- `normalizeDisabledDates`
+- `normalizeSlots`
+- `normalizeBookingCreateResult`
+- `normalizeReservationSummary`
+- `normalizeReservationPage`
+
+Leaf UI receives normalized feature-domain values only. API wrappers own raw envelope unwrapping.
+
+## 37. Date/time/timezone contract
+
+- Date is opaque schedule-local `YYYY-MM-DD`.
+- Time is opaque `HH:mm`/trimmed `HH:mm:ss`.
+- Compare date/time as validated calendar/time parts.
+- `addMinutesToTime` computes review-only estimated end without constructing a timezone-bearing date.
+- Server `reservationDate`, `startTime`, and `endTime` are authoritative after creation.
+- No timezone text, abbreviations, conversions, `UTC`, `店家時間`, or `您的當地時間`.
+
+## 38. Cache/refresh architecture
+
+No global query client.
+
+Reload points:
+
+- Businesses: initial/retry.
+- Services + disabled dates: after business selection.
+- Slots: after service/date; after conflict.
+- Reservation list: initial, filters, sort, page, retry, successful cancellation.
+- Filter businesses: initial.
+- Filter services: after filter-business change.
+
+State stays feature-local. `AuthContext.refresh()` is not called as a booking/list refresh substitute.
+
+## 39. Accessibility contract
+
+- Exactly one route-level `h1`.
+- Logical `h2` section headings.
+- Progress has text equivalent and current-step semantics.
+- All controls have labels and 44px minimum targets where touch-relevant.
+- Flatpickr must be keyboard-operable and validate typed input.
+- Slots expose selected/unavailable states beyond color.
+- Disabled slot reason is in accessible text.
+- Errors are associated using `aria-describedby`.
+- Status is icon plus text.
+- Mutation feedback is live-region based.
+- Reduced-motion preferences disable nonessential transitions.
+- Visible focus exists on keyboard interaction; no static arbitrary focus rings.
+
+## 40. Focus-management contract
+
+- Booking initial error retry focuses task heading after successful reload.
+- Service error retry returns focus to service section.
+- Slot conflict focuses the availability message.
+- Dialog/sheet captures opener on open and traps focus.
+- Pending confirmation cannot close through Escape/backdrop.
+- On normal cancel close, restore opener focus.
+- After refresh removes the source action, focus nearest surviving section heading; if none, focus `我的預約` H1.
+- After mutation success plus refresh failure, focus stale message/reload control.
+- Result state focuses result heading after submit.
+
+## 41. Security/privacy contract
+
+- Render no reservation, user, business IDs, usernames, auth claims, internal timestamps, raw backend messages, or backend DTO dumps.
+- Never log booking draft, remark, cancellation reason, CSRF token, or session data.
+- Use existing credentialed fetch and CSRF behavior.
+- Keep safe internal-only `returnTo`.
+- Internal reservation ID exists only in mutation state.
+- Ownership remains backend-authoritative.
+- Customer route guard is UX/composition protection, not a substitute for backend role authorization.
+
+## 42. Test contract
+
+Future tests must cover:
+
+- Route/guard precedence, anonymous returnTo, customer access, business redirect, no loop, merchant routes unaffected.
+- Pure business/service/slot/result/reservation normalizers and malformed payloads.
+- Draft invalidation on business/service/date changes.
+- Stale preferred-business, service, disabled-date, slot, filter-service, and reservation query responses.
+- Booking loading, retry, no services, no slots, unavailable selection, 400, 401, 409, 500, duplicate submit, result, and refresh behavior.
+- Local date/time helpers without timezone shifts.
+- Sectioning/paging strategy, scheduler-lag records, statuses, filtered/empty/stale state.
+- PENDING cancellation, CONFIRMED required reason, duplicate prevention, mutation error, refresh failure, terminal no-action states.
+- One H1, accessible progress, slot names/states, dialog/sheet semantics, focus restoration, live feedback.
+- Customer shell plus Families 3–6 regression.
+
+No test dependency is added.
+
+## 43. Family 3 regression boundary
+
+Merchant service/booking-management routes, service components, and merchant-only business selection behavior are untouched. Family 2 must not import or recompose Family 3 merchant workspace UI.
+
+## 44. Family 4 regression boundary
+
+Business settings routes, focused settings headers, dirty-form/save behavior, and business-hours adapters remain unchanged. Reuse only generic focus/stale primitives where semantics match.
+
+## 45. Family 5 regression boundary
+
+Customer notifications, profile, account menu, navbar behavior, and notification preferences remain unchanged. Family 2 may use customer shell behavior but cannot alter notification routing or account semantics.
+
+## 46. Family 6 regression boundary
+
+LINE routes, account linking, conversation flow, webhook/security behavior, and LINE-specific reservation actions remain unchanged. No Family 2 customer web behavior is added to LINE flows.
+
+## 47. Legacy migration/cleanup plan
+
+| Legacy surface | Temporary status | Removal phase |
+|---|---|---|
+| Monolithic `ReservationNewPage.tsx` | Route adapter until booking feature passes | Phase 3 |
+| `MyReservationsPage.tsx` table/mobile duplication | Route adapter until workspace passes | Phase 4 |
+| Bootstrap cancellation modal | Retained until feature dialog/sheet passes | Phase 5 |
+| Raw DTO rendering | Replaced by normalizers incrementally | Phases 2–5 |
+| Toast-only booking errors | Retained for global fallback only | Phases 2–5 |
+| Booking success home navigation | Removed after result state passes | Phase 3 |
+
+No legacy code is removed before its replacement passes route and regression tests.
+
+## 48. Implementation phases
+
+1. **Route/domain/time foundation**
+   Customer guard, safe return behavior, typed API error boundary, normalizers, status/capability helpers, local date utilities, request-generation utilities, tests.
+
+2. **Booking selection flow**
+   Preferred business/service/date/slots, progress, context, loading/error/empty, responsive booking shell.
+
+3. **Booking review/submit/result**
+   Review, remark, request mapper, duplicate prevention, 400/401/409/500, PENDING result.
+
+4. **My reservations workspace**
+   Strategy B sectioning, filters/pagination, loading/error/empty/stale, desktop/mobile layouts.
+
+5. **Cancellation flows**
+   PENDING confirmation, CONFIRMED request reason, dialog/sheet, authoritative refresh, stale-after-success state, focus behavior.
+
+6. **Family 2 integration/regression**
+   All breakpoints, route guards, accessibility, privacy, legacy cleanup, Family 3–6 regression.
+
+## 49. Known limitations
+
+- Backend has no customer reservation detail endpoint; results cannot survive reload.
+- Backend offers generic paged queries only; section grouping is limited to loaded authoritative records.
+- Backend lacks business timezone metadata.
+- Customer-only frontend routes are not equivalent to backend `ROLE_USER` API authorization.
+- Scheduler completion may lag up to five minutes.
+- Service selection is backend name-based during creation despite local service ID normalization.
+
+## 50. Unsupported capabilities
+
+Excluded unless backend changes:
+
+- Guest booking
+- Staff/provider or any-staff selection
+- Price, payment, deposit, receipt, review
+- Cancellation policy metadata
+- Business timezone claims
+- Slot hold, lock, countdown, waitlist
+- Reservation detail, reschedule, rebook, edit
+- Multiple/recurring/group booking
+- Customer chat/messaging
+
+## 51. Remaining open decisions
+
+None blocking Phase 1.
+
+Backend hardening is explicitly deferred:
+
+- Enforce `ROLE_USER` at Family 2 API boundaries.
+- Consider a server-backed customer reservation detail/result endpoint only if persistent booking-result recovery becomes a product requirement.
+- Consider query support for globally authoritative upcoming/history grouping only if pagination limitation becomes unacceptable.
+
+## 52. Final Phase 1 entry criteria
+
+Phase 1 may begin only when:
+
+- Route guard precedence and safe redirect target `/` are accepted.
+- Strategy B grouping limitation is accepted.
+- Client-held result reload behavior is accepted.
+- Session expiry is accepted as no-draft-persistence: redirect through safe login return flow, then clean booking restart with a clear expiry notice.
+- Typed HTTP-status error handling is approved as foundational refactoring.
+- No backend contract changes are assumed.
+
+---
+
+1. Final route decisions: `/reservation/new` remains one internal-step customer route; `/my/reservations` remains one customer workspace.
+
+2. Customer-role guard decision: `RequireAuth → RequireCustomer`; business users redirect before composition mounts.
+
+3. Timezone/date decision: opaque schedule-local strings; no timezone parsing or labels.
+
+4. Booking state machine: initializing, selection, date/time, review, submitting, result, recoverable errors/conflict, auth handoff.
+
+5. Draft invalidation: business clears service/date/availability; service clears date/time; date clears slot/end estimate.
+
+6. Async race strategy: `AbortController` plus request generations.
+
+7. Slot conflict strategy: clear slot, preserve context/remark, reload, announce, focus availability message.
+
+8. Submit/result strategy: immutable request snapshot; stay in-route after `201` with `PENDING` result.
+
+9. Result reload behavior: clean booking restart; no result reconstruction.
+
+10. Reservation-query/grouping strategy: classify the loaded generic paged query only.
+
+11. Status normalization: exact five backend statuses with icon plus text.
+
+12. Filter/pagination strategy: secondary disclosure, reset page on changes, numbered pagination only.
+
+13. Cancellation capability rules: only `PENDING` and `CONFIRMED`.
+
+14. PENDING cancellation semantics: explicit confirmation, no reason, immediate `CANCELLED`.
+
+15. CONFIRMED cancellation semantics: reason required, creates `CANCEL_REQUESTED`.
+
+16. Refresh-failure behavior: mutation success remains distinct; old rows become stale/unconfirmed.
+
+17. Desktop architecture: booking task/context planes, operational reservation rows, centered dialog.
+
+18. Mobile architecture: focused booking shell, inline context, normal reservation shell, bottom sheet.
+
+19. Component/file plan: customer-booking and customer-reservations feature boundaries, with current pages retained as adapters.
+
+20. Accessibility architecture: semantic headings, keyboard calendar, text-plus-icon state, labelled fields, live feedback.
+
+21. Focus-management architecture: conflict/result/dialog/sheet/focus-restoration rules are locked.
+
+22. Security/privacy architecture: no internal identifiers or raw errors; safe returnTo; no draft/reason logging.
+
+23. Test strategy: route, domain, race, booking, reservations, cancellation, accessibility, and regression coverage.
+
+24. Family 3–6 regression boundaries: merchant operations, settings, notifications/profile, and LINE remain isolated.
+
+25. Legacy migration plan: replace only after equivalent feature path passes.
+
+26. Final implementation phases: six phases, beginning with guard/domain/time foundation.
+
+27. Known limitations: paged grouping, no timezone/detail route, scheduler lag, backend role gap.
+
+28. Unsupported capabilities: locked out in section 50.
+
+29. Remaining open decisions: none blocking Phase 1.
+
+30. No files were modified.
+
+31. No code was implemented.
+
+32. No images were generated.

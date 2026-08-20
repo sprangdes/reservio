@@ -1,11 +1,19 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../state/AuthContext';
 import { api } from '../api';
 import { useToast } from '../state/ToastContext';
 import { emitNotificationsChanged, NOTIFICATIONS_CHANGED_EVENT } from '../notificationEvents';
-import { NotificationSettingsPanel } from '../pages/NotificationSettingsPage';
 import { PreferredBusinessesPanel } from '../pages/PreferredBusinessesPage';
+import {
+  CUSTOMER_NOTIFICATION_SETTINGS_BACK_TARGET,
+  CUSTOMER_NOTIFICATION_SETTINGS_ROUTE,
+  notificationSettingsDestinationFor
+} from '../features/customer-notifications/customerNotificationSettingsRoute';
+import { clearMerchantRegistrationDraft } from '../features/auth/merchantRegistrationDraft';
+import { clearPasswordResetState } from '../features/auth/passwordResetState';
+import { clearReturnContext } from '../features/auth/returnContext';
+import { formatDateTimeToSeconds } from '../utils/time';
 
 interface NotificationItem {
   id: number;
@@ -16,12 +24,13 @@ interface NotificationItem {
   createdAt: string;
 }
 
-type ActiveSettingsPanel = 'notifications' | 'preferred-businesses' | null;
+type ActiveSettingsPanel = 'preferred-businesses' | null;
 
 export default function Navbar() {
   const { me, setMe } = useAuth();
-  const { setSuccessMessage, setErrorMessage } = useToast();
+  const { setErrorMessage } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [hoverEnabled, setHoverEnabled] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -76,12 +85,13 @@ export default function Navbar() {
   const handleLogout = async () => {
     try {
       await api.logout();
+      clearReturnContext();
+      clearPasswordResetState();
+      clearMerchantRegistrationDraft();
       setMe(null);
-      setSuccessMessage('您已成功登出。');
       navigate('/login');
-    } catch (err) {
-      const error = err as Error;
-      setErrorMessage(error.message || '登出失敗');
+    } catch {
+      setErrorMessage('目前無法完成登出，請確認網路連線後再試。');
     }
   };
 
@@ -94,8 +104,8 @@ export default function Navbar() {
       setNotificationModalOpen(false);
       setOpen(false);
       navigate(me?.role === 'ROLE_BUSINESS' ? '/reservation/manage' : '/my/reservations');
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '通知更新失敗');
+    } catch {
+      setErrorMessage('暫時無法更新通知，請稍後再試。');
     }
   };
 
@@ -103,8 +113,8 @@ export default function Navbar() {
     try {
       await api.markAllNotificationsRead();
       emitNotificationsChanged();
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '通知更新失敗');
+    } catch {
+      setErrorMessage('暫時無法更新通知，請稍後再試。');
     }
   };
 
@@ -121,14 +131,16 @@ export default function Navbar() {
     setOpen(false);
   };
 
-  const settingsPanelTitle = activeSettingsPanel === 'notifications' ? '通知設定' : '管理想預約店家';
+  const notificationSettingsDestination = notificationSettingsDestinationFor(me?.role);
+  const isCustomerNotificationSettingsRoute = me?.role === 'ROLE_USER' && location.pathname === CUSTOMER_NOTIFICATION_SETTINGS_ROUTE;
+  const settingsPanelTitle = '管理想預約店家';
 
   const navClass = 'navbar navbar-expand-lg navbar-dark fixed-top navbar-transparent navbar-custom-shadow';
 
   return (
     <div>
       <nav
-        className={navClass}
+        className={`${navClass}${isCustomerNotificationSettingsRoute ? ' customer-settings-navbar' : ''}`}
         onMouseEnter={() => hoverEnabled && setOpen(true)}
         onMouseLeave={() => hoverEnabled && setOpen(false)}
       >
@@ -157,11 +169,13 @@ export default function Navbar() {
                       </Link>
                     </li>
                   )}
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/my/reservations">
-                      我的預約
-                    </Link>
-                  </li>
+                  {me.role === 'ROLE_BUSINESS' ? null : (
+                    <li className="nav-item">
+                      <Link className="nav-link" to="/my/reservations">
+                        我的預約
+                      </Link>
+                    </li>
+                  )}
                   <li className="nav-item mobile-menu__divider"></li>
                   <li className="nav-item mobile-menu__user">
                     <span className="nav-link">
@@ -182,7 +196,7 @@ export default function Navbar() {
                         </Link>
                       </li>
                       <li className="nav-item mobile-menu__item">
-                        <Link className="nav-link" to="/business/line-integration">
+                        <Link className="nav-link" to="/business/settings/integrations/line">
                           LINE 串接
                         </Link>
                       </li>
@@ -200,15 +214,15 @@ export default function Navbar() {
                     </>
                   )}
                   <li className="nav-item mobile-menu__item">
-                    <button type="button" className="nav-link mobile-menu__button" onClick={() => openSettingsPanel('notifications')}>
+                    <Link className="nav-link mobile-menu__button" to={notificationSettingsDestination} onClick={() => setOpen(false)}>
                       通知設定
-                    </button>
+                    </Link>
                   </li>
                   {me.emailVerified ? null : (
                     <li className="nav-item mobile-menu__item">
-                      <button type="button" className="nav-link mobile-menu__button mobile-menu__button--warning" onClick={() => openSettingsPanel('notifications')}>
-                        驗證 Email
-                      </button>
+                    <Link className="nav-link mobile-menu__button mobile-menu__button--warning" to={notificationSettingsDestination} onClick={() => setOpen(false)}>
+                      驗證 Email
+                    </Link>
                     </li>
                   )}
                   <li className="nav-item mobile-menu__item">
@@ -264,7 +278,7 @@ export default function Navbar() {
                             <span className="notification-menu__title">{item.title}</span>
                             <span className="notification-menu__content">{item.content}</span>
                             <span className="notification-menu__time">
-                              {new Date(item.createdAt).toLocaleString('zh-TW')}
+                              {formatDateTimeToSeconds(item.createdAt)}
                             </span>
                           </button>
                         ))}
@@ -289,7 +303,7 @@ export default function Navbar() {
                             </Link>
                           </li>
                           <li>
-                            <Link className="dropdown-item user-menu__item" to="/business/line-integration">
+                            <Link className="dropdown-item user-menu__item" to="/business/settings/integrations/line">
                               LINE 串接
                             </Link>
                           </li>
@@ -313,23 +327,18 @@ export default function Navbar() {
                         </>
                       )}
                       <li>
-                        <button
-                          type="button"
-                          className="dropdown-item user-menu__item"
-                          onClick={() => openSettingsPanel('notifications')}
-                        >
+                        <Link className="dropdown-item user-menu__item" to={notificationSettingsDestination}>
                           通知設定
-                        </button>
+                        </Link>
                       </li>
                       {me.emailVerified ? null : (
                           <li>
-                            <button
-                                type="button"
-                                className="dropdown-item user-menu__item user-menu__item--warning"
-                                onClick={() => openSettingsPanel('notifications')}
+                            <Link
+                              className="dropdown-item user-menu__item user-menu__item--warning"
+                              to={notificationSettingsDestination}
                             >
                               驗證 Email
-                            </button>
+                            </Link>
                           </li>
                       )}
                       <li><hr className="dropdown-divider user-menu__divider" /></li>
@@ -365,17 +374,23 @@ export default function Navbar() {
                   <button type="button" className="btn-close" aria-label="Close" onClick={closeSettingsPanel}></button>
                 </div>
                 <div className="modal-body settings-modal__body">
-                  {activeSettingsPanel === 'notifications' ? (
-                    <NotificationSettingsPanel onSaved={closeSettingsPanel} />
-                  ) : (
-                    <PreferredBusinessesPanel onCancel={closeSettingsPanel} onSaved={closeSettingsPanel} />
-                  )}
+                  <PreferredBusinessesPanel onCancel={closeSettingsPanel} onSaved={closeSettingsPanel} />
                 </div>
               </div>
             </div>
           </div>
           <div className="modal-backdrop fade show"></div>
         </>
+      ) : null}
+      {isCustomerNotificationSettingsRoute ? (
+        <div className="customer-settings-navbar__mobile-topbar">
+          <Link to={CUSTOMER_NOTIFICATION_SETTINGS_BACK_TARGET} aria-label="返回個人資料">
+            <i className="bi bi-arrow-left" aria-hidden="true" />
+            <span>個人資料</span>
+          </Link>
+          <strong>通知設定</strong>
+          <span aria-hidden="true" />
+        </div>
       ) : null}
       {notificationModalOpen ? (
         <>
@@ -411,7 +426,7 @@ export default function Navbar() {
                         <span className="notification-menu__title">{item.title}</span>
                         <span className="notification-menu__content">{item.content}</span>
                         <span className="notification-menu__time">
-                          {new Date(item.createdAt).toLocaleString('zh-TW')}
+                          {formatDateTimeToSeconds(item.createdAt)}
                         </span>
                       </button>
                     ))}

@@ -1,16 +1,12 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
-import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import RegisterBusinessPage from './pages/RegisterBusinessPage';
 import ReservationNewPage from './pages/ReservationNewPage';
 import MyReservationsPage from './pages/MyReservationsPage';
-import ManageTodayPage from './pages/ManageTodayPage';
-import ManageAllPage from './pages/ManageAllPage';
-import ManagePendingPage from './pages/ManagePendingPage';
 import ServiceManagementPage from './pages/ServiceManagementPage';
-import BusinessInfoPage from './pages/BusinessInfoPage';
+import BusinessInfoPage from './features/business-settings/LegacyBusinessInfoCompatibility';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ForgotPasswordVerifyPage from './pages/ForgotPasswordVerifyPage';
 import ForceChangePasswordPage from './pages/ForceChangePasswordPage';
@@ -18,13 +14,23 @@ import PreferredBusinessesPage from './pages/PreferredBusinessesPage';
 import BusinessSetupPage from './pages/BusinessSetupPage';
 import NotificationsPage from './pages/NotificationsPage';
 import NotificationSettingsPage from './pages/NotificationSettingsPage';
-import LineIntegrationPage from './pages/LineIntegrationPage';
 import LineAccountLinkPage from './pages/LineAccountLinkPage';
 import LineAccountLinksPage from './pages/LineAccountLinksPage';
 import ProfilePage from './pages/ProfilePage';
+import BusinessWorkspaceShell from './features/business-operations/BusinessWorkspaceShell';
+import MerchantNotificationsPage from './features/business-operations/MerchantNotificationsPage';
+import OperationsOverviewPage from './features/business-operations/OperationsOverviewPage';
+import ReservationCenterPage, { type ReservationCenterPreset } from './features/business-operations/ReservationCenterPage';
 import { useAuth } from './state/AuthContext';
 import {JSX} from "react";
 import SessionTimeoutManager from './components/SessionTimeoutManager';
+import { ServiceEditorScaffold, SettingsLandingPage, SettingsScaffoldPage } from './features/business-settings/SettingsPages';
+import { resolveNotificationSettingsRoute } from './features/customer-notifications/customerNotificationSettingsRoute';
+import { buildLoginPath, resolvePostAuthDestination } from './features/auth/authDestination';
+import PublicHomePage from './features/public-entry/PublicHomePage';
+import RouteFocusManager from './components/RouteFocusManager';
+import CustomerDashboardPage from './features/customer-dashboard/CustomerDashboardPage';
+import GlobalDatePicker from './components/GlobalDatePicker';
 
 function RequireAuth({ children }: Readonly<{ children: JSX.Element }>) {
   const { me, loading } = useAuth();
@@ -35,8 +41,7 @@ function RequireAuth({ children }: Readonly<{ children: JSX.Element }>) {
   }
 
   if (!me) {
-    const returnTo = encodeURIComponent(`${location.pathname}${location.search}`);
-    return <Navigate to={`/login?returnTo=${returnTo}`} replace />;
+    return <Navigate to={buildLoginPath(location.pathname, location.search)} state={location.state} replace />;
   }
 
   return children;
@@ -45,13 +50,11 @@ function RequireAuth({ children }: Readonly<{ children: JSX.Element }>) {
 function PasswordResetGuard({ children }: Readonly<{ children: JSX.Element }>) {
   const { me, loading } = useAuth();
   const location = useLocation();
-  const allowPaths = ['/force-change-password', '/login', '/forgot-password', '/forgot-password/verify'];
-
   if (loading) {
-    return children;
+    return null;
   }
 
-  if (me?.mustChangePassword && !allowPaths.includes(location.pathname)) {
+  if (me?.mustChangePassword && location.pathname !== '/force-change-password') {
     return <Navigate to="/force-change-password" replace />;
   }
 
@@ -70,77 +73,158 @@ function BusinessSetupGuard({ children }: Readonly<{ children: JSX.Element }>) {
   return children;
 }
 
+function AuthRouteRedirect({ children }: Readonly<{ children: JSX.Element }>) {
+  const { me, loading } = useAuth();
+  const location = useLocation();
+  // A successful LINE callback must consume its safe return context before the generic redirect runs.
+  const lineLogin = new URLSearchParams(location.search).get('lineLogin');
+  if (lineLogin === 'success' || lineLogin === 'failed') return children;
+  if (loading || !me) return children;
+  return <Navigate to={resolvePostAuthDestination(me).path} replace />;
+}
+
+function ForceChangeRouteGuard({ children }: Readonly<{ children: JSX.Element }>) {
+  const { me, loading } = useAuth();
+  if (loading || !me) return children;
+  if (!me.mustChangePassword) return <Navigate to={resolvePostAuthDestination(me).path} replace />;
+  return children;
+}
+
+function BusinessAwareHome() {
+  const { me, loading } = useAuth();
+  if (loading) return null;
+  if (!me) return <PublicHomePage />;
+  if (me?.role === 'ROLE_BUSINESS') {
+    return <BusinessWorkspaceShell><OperationsOverviewPage /></BusinessWorkspaceShell>;
+  }
+  return <Navigate to={resolvePostAuthDestination(me).path} replace />;
+}
+
+function ReservationCenterRoute({ preset }: Readonly<{ preset: ReservationCenterPreset }>) {
+  return <BusinessWorkspaceShell><ReservationCenterPage preset={preset} /></BusinessWorkspaceShell>;
+}
+
+function RequireBusiness({ children }: Readonly<{ children: JSX.Element }>) {
+  const { me, loading } = useAuth();
+  const location = useLocation();
+  if (loading) return null;
+  if (!me) return <Navigate to={buildLoginPath(location.pathname, location.search)} replace />;
+  if (me.mustChangePassword || me.role !== 'ROLE_BUSINESS' || !me.business) return <Navigate to={resolvePostAuthDestination(me).path} replace />;
+  return children;
+}
+
+function RequireCustomer({ children }: Readonly<{ children: JSX.Element }>) {
+  const { me, loading } = useAuth();
+  const location = useLocation();
+  if (loading) return null;
+  if (!me) return <Navigate to={buildLoginPath(location.pathname, location.search)} replace />;
+  if (me.mustChangePassword || me.role !== 'ROLE_USER') return <Navigate to={resolvePostAuthDestination(me).path} replace />;
+  return children;
+}
+
+function RequireBusinessSetup({ children }: Readonly<{ children: JSX.Element }>) {
+  const { me, loading } = useAuth();
+  const location = useLocation();
+  if (loading) return null;
+  if (!me) return <Navigate to={buildLoginPath(location.pathname, location.search)} replace />;
+  if (me.mustChangePassword || me.role !== 'ROLE_BUSINESS' || me.business) return <Navigate to={resolvePostAuthDestination(me).path} replace />;
+  return children;
+}
+
+function SettingsRoute({ page }: Readonly<{ page: 'landing' | 'profile' | 'booking' | 'hours' | 'notifications' | 'line' | 'account' }>) {
+  const focused = page !== 'landing';
+  return <RequireBusiness><BusinessWorkspaceShell focused={focused}>{page === 'landing' ? <SettingsLandingPage /> : <SettingsScaffoldPage page={page} />}</BusinessWorkspaceShell></RequireBusiness>;
+}
+
+function RoleAwareNotificationSettingsRoute() {
+  const { me } = useAuth();
+  if (resolveNotificationSettingsRoute(me?.role, Boolean(me?.business)) === 'merchant-compatibility') {
+    return <BusinessWorkspaceShell focused><SettingsScaffoldPage page="notifications" /></BusinessWorkspaceShell>;
+  }
+  return <NotificationSettingsPage />;
+}
+
+function NotificationSettingsCompatibility() {
+  return <RoleAwareNotificationSettingsRoute />;
+}
+
+function RoleAwareNotificationsRoute() {
+  const { me } = useAuth();
+  if (me?.role === 'ROLE_BUSINESS' && me.business) {
+    return <BusinessWorkspaceShell><MerchantNotificationsPage /></BusinessWorkspaceShell>;
+  }
+  return <NotificationsPage />;
+}
+
+function LineIntegrationCompatibility() {
+  return <RequireBusiness><Navigate to="/business/settings/integrations/line" replace /></RequireBusiness>;
+}
+
 export default function App() {
   return (
     <PasswordResetGuard>
       <BusinessSetupGuard>
         <>
         <SessionTimeoutManager />
+        <GlobalDatePicker />
+        <RouteFocusManager />
         <Routes>
       <Route
         path="/"
-        element={
-          <Layout>
-            <HomePage />
-          </Layout>
-        }
+        element={<BusinessAwareHome />}
       />
       <Route
         path="/login"
         element={
-          <Layout>
-            <LoginPage />
-          </Layout>
+          <AuthRouteRedirect><LoginPage /></AuthRouteRedirect>
         }
       />
       <Route
         path="/register"
         element={
-          <Layout>
-            <RegisterPage />
-          </Layout>
+          <AuthRouteRedirect><RegisterPage /></AuthRouteRedirect>
         }
       />
       <Route
         path="/register-business"
         element={
-          <Layout>
-            <RegisterBusinessPage />
-          </Layout>
+          <AuthRouteRedirect><RegisterBusinessPage /></AuthRouteRedirect>
         }
       />
       <Route
         path="/forgot-password"
         element={
-          <Layout>
-            <ForgotPasswordPage />
-          </Layout>
+          <AuthRouteRedirect><ForgotPasswordPage /></AuthRouteRedirect>
         }
       />
       <Route
         path="/forgot-password/verify"
         element={
-          <Layout>
-            <ForgotPasswordVerifyPage />
-          </Layout>
+          <AuthRouteRedirect><ForgotPasswordVerifyPage /></AuthRouteRedirect>
         }
       />
       <Route
         path="/force-change-password"
         element={
-          <Layout>
-            <RequireAuth>
+          <RequireAuth>
+            <ForceChangeRouteGuard>
               <ForceChangePasswordPage />
-            </RequireAuth>
-          </Layout>
+            </ForceChangeRouteGuard>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <RequireAuth><RequireCustomer><CustomerDashboardPage /></RequireCustomer></RequireAuth>
         }
       />
       <Route
         path="/reservation/new"
         element={
-          <Layout>
+          <Layout hideNavigation hideFooter>
             <RequireAuth>
-              <ReservationNewPage />
+              <RequireCustomer><ReservationNewPage /></RequireCustomer>
             </RequireAuth>
           </Layout>
         }
@@ -148,9 +232,9 @@ export default function App() {
       <Route
         path="/my/reservations"
         element={
-          <Layout>
+          <Layout hideNavigation hideFooter>
             <RequireAuth>
-              <MyReservationsPage />
+              <RequireCustomer><MyReservationsPage /></RequireCustomer>
             </RequireAuth>
           </Layout>
         }
@@ -158,113 +242,86 @@ export default function App() {
       <Route
         path="/preferred-businesses"
         element={
-          <Layout>
-            <RequireAuth>
-              <PreferredBusinessesPage />
-            </RequireAuth>
-          </Layout>
+          <RequireAuth><RequireCustomer><PreferredBusinessesPage /></RequireCustomer></RequireAuth>
         }
       />
       <Route
         path="/reservation/today/manage"
         element={
-          <Layout>
-            <RequireAuth>
-              <ManageTodayPage />
-            </RequireAuth>
-          </Layout>
+          <RequireAuth><RequireBusiness><ReservationCenterRoute preset="today" /></RequireBusiness></RequireAuth>
         }
       />
       <Route
         path="/reservation/manage"
         element={
-          <Layout>
-            <RequireAuth>
-              <ManageAllPage />
-            </RequireAuth>
-          </Layout>
+          <RequireAuth><RequireBusiness><ReservationCenterRoute preset="all" /></RequireBusiness></RequireAuth>
         }
       />
       <Route
         path="/reservation/pending/manage"
         element={
-          <Layout>
-            <RequireAuth>
-              <ManagePendingPage />
-            </RequireAuth>
-          </Layout>
+          <RequireAuth><RequireBusiness><ReservationCenterRoute preset="pending" /></RequireBusiness></RequireAuth>
         }
       />
       <Route
         path="/service/manage"
         element={
-          <Layout>
-            <RequireAuth>
-              <ServiceManagementPage />
-            </RequireAuth>
-          </Layout>
+          <RequireAuth><RequireBusiness><BusinessWorkspaceShell><ServiceManagementPage /></BusinessWorkspaceShell></RequireBusiness></RequireAuth>
         }
       />
+      <Route path="/service/new" element={<RequireAuth><RequireBusiness><BusinessWorkspaceShell focused><ServiceEditorScaffold editing={false} /></BusinessWorkspaceShell></RequireBusiness></RequireAuth>} />
+      <Route path="/service/:id/edit" element={<RequireAuth><RequireBusiness><BusinessWorkspaceShell focused><ServiceEditorScaffold editing /></BusinessWorkspaceShell></RequireBusiness></RequireAuth>} />
       <Route
         path="/notifications"
-        element={<Layout><RequireAuth><NotificationsPage /></RequireAuth></Layout>}
+        element={<RequireAuth><RoleAwareNotificationsRoute /></RequireAuth>}
       />
       <Route
         path="/notifications/settings"
-        element={<Layout><RequireAuth><NotificationSettingsPage /></RequireAuth></Layout>}
+        element={<RequireAuth><NotificationSettingsCompatibility /></RequireAuth>}
       />
       <Route
         path="/business/setup"
         element={
-          <Layout>
-            <RequireAuth>
-              <BusinessSetupPage />
-            </RequireAuth>
+          <Layout hideFooter>
+            <RequireAuth><RequireBusinessSetup><BusinessSetupPage /></RequireBusinessSetup></RequireAuth>
           </Layout>
         }
       />
       <Route
         path="/business/info"
         element={
-          <Layout>
-            <RequireAuth>
-              <BusinessInfoPage />
-            </RequireAuth>
-          </Layout>
+          <RequireAuth><RequireBusiness><BusinessWorkspaceShell><BusinessInfoPage /></BusinessWorkspaceShell></RequireBusiness></RequireAuth>
         }
       />
+      <Route path="/business/settings" element={<RequireAuth><SettingsRoute page="landing" /></RequireAuth>} />
+      <Route path="/business/settings/profile" element={<RequireAuth><SettingsRoute page="profile" /></RequireAuth>} />
+      <Route path="/business/settings/booking" element={<RequireAuth><SettingsRoute page="booking" /></RequireAuth>} />
+      <Route path="/business/settings/hours" element={<RequireAuth><SettingsRoute page="hours" /></RequireAuth>} />
+      <Route path="/business/settings/notifications" element={<RequireAuth><SettingsRoute page="notifications" /></RequireAuth>} />
+      <Route path="/business/settings/integrations/line" element={<RequireAuth><SettingsRoute page="line" /></RequireAuth>} />
+      <Route path="/business/settings/account" element={<RequireAuth><SettingsRoute page="account" /></RequireAuth>} />
       <Route
         path="/line/account-link"
-        element={<Layout><LineAccountLinkPage /></Layout>}
+        element={<Layout hideFooter><LineAccountLinkPage /></Layout>}
       />
       <Route
         path="/settings/line-accounts"
         element={
-          <Layout>
-            <RequireAuth>
-              <LineAccountLinksPage />
-            </RequireAuth>
+          <Layout hideFooter>
+            <RequireAuth><RequireCustomer><LineAccountLinksPage /></RequireCustomer></RequireAuth>
           </Layout>
         }
       />
       <Route
         path="/profile"
         element={
-          <Layout>
-            <RequireAuth>
-              <ProfilePage />
-            </RequireAuth>
-          </Layout>
+          <RequireAuth><RequireCustomer><ProfilePage /></RequireCustomer></RequireAuth>
         }
       />
       <Route
         path="/business/line-integration"
         element={
-          <Layout>
-            <RequireAuth>
-              <LineIntegrationPage />
-            </RequireAuth>
-          </Layout>
+          <RequireAuth><LineIntegrationCompatibility /></RequireAuth>
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
