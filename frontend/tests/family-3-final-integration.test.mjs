@@ -44,9 +44,9 @@ test('Family 3 modal surfaces trap focus, restore focus, and retain accessible d
   assert.match(drawer, /role="dialog"/);
 });
 
-test('future operations capabilities retain production-safe defaults and no preview transport', () => {
-  assert.match(flags, /reports: previewState/);
+test('future operations capabilities stay unavailable without development preview UI', () => {
+  assert.match(flags, /reports: 'unavailable'/);
   assert.match(flags, /resourceScheduling: 'unavailable'/);
-  assert.match(flags, /import\.meta\.env\.DEV/);
+  assert.doesNotMatch(flags, /preview|import\.meta\.env/);
   assert.doesNotMatch(flags, /fetch\(|\/api\//);
 });

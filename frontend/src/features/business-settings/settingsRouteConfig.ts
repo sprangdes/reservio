@@ -1,4 +1,4 @@
-export type CapabilityState = 'unavailable' | 'preview' | 'enabled';
+export type CapabilityState = 'enabled';
 export type SettingsMobileShell = 'workspace' | 'focused';
 
 export type SettingsRouteConfig = {
@@ -25,14 +25,3 @@ export const settingsRouteConfig = {
   serviceNew: { path: '/service/new', label: '新增服務', icon: 'bi-plus-circle', desktopSecondaryNavigation: false, mobileShell: 'focused', requiredRole: 'ROLE_BUSINESS', parentDestination: '/service/manage', capability: 'enabled' },
   serviceEdit: { path: '/service/:id/edit', label: '編輯服務', icon: 'bi-pencil-square', desktopSecondaryNavigation: false, mobileShell: 'focused', requiredRole: 'ROLE_BUSINESS', parentDestination: '/service/manage', capability: 'enabled' }
 } as const satisfies Record<string, SettingsRouteConfig>;
-
-export const settingsCapabilities: Readonly<Record<
-  'publicBusinessProfile' | 'branding' | 'bookingRules' | 'multipleBusinessHourIntervals' | 'temporaryClosureRanges' | 'servicePrice' | 'serviceCategories' | 'serviceOrdering' | 'staff' | 'resources' | 'messageTemplates' | 'lineLiveHealth' | 'merchantProfileEditing' | 'voluntaryPasswordChange' | 'sessionManagement' | 'deviceManagement' | 'accountDeletion' | 'auditHistory',
-  CapabilityState
->> = {
-  publicBusinessProfile: previewState(), branding: previewState(), bookingRules: previewState(), multipleBusinessHourIntervals: 'unavailable', temporaryClosureRanges: 'unavailable', servicePrice: previewState(), serviceCategories: previewState(), serviceOrdering: previewState(), staff: previewState(), resources: previewState(), messageTemplates: previewState(), lineLiveHealth: 'unavailable', merchantProfileEditing: 'unavailable', voluntaryPasswordChange: 'unavailable', sessionManagement: 'unavailable', deviceManagement: 'unavailable', accountDeletion: 'unavailable', auditHistory: 'unavailable'
-};
-
-function previewState(): CapabilityState {
-  return import.meta.env.DEV && import.meta.env.VITE_BUSINESS_SETTINGS_PREVIEW === 'true' ? 'preview' : 'unavailable';
-}

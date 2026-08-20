@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../state/AuthContext';
 import { useToast } from '../../state/ToastContext';
-import { isPreviewCapability } from './future/featureFlags';
 import { isActionableException, nextUpcomingReservation, todayAgendaPreview, todaySummary } from './overview';
 import { useOperationsOverview } from './hooks/useOperationsOverview';
 import { useReservationCenter } from './reservations/hooks/useReservationCenter';
@@ -44,7 +43,7 @@ export default function OperationsOverviewPage() {
       <PendingWorkSection items={pendingItems} state={overview.pendingState} onSelect={select} onAction={requestAction} onRetry={() => { void overview.retryPending().catch(() => undefined); }} />
       <aside className="operations-overview-ui__side" aria-label="今日營運摘要"><NextReservationPanel item={next} loading={todayLoading} onSelect={select} /><TodaySummary todayCount={summary.todayCount} pendingCount={summary.pendingCount} /></aside>
       <TodayAgendaPreview items={agenda} loading={todayLoading} onSelect={select} />
-      <aside className="operations-overview-ui__secondary" aria-label="營運提醒與通知"><OperationalAlerts cancellationCount={cancellationCount} failed={overview.pendingState.phase === 'query-error'} /><NotificationSummary notifications={overview.data.notifications} unreadCount={overview.data.unreadCount} state={overview.notificationState} onRetry={() => { void overview.retryNotifications().catch(() => undefined); }} />{isPreviewCapability('reports') || isPreviewCapability('messageCenter') ? <section className="operations-overview__future" aria-label="即將提供的營運功能"><i className="bi bi-stars" aria-hidden="true" /><span>更多營運摘要</span><small>即將提供</small></section> : null}</aside>
+      <aside className="operations-overview-ui__secondary" aria-label="營運提醒與通知"><OperationalAlerts cancellationCount={cancellationCount} failed={overview.pendingState.phase === 'query-error'} /><NotificationSummary notifications={overview.data.notifications} unreadCount={overview.data.unreadCount} state={overview.notificationState} onRetry={() => { void overview.retryNotifications().catch(() => undefined); }} /></aside>
     </div>
     {todayController.selection ? <ReservationDetailsExperience selection={todayController.selection} mutationState={todayController.mutationState} confirmationAction={confirmationAction} onClose={closeDetails} onRequestAction={setConfirmationAction} onCancelConfirmation={() => setConfirmationAction(null)} onConfirmAction={confirmAction} /> : null}
   </section>;
