@@ -27,7 +27,7 @@ test('Phase 4 workspace exposes one customer hierarchy with secondary filters an
   const workspace = source('features/customer-reservations/MyReservationsWorkspace.tsx');
   assert.match(page, /MyReservationsWorkspace/);
   assert.match(workspace, /<h1>我的預約<\/h1>/);
-  assert.match(workspace, /建立預約/);
+  assert.doesNotMatch(workspace, /customer-reservation-workspace__create/);
   assert.match(workspace, /下一個預約/);
   assert.match(workspace, /需要留意/);
   assert.match(workspace, /即將到來/);
