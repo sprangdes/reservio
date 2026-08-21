@@ -1187,6 +1187,7 @@ main {
 .customer-preferences-workspace { --customer-green: #004c37; --customer-deep: #003d2d; --customer-ink: #1c2822; --customer-muted: #68726c; --customer-line: #dfdbd3; min-height: 100dvh; padding: 0 1.25rem 3.75rem; background: radial-gradient(circle at 50% 0, #fff 0, #faf9f6 67%); color: var(--customer-ink); font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif; }
 .customer-preferences-workspace *, .customer-preferences-workspace *::before, .customer-preferences-workspace *::after { box-sizing: border-box; }
 .customer-preferences-workspace__content { width: min(100%, 72rem); margin: 0 auto; }
+.customer-preferences-workspace__content, .customer-preferences-workspace__panel, .customer-preferences-workspace .preferred-businesses-panel, .customer-preferences-workspace .settings-panel-section, .customer-preferences-workspace .preferred-businesses-panel__item { min-width: 0; max-width: 100%; }
 .customer-preferences-workspace__header { margin: 2.65rem 0 2rem; }
 .customer-preferences-workspace__header p { margin: 0 0 .55rem; color: #5f796b; font-size: .78rem; font-weight: 850; letter-spacing: .08em; }
 .customer-preferences-workspace__header h1 { margin: 0; color: var(--customer-deep); font-size: clamp(2.25rem, 4vw, 3.2rem); font-weight: 850; letter-spacing: -.06em; line-height: 1.12; text-wrap: balance; }
@@ -1207,6 +1208,7 @@ main {
 .customer-preferences-workspace .preferred-business-card:hover { border-color: #78a28a !important; background: #f4f8f4; transform: translateY(-1px); }
 .customer-preferences-workspace .preferred-business-card--selected { border-color: var(--customer-green) !important; background: #eef6ef; }
 .customer-preferences-workspace .preferred-business-card .card-body { gap: .75rem; padding: 1rem 1.1rem; color: var(--customer-ink); }
+.customer-preferences-workspace .preferred-business-card .card-body > .fw-bold { min-width: 0; overflow-wrap: anywhere; }
 .customer-preferences-workspace .preferred-business-card__selection { display: inline-flex; flex: 0 0 auto; align-items: center; gap: .35rem; color: #5f796b; font-size: .84rem; font-weight: 800; white-space: nowrap; }
 .customer-preferences-workspace .preferred-business-card--selected .preferred-business-card__selection { color: var(--customer-green); }
 .customer-preferences-workspace .preferred-businesses-panel__state { display: grid; min-height: 9rem; place-items: center; padding: 1rem; border: 1px dashed #ccd7cf; border-radius: .55rem; background: #fafbf9; color: var(--customer-muted); text-align: center; }
@@ -1223,6 +1225,8 @@ main {
 @media (prefers-reduced-motion: reduce) { .customer-preferences-workspace *, .customer-preferences-workspace *::before, .customer-preferences-workspace *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
 
 @media (max-width: 768px) { .customer-preferences-workspace .preferred-businesses-panel__actions--centered .preferred-businesses-panel__save { flex: 0 1 100%; } }
+
+@media (max-width: 768px) { .customer-preferences-workspace { overflow-x: hidden; }.customer-preferences-workspace .preferred-businesses-panel__save { width: 100%; max-width: 100%; } }
 
 /* Customer workspace accents: orange is reserved for navigation orientation and light attention cues. */
 .customer-workspace-header__back:hover i { color: var(--system-orange-deep); }
