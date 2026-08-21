@@ -59,6 +59,7 @@ export default function CustomerWorkspaceHeader({ title, active, showBack = true
     {showBack ? <button type="button" className="customer-workspace-header__back" onClick={() => navigate(-1)} aria-label="返回上一頁"><i className="bi bi-chevron-left" aria-hidden="true" /><span>返回</span></button> : null}
     <Link className="customer-workspace-header__brand" to="/dashboard">Reservio</Link>
     <strong className="customer-workspace-header__mobile-title">{title}</strong>
+    {showMobileNavigation ? <LogoutButton className="customer-workspace-header__mobile-logout"><i className="bi bi-box-arrow-right" aria-hidden="true" /><span>登出</span></LogoutButton> : null}
     <nav aria-label="客戶導覽">
       {navigation.map((item) => <Link key={item.key} to={item.to} aria-current={item.key === active ? 'page' : undefined}>{item.label}</Link>)}
       {showCreate ? <Link to="/reservation/new" className="customer-workspace-header__create"><i className="bi bi-plus-lg" aria-hidden="true" /><span>建立預約</span></Link> : null}
