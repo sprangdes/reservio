@@ -13,11 +13,17 @@ class LineAccountLinkTokenServiceTest {
         String first = service.generateToken();
         String second = service.generateToken();
 
-        assertThat(first).isNotEqualTo(second);
-        assertThat(first).matches("[A-Za-z0-9_-]+");
-        assertThat(service.hash(first))
-                .isEqualTo(service.hash(first))
-                .isNotEqualTo(service.hash(second))
+        String firstHash = service.hash(first);
+        String firstHashAgain = service.hash(first);
+        String secondHash = service.hash(second);
+
+        assertThat(first)
+                .isNotEqualTo(second)
+                .matches("[A-Za-z0-9_-]+");
+
+        assertThat(firstHash)
+                .isEqualTo(firstHashAgain)
+                .isNotEqualTo(secondHash)
                 .hasSize(64);
     }
 }
