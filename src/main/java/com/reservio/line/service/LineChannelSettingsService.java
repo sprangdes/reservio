@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Base64;
 
 @Service
@@ -75,7 +76,7 @@ public class LineChannelSettingsService {
                 "Channel Access Token"
         ));
         channel.setEnabled(request.enabled());
-        channel.setUpdatedAt(LocalDateTime.now());
+        channel.setUpdatedAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
         if (credentialsChanged) {
             channel.setTokenValidatedAt(null);
             channel.setWebhookVerifiedAt(null);
@@ -92,7 +93,7 @@ public class LineChannelSettingsService {
     public LineChannelSettingsResponse disable() {
         BusinessLineChannel channel = currentChannel();
         channel.setEnabled(false);
-        channel.setUpdatedAt(LocalDateTime.now());
+        channel.setUpdatedAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
         return toResponse(channelRepo.save(channel));
     }
 
@@ -101,7 +102,7 @@ public class LineChannelSettingsService {
         BusinessLineChannel channel = currentChannel();
         channel.setWebhookKey(newWebhookKey());
         channel.setWebhookVerifiedAt(null);
-        channel.setUpdatedAt(LocalDateTime.now());
+        channel.setUpdatedAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
         return toResponse(channelRepo.save(channel));
     }
 
@@ -110,7 +111,7 @@ public class LineChannelSettingsService {
                 .business(business)
                 .webhookKey(newWebhookKey())
                 .enabled(false)
-                .createdAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")))
                 .build();
     }
 

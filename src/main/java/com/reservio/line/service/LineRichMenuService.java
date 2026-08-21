@@ -20,6 +20,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -85,12 +86,12 @@ public class LineRichMenuService {
         BusinessLineChannel channel = currentChannel();
         try {
             String displayName = messagingClient.getBotDisplayName(channel);
-            channel.setTokenValidatedAt(LocalDateTime.now());
+            channel.setTokenValidatedAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
 
             LineWebhookEndpoint webhook = messagingClient.getWebhookEndpoint(channel);
             String expectedWebhook = webhookUrl(channel);
             boolean webhookReady = webhook.active() && expectedWebhook.equals(webhook.endpoint());
-            channel.setWebhookVerifiedAt(webhookReady ? LocalDateTime.now() : null);
+            channel.setWebhookVerifiedAt(webhookReady ? LocalDateTime.now(ZoneId.of("Asia/Taipei")) : null);
             channelRepo.save(channel);
 
             String webhookMessage;
@@ -148,7 +149,7 @@ public class LineRichMenuService {
             }
             channel.setRichMenuId(newUnlinkedRichMenuId);
             channel.setLinkedRichMenuId(newLinkedRichMenuId);
-            channel.setRichMenuUpdatedAt(LocalDateTime.now());
+            channel.setRichMenuUpdatedAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
             channelRepo.save(channel);
             cleanupOldMenu(channel, oldUnlinkedRichMenuId, newUnlinkedRichMenuId);
             cleanupOldMenu(channel, oldLinkedRichMenuId, newLinkedRichMenuId);

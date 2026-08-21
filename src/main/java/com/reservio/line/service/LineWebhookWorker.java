@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Service
 public class LineWebhookWorker {
@@ -50,7 +51,7 @@ public class LineWebhookWorker {
     @Scheduled(fixedDelayString = "${app.line.messaging.worker-delay-ms:1000}")
     @Transactional
     public void processPendingEvents() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Taipei"));
         for (LineWebhookEvent event : eventRepo.findTop50ByStatusAndNextAttemptAtBeforeOrderById(
                 LineWebhookEventStatus.PENDING, now)) {
             processOne(event, now);

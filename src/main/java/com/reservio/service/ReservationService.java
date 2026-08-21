@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -102,9 +103,9 @@ public class ReservationService {
         UserData user = userDataService.getCurrentUser();
         BusinessData businessData = user.getBusinessData();
         if (businessData != null) {
-            return reservationRepo.countByBusinessAndReservationDateAndStatusNot(businessData, LocalDate.now(), CANCELLED);
+            return reservationRepo.countByBusinessAndReservationDateAndStatusNot(businessData, LocalDate.now(ZoneId.of("Asia/Taipei")), CANCELLED);
         }
-        return reservationRepo.countByUserAndReservationDateAndStatusNot(user, LocalDate.now(), CANCELLED);
+        return reservationRepo.countByUserAndReservationDateAndStatusNot(user, LocalDate.now(ZoneId.of("Asia/Taipei")), CANCELLED);
     }
 
     /**
@@ -225,7 +226,7 @@ public class ReservationService {
             throw new IllegalStateException("已完成的預約不可取消");
         } else if (currentStatus == PENDING) {
             reservation.setStatus(CANCELLED);
-            reservation.setCancelledAt(LocalDateTime.now());
+            reservation.setCancelledAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
             reservation.setCancelReason(null);
         } else if (currentStatus == CONFIRMED) {
             String reason = cancelReason == null ? "" : cancelReason.trim();
@@ -238,7 +239,7 @@ public class ReservationService {
             throw new IllegalStateException("此預約狀態不可取消: " + currentStatus);
         }
 
-        reservation.setUpdatedAt(LocalDateTime.now());
+        reservation.setUpdatedAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
         reservation.setUpdatedBy(updatedBy);
         reservationRepo.save(reservation);
         reservationNotificationService.notifyBusinessOfCustomerChange(reservation);
@@ -272,11 +273,11 @@ public class ReservationService {
         }
 
         reservation.setStatus(newStatus);
-        reservation.setUpdatedAt(LocalDateTime.now());
+        reservation.setUpdatedAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
         reservation.setUpdatedBy(actor.getUsername());
 
         if (newStatus == CANCELLED) {
-            reservation.setCancelledAt(LocalDateTime.now());
+            reservation.setCancelledAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
         }
 
         reservationRepo.save(reservation);
@@ -318,12 +319,12 @@ public class ReservationService {
 
         if (approve) {
             reservation.setStatus(CANCELLED);
-            reservation.setCancelledAt(LocalDateTime.now());
+            reservation.setCancelledAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
         } else {
             reservation.setStatus(CONFIRMED);
         }
 
-        reservation.setUpdatedAt(LocalDateTime.now());
+        reservation.setUpdatedAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
         reservation.setUpdatedBy(actor.getUsername());
         reservationRepo.save(reservation);
         reservationNotificationService.notifyCustomerOfBusinessChange(reservation);
@@ -331,7 +332,7 @@ public class ReservationService {
 
     @Scheduled(cron = "0 */5 * * * * ")
     public void markCompletedReservations() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Taipei"));
         List<Reservation> candidates = reservationRepo.findAllByStatusIn(List.of(PENDING, CONFIRMED, CANCEL_REQUESTED));
         for (Reservation reservation : candidates) {
             LocalDateTime endAt = LocalDateTime.of(reservation.getReservationDate(), reservation.getEndTime());
@@ -346,7 +347,7 @@ public class ReservationService {
 
     public List<Reservation> getTodayReservations() {
         UserData currentUser = userDataService.getCurrentUser();
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Taipei"));
         if (currentUser.getRole().equals(ROLE_BUSINESS.name())) {
             return reservationRepo.getAllByBusinessAndReservationDateAndStatusIn(
                     currentUser.getBusinessData(),
@@ -363,7 +364,7 @@ public class ReservationService {
 
     public List<Reservation> getWeekReservations() {
         UserData currentUser = userDataService.getCurrentUser();
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Taipei"));
         LocalDate startOfWeek = today.with(DayOfWeek.MONDAY);
         LocalDate endOfWeek = today.with(DayOfWeek.SUNDAY);
         if (currentUser.getRole().equals(ROLE_BUSINESS.name())) {
@@ -384,7 +385,7 @@ public class ReservationService {
 
     public List<Reservation> getMonthReservations() {
         UserData currentUser = userDataService.getCurrentUser();
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Taipei"));
         LocalDate startOfMonth = today.withDayOfMonth(1);
         LocalDate endOfMonth = today.withDayOfMonth(today.lengthOfMonth());
         if (currentUser.getRole().equals(ROLE_BUSINESS.name())) {
@@ -412,7 +413,7 @@ public class ReservationService {
 
     private void markCompleted(Reservation reservation) {
         reservation.setStatus(COMPLETED);
-        reservation.setUpdatedAt(LocalDateTime.now());
+        reservation.setUpdatedAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
         reservation.setUpdatedBy(SYSTEM.name());
         reservationRepo.save(reservation);
     }
@@ -422,7 +423,7 @@ public class ReservationService {
             return false;
         }
         LocalDateTime endAt = LocalDateTime.of(reservation.getReservationDate(), reservation.getEndTime());
-        return !endAt.isAfter(LocalDateTime.now());
+        return !endAt.isAfter(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
     }
 
     private Sort buildSort(String sortBy, String sortDir) {
