@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, api } from '../api';
 import { useAuth } from '../state/AuthContext';
-import LogoutButton from '../components/LogoutButton';
 import CustomerWorkspaceHeader from '../features/customer-workspace/CustomerWorkspaceHeader';
 
 export default function ProfilePage() {
@@ -96,7 +95,6 @@ export default function ProfilePage() {
               {saving ? '儲存中…' : '儲存變更'}
             </button>
           </form>
-          <LogoutButton className="customer-profile-page__logout"><i className="bi bi-box-arrow-right" aria-hidden="true" />登出</LogoutButton>
       </section>
     </main>
   );

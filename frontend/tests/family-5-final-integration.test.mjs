@@ -41,13 +41,12 @@ test('Navbar uses the canonical destination and has no obsolete customer notific
   assert.doesNotMatch(navbar, /NotificationSettingsPanel|setNotificationSettingsOpen|notificationSettingsOpen/);
 });
 
-test('merchant notification indicator reflects the shared unread count after notification changes', () => {
+test('merchant desktop notification indicator reflects the shared unread count after notification changes', () => {
   assert.match(workspaceShell, /api\.notificationUnreadCount\(\)/);
   assert.match(workspaceShell, /NOTIFICATIONS_CHANGED_EVENT/);
   assert.match(workspaceShell, /unreadCount=\{unreadCount\}/);
-  for (const header of [workspaceTopBar, mobileWorkspaceHeader]) {
-    assert.match(header, /unreadCount > 0 \? <span className="business-workspace__notification-dot" aria-hidden="true" \/> : null/);
-  }
+  assert.match(workspaceTopBar, /unreadCount > 0 \? <span className="business-workspace__notification-dot" aria-hidden="true" \/> : null/);
+  assert.doesNotMatch(mobileWorkspaceHeader, /business-workspace__notification-dot|bi-bell/);
 });
 
 test('customer save and verification preserve account-level data without exposing or prematurely mutating it', () => {

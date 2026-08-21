@@ -63,9 +63,9 @@ export default function CustomerDashboardPage() {
         <div className="customer-dashboard__primary-actions">{status ? <span className={`customer-dashboard__status is-${status.category}`}>{status.label}</span> : null}<Link to={upcoming ? '/my/reservations' : '/reservation/new'}>{upcoming ? '查看預約' : '開始預約'}<i className="bi bi-arrow-right" aria-hidden="true" /></Link></div>
       </section>
       <section className="customer-dashboard__shortcuts" aria-label="快速功能">
-        <Link to="/reservation/new"><i className="bi bi-calendar-plus" aria-hidden="true" /><span><strong>建立預約</strong><small>選擇店家、服務與時段</small></span><i className="bi bi-arrow-up-right" aria-hidden="true" /></Link>
-        <Link to="/my/reservations"><i className="bi bi-calendar2-check" aria-hidden="true" /><span><strong>我的預約</strong><small>查看、管理與取消預約</small></span><i className="bi bi-arrow-up-right" aria-hidden="true" /></Link>
-        <Link to="/preferred-businesses"><i className="bi bi-heart" aria-hidden="true" /><span><strong>想預約店家</strong><small>{state === 'ready' ? `目前已選擇 ${preferredCount} 間店家` : '管理常用店家'}</small></span><i className="bi bi-arrow-up-right" aria-hidden="true" /></Link>
+        <Link to="/reservation/new"><i className="bi bi-calendar-plus" aria-hidden="true" /><span><strong>建立預約</strong><small>選擇店家、服務與時段</small></span></Link>
+        <Link to="/my/reservations"><i className="bi bi-calendar2-check" aria-hidden="true" /><span><strong>我的預約</strong><small>查看、管理與取消預約</small></span></Link>
+        <Link to="/preferred-businesses"><i className="bi bi-heart" aria-hidden="true" /><span><strong>想預約店家</strong><small>{state === 'ready' ? `目前已選擇 ${preferredCount} 間店家` : '管理常用店家'}</small></span></Link>
       </section>
     </section>
   </main>;
