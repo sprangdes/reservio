@@ -175,7 +175,12 @@ public class LineChannelSettingsService {
 
     private String webhookUrl(String webhookKey) {
         String baseUrl = required(properties.webhookBaseUrl(), "Webhook Base URL");
-        return baseUrl.replaceAll("/+$", "")
+
+        while (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+
+        return baseUrl
                 + "/api/integrations/line/webhook/"
                 + webhookKey;
     }
