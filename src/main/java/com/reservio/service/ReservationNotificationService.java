@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import static com.reservio.enums.ReservationStatus.CONFIRMED;
 
@@ -43,7 +44,7 @@ public class ReservationNotificationService {
 
     @Scheduled(cron = "0 */5 * * * *")
     public void createUpcomingReminders() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Taipei"));
         LocalDateTime windowEnd = now.plusHours(2);
         LocalDateTime windowStart = windowEnd.minusMinutes(5);
         for (Reservation reservation : reservationRepo.findAllByStatusAndReservationDateBetween(

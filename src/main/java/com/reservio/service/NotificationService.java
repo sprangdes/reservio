@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Service
 public class NotificationService {
@@ -35,7 +36,7 @@ public class NotificationService {
         if (recipient == null || notificationRepo.existsByDedupeKey(dedupeKey)) {
             return;
         }
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Taipei"));
         Notification notification = notificationRepo.save(Notification.builder()
                 .recipient(recipient)
                 .reservation(reservation)
@@ -76,14 +77,14 @@ public class NotificationService {
         Notification notification = notificationRepo.findByIdAndRecipient(notificationId, user)
                 .orElseThrow(() -> new IllegalArgumentException("找不到通知"));
         if (notification.getReadAt() == null) {
-            notification.setReadAt(LocalDateTime.now());
+            notification.setReadAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
             notificationRepo.save(notification);
         }
     }
 
     @Transactional
     public void markAllRead(UserData user) {
-        notificationRepo.markAllRead(user, LocalDateTime.now());
+        notificationRepo.markAllRead(user, LocalDateTime.now(ZoneId.of("Asia/Taipei")));
     }
 
     public NotificationPreferenceResponse preferenceResponse(UserData user) {
@@ -114,7 +115,7 @@ public class NotificationService {
 
     @Transactional
     public void deleteExpired() {
-        notificationRepo.deleteAllByExpiresAtBefore(LocalDateTime.now());
+        notificationRepo.deleteAllByExpiresAtBefore(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
     }
 
     private NotificationResponse toResponse(Notification notification) {

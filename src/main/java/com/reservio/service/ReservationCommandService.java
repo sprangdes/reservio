@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Propagation;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 
 import static com.reservio.enums.ReservationStatus.PENDING;
 
@@ -76,7 +77,7 @@ public class ReservationCommandService {
                 .customerName(customerName)
                 .customerPhone(customerPhone)
                 .source(source)
-                .createdAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")))
                 .createdBy(source.name())
                 .deletedFlag(false)
                 .build();
@@ -105,13 +106,13 @@ public class ReservationCommandService {
         if (reservationDate == null) {
             throw new IllegalArgumentException("預約日期不可為空");
         }
-        if (reservationDate.isBefore(LocalDate.now())) {
+        if (reservationDate.isBefore(LocalDate.now(ZoneId.of("Asia/Taipei")))) {
             throw new IllegalArgumentException("預約日期不可早於今天");
         }
         if (startTime == null) {
             throw new IllegalArgumentException("預約時間不可為空");
         }
-        if (reservationDate.equals(LocalDate.now()) && !startTime.isAfter(LocalTime.now())) {
+        if (reservationDate.equals(LocalDate.now(ZoneId.of("Asia/Taipei"))) && !startTime.isAfter(LocalTime.now(ZoneId.of("Asia/Taipei")))) {
             throw new IllegalArgumentException("預約時間必須晚於目前時間");
         }
         if (source == null) {
