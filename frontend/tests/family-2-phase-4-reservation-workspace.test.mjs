@@ -77,7 +77,7 @@ test('customer account and reservation pages share the customer workspace naviga
   assert.match(app, /path="\/preferred-businesses"[\s\S]*<RequireAuth><RequireCustomer><PreferredBusinessesPage \/><\/RequireCustomer><\/RequireAuth>/);
 });
 
-test('loaded-page Strategy B grouping chooses only the nearest local future record and retains scheduler-lag status', () => {
+test('loaded-page Strategy B grouping chooses only the nearest local future record while preserving API ordering', () => {
   const pending = summary(1, 'PENDING', '2026-08-15', '14:00:00');
   const confirmed = summary(2, 'CONFIRMED', '2026-08-16', '09:00:00');
   const requested = summary(3, 'CANCEL_REQUESTED', '2026-08-17', '10:00:00');
@@ -89,7 +89,7 @@ test('loaded-page Strategy B grouping chooses only the nearest local future reco
   assert.equal(sections.next.id, '1');
   assert.deepEqual(sections.upcoming.map((item) => item.id), ['2']);
   assert.deepEqual(sections.attention.map((item) => item.id), ['3']);
-  assert.deepEqual(sections.history.map((item) => item.id), ['6', '4', '5']);
+  assert.deepEqual(sections.history.map((item) => item.id), ['4', '5', '6']);
   assert.equal(sections.history.find((item) => item.id === '5').status, 'CONFIRMED');
   assert.equal(new Set([sections.next.id, ...sections.upcoming.map((item) => item.id), ...sections.attention.map((item) => item.id), ...sections.history.map((item) => item.id)]).size, 6);
 });
