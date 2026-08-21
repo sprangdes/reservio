@@ -83,7 +83,9 @@ class BusinessDataServiceTest {
                 .build();
         when(userDataService.getCurrentUser()).thenReturn(user);
 
-        assertThatThrownBy(() -> businessDataService.setupCurrentBusiness(setupRequest()))
+        SetupBusinessRequest request = setupRequest();
+
+        assertThatThrownBy(() -> businessDataService.setupCurrentBusiness(request))
                 .isInstanceOf(NotBusinessAccountException.class);
 
         verify(businessDataRepo, never()).save(org.mockito.ArgumentMatchers.any());
@@ -100,7 +102,9 @@ class BusinessDataServiceTest {
                 .build();
         when(userDataService.getCurrentUser()).thenReturn(user);
 
-        assertThatThrownBy(() -> businessDataService.setupCurrentBusiness(setupRequest()))
+        SetupBusinessRequest request = setupRequest();
+
+        assertThatThrownBy(() -> businessDataService.setupCurrentBusiness(request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("商家資訊已建立");
 
