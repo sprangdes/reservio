@@ -108,11 +108,11 @@ export function PreferredBusinessesPanel({ onCancel, onSaved }: Readonly<Preferr
     categoryContent = <div className="preferred-businesses-panel__state">此分類目前沒有店家</div>;
   } else if (categories.length > 0) {
     categoryContent = (
-      <div className="row g-3 preferred-businesses-panel__list">
+      <div className="preferred-businesses-panel__list">
         {activeBusinesses.map((business) => {
           const checked = selectedIds.includes(Number(business.id));
           return (
-            <div className="col-md-6" key={business.id}>
+            <div className="preferred-businesses-panel__item" key={business.id}>
               <button
                 type="button"
                 aria-pressed={checked}
@@ -161,12 +161,12 @@ export function PreferredBusinessesPanel({ onCancel, onSaved }: Readonly<Preferr
           </>
         )}
       </div>
-      <div className="preferred-businesses-panel__actions">
+      <div className={`preferred-businesses-panel__actions${onCancel ? '' : ' preferred-businesses-panel__actions--centered'}`}>
         {onCancel ? (
           <button type="button" className="preferred-businesses-panel__cancel" onClick={onCancel}>
             返回
           </button>
-        ) : <span />}
+        ) : null}
         <button type="button" className="btn btn-gradient fw-bold px-4 preferred-businesses-panel__save" onClick={handleSave} disabled={loading || categoryLoading || saving}>
           {saving ? '儲存中...' : '儲存設定'}
         </button>

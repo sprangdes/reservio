@@ -1,5 +1,4 @@
 import { useMemo, useState, type ReactNode, type RefObject } from 'react';
-import { Link } from 'react-router-dom';
 import { classifyLoadedReservationPage } from './query';
 import ReservationFilters from './ReservationFilters';
 import ReservationRow from './ReservationRow';
@@ -39,7 +38,6 @@ export default function MyReservationsWorkspace() {
       <div className="customer-reservation-workspace__container">
         <header className="customer-reservation-workspace__header">
           <div><h1>我的預約</h1><p>在這裡查看與管理你的所有預約狀態。</p></div>
-          <Link to="/reservation/new" className="customer-reservation-workspace__create"><i className="bi bi-plus-lg" aria-hidden="true" />建立預約</Link>
         </header>
         {initialLoading ? <ReservationListSkeleton /> : null}
         {initialError ? <ReservationErrorState onRetry={workspace.retry} /> : null}
