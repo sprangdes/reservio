@@ -12,6 +12,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 
+import java.time.Month;
+import java.util.Objects;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -64,8 +67,8 @@ class LineIntegrationControllerTest {
         when(settingsService.rotateWebhookKey()).thenReturn(settings);
         LineIntegrationController controller = controller();
 
-        assertThat(controller.disable().getBody().getData()).isSameAs(settings);
-        assertThat(controller.rotateWebhookKey().getBody().getData()).isSameAs(settings);
+        assertThat(Objects.requireNonNull(controller.disable().getBody()).getData()).isSameAs(settings);
+        assertThat(Objects.requireNonNull(controller.rotateWebhookKey().getBody()).getData()).isSameAs(settings);
         verify(settingsService).disable();
         verify(settingsService).rotateWebhookKey();
     }
@@ -78,9 +81,9 @@ class LineIntegrationControllerTest {
         when(richMenuService.provisionRichMenu()).thenReturn(status);
         LineIntegrationController controller = controller();
 
-        assertThat(controller.getStatus().getBody().getData()).isSameAs(status);
-        assertThat(controller.testConnection().getBody().getData()).isSameAs(status);
-        assertThat(controller.provisionRichMenu().getBody().getData()).isSameAs(status);
+        assertThat(Objects.requireNonNull(controller.getStatus().getBody()).getData()).isSameAs(status);
+        assertThat(Objects.requireNonNull(controller.testConnection().getBody()).getData()).isSameAs(status);
+        assertThat(Objects.requireNonNull(controller.provisionRichMenu().getBody()).getData()).isSameAs(status);
         verify(richMenuService).getStatus();
         verify(richMenuService).testConnection();
         verify(richMenuService).provisionRichMenu();
@@ -101,7 +104,7 @@ class LineIntegrationControllerTest {
                 true,
                 "Rich Menu 已建立",
                 "richmenu-1",
-                java.time.LocalDateTime.of(2026, 6, 25, 9, 0)
+                java.time.LocalDateTime.of(2026, Month.JUNE, 25, 9, 0)
         );
     }
 
