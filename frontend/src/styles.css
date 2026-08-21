@@ -2385,6 +2385,9 @@ main {
 
 /* Final UI cohesion checks. */
 .business-hours__override-editor > h3 { margin: 0; color: var(--workspace-green-deep); font-size: 1.08rem; font-weight: 800; line-height: 1.4; }
+@media (min-width: 769px) {
+  .booking-flow > .customer-workspace-header { padding-inline: 2.25rem; }
+}
 @media (max-width: 768px) {
   .customer-workspace-header { width: 100%; margin: 0 auto 1.55rem; padding-inline: 0; }
   .customer-dashboard__intro h1,
