@@ -34,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 
 @ExtendWith(MockitoExtension.class)
 class LineAccountLinkServiceTest {
@@ -208,7 +209,7 @@ class LineAccountLinkServiceTest {
         customer.setLinkedAt(linkedAt);
         when(customerRepo.findByIdAndLinkedUser(3L, target)).thenReturn(Optional.of(customer));
         when(channelRepo.findByBusinessId(8L)).thenReturn(Optional.of(channel));
-        org.mockito.Mockito.doThrow(new IllegalStateException("LINE API 503"))
+        doThrow(new IllegalStateException("LINE API 503"))
                 .when(richMenuService).removeLinkedMenu(channel, "U123");
 
         assertThatThrownBy(() -> service.unlink(3L, target))
@@ -229,8 +230,7 @@ class LineAccountLinkServiceTest {
         customer.setLinkedAt(linkedAt);
         when(customerRepo.findByIdAndLinkedUser(3L, target)).thenReturn(Optional.of(customer));
         when(channelRepo.findByBusinessId(8L)).thenReturn(Optional.of(channel));
-        org.mockito.Mockito.doThrow(new IllegalStateException("database unavailable"))
-                .when(customerRepo).save(customer);
+        doThrow(new IllegalStateException("database unavailable")).when(customerRepo).save(customer);
 
         assertThatThrownBy(() -> service.unlink(3L, target))
                 .isInstanceOf(IllegalStateException.class)
