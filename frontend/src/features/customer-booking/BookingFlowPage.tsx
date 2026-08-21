@@ -130,7 +130,7 @@ export function BookingFlowPage() {
   if (result) return <BookingResultState result={result} />;
 
   return <main className="booking-flow">
-    <CustomerWorkspaceHeader title="建立預約" showCreate={false} />
+    <CustomerWorkspaceHeader title="建立預約" showCreate={false} showMobileNavigation={false} />
     <div className="booking-flow__container">
       <BookingProgress step={step} />
       <div className="booking-flow__layout">
