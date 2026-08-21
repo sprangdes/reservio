@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -167,7 +168,7 @@ public class BusinessDataService {
             throw new NotBusinessAccountException("用戶為非商家帳號");
         }
         Long businessId = businessData.getId();
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Taipei"));
         List<DateAvailableHours> dateAvailableHours = dateAvailableHoursRepo.findAllByBusinessIdAndDateAfter(
                 businessId,
                 today
