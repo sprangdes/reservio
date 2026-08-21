@@ -51,9 +51,9 @@ export default function MyReservationsWorkspace() {
             <Section title="即將到來" headingRef={workspace.sectionRef}>
               {sections.upcoming.length ? sections.upcoming.map((reservation) => <ReservationRow key={reservation.id} reservation={reservation} variant="upcoming" cancellationBlocked={workspace.cancellationBlockedIds.has(reservation.id)} onCancel={setCancelling} />) : <p className="customer-reservation-workspace__quiet">此頁目前沒有其他即將到來的預約。</p>}
             </Section>
+            <ReservationFilters open={filtersOpen} draft={workspace.draft} businesses={workspace.businesses} services={workspace.services} servicesLoading={workspace.servicesLoading} servicesError={workspace.servicesError} onToggle={() => setFiltersOpen((current) => !current)} onChange={workspace.changeDraft} onSubmit={(event) => { event.preventDefault(); workspace.applyFilters(); }} onClear={workspace.clearFilters} onRetryServices={workspace.retryServices} />
             <Section title="歷史預約">
               {sections.history.length ? <div className="customer-reservation-history">{sections.history.map((reservation) => <ReservationRow key={reservation.id} reservation={reservation} variant="history" />)}</div> : <p className="customer-reservation-workspace__quiet">此頁目前沒有歷史預約。</p>}
-              <ReservationFilters open={filtersOpen} draft={workspace.draft} businesses={workspace.businesses} services={workspace.services} servicesLoading={workspace.servicesLoading} servicesError={workspace.servicesError} onToggle={() => setFiltersOpen((current) => !current)} onChange={workspace.changeDraft} onSubmit={(event) => { event.preventDefault(); workspace.applyFilters(); }} onClear={workspace.clearFilters} onRetryServices={workspace.retryServices} />
             </Section>
             <nav className="customer-reservation-pagination" aria-label="預約頁碼">
               <button type="button" aria-label="上一頁" disabled={workspace.page.page <= 0} onClick={() => workspace.changePage(workspace.page.page - 1)}><i className="bi bi-chevron-left" aria-hidden="true" /></button>
