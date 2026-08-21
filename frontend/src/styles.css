@@ -1252,6 +1252,11 @@ main {
 @media (max-width: 768px) { .customer-profile-page { padding-top: 0; } }
 @media (max-width: 768px) { main:has(> .customer-workspace-header--with-mobile-tabs) { padding-bottom: calc(6rem + env(safe-area-inset-bottom)) !important; } }
 
+@media (max-width: 768px) {
+  .customer-workspace-header--with-mobile-tabs { --customer-mobile-header-offset: 0px; margin-bottom: calc(1.55rem - var(--customer-mobile-header-offset)); transform: translateY(calc(-1 * var(--customer-mobile-header-offset))); will-change: transform; }
+  .customer-workspace-header--with-mobile-tabs.is-mobile-collapsed { pointer-events: none; }
+}
+
 /* Customer notification settings use the same shared workspace shell as notifications. */
 .customer-notifications-page__actions { display: flex; align-items: center; gap: .65rem; }
 .customer-notifications-page__actions > a { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; padding: .45rem .8rem; border: 1px solid #b8c8be; border-radius: .38rem; background: #fffefd; color: #004c37; font: inherit; font-weight: 800; text-decoration: none; }
