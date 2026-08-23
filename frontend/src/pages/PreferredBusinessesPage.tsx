@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
 import { useToast } from '../state/ToastContext';
 import CustomerWorkspaceHeader from '../features/customer-workspace/CustomerWorkspaceHeader';
-import ToastContainer from '../components/ToastContainer';
 
 type Business = {
   id: number;
@@ -189,7 +188,6 @@ export default function PreferredBusinessesPage() {
           <PreferredBusinessesPanel />
         </div>
       </section>
-      <ToastContainer />
     </main>
   );
 }

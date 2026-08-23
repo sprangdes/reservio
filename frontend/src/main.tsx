@@ -8,6 +8,7 @@ import 'flatpickr/dist/flatpickr.min.css';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+import ToastContainer from './components/ToastContainer';
 import { AuthProvider } from './state/AuthContext';
 import { ToastProvider } from './state/ToastContext';
 import './styles.css';
@@ -27,6 +28,7 @@ createRoot(rootElement).render(
       <AuthProvider>
         <ToastProvider>
           <App />
+          <ToastContainer />
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
