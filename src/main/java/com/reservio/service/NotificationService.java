@@ -19,6 +19,8 @@ import java.time.ZoneId;
 
 @Service
 public class NotificationService {
+    private static final ZoneId TAIPEI_ZONE_ID = ZoneId.of("Asia/Taipei");
+
     private final NotificationRepo notificationRepo;
     private final NotificationDeliveryRepo deliveryRepo;
     private final NotificationPreferenceRepo preferenceRepo;
@@ -36,7 +38,7 @@ public class NotificationService {
         if (recipient == null || notificationRepo.existsByDedupeKey(dedupeKey)) {
             return;
         }
-        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Taipei"));
+        LocalDateTime now = LocalDateTime.now(TAIPEI_ZONE_ID);
         Notification notification = notificationRepo.save(Notification.builder()
                 .recipient(recipient)
                 .reservation(reservation)
@@ -77,14 +79,14 @@ public class NotificationService {
         Notification notification = notificationRepo.findByIdAndRecipient(notificationId, user)
                 .orElseThrow(() -> new IllegalArgumentException("找不到通知"));
         if (notification.getReadAt() == null) {
-            notification.setReadAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
+            notification.setReadAt(LocalDateTime.now(TAIPEI_ZONE_ID));
             notificationRepo.save(notification);
         }
     }
 
     @Transactional
     public void markAllRead(UserData user) {
-        notificationRepo.markAllRead(user, LocalDateTime.now(ZoneId.of("Asia/Taipei")));
+        notificationRepo.markAllRead(user, LocalDateTime.now(TAIPEI_ZONE_ID));
     }
 
     public NotificationPreferenceResponse preferenceResponse(UserData user) {
@@ -115,7 +117,7 @@ public class NotificationService {
 
     @Transactional
     public void deleteExpired() {
-        notificationRepo.deleteAllByExpiresAtBefore(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
+        notificationRepo.deleteAllByExpiresAtBefore(LocalDateTime.now(TAIPEI_ZONE_ID));
     }
 
     private NotificationResponse toResponse(Notification notification) {

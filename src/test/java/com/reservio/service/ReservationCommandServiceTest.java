@@ -108,13 +108,14 @@ class ReservationCommandServiceTest {
     @Test
     void rejectsOverlappingReservation() {
         LocalDate date = LocalDate.now().plusDays(2);
+        LocalTime startTime = LocalTime.of(10, 0);
         when(businessDataRepo.findByIdForUpdate(10L)).thenReturn(Optional.of(business));
         when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(serviceItem));
         when(reservationTimeService.getTimeSlotsForDate(date, 60, 10L))
                 .thenReturn(List.of(new TimeSlotResponse("10:00", false)));
 
         assertThatThrownBy(() -> service.createReservation(
-                customer, business, serviceItem, date, LocalTime.of(10, 0),
+                customer, business, serviceItem, date, startTime,
                 ReservationSource.LINE, null, null, null, null
         ))
                 .isInstanceOf(IllegalStateException.class)
@@ -126,12 +127,14 @@ class ReservationCommandServiceTest {
     @Test
     void rejectsServiceOwnedByAnotherBusiness() {
         BusinessData anotherBusiness = BusinessData.builder().id(11L).build();
+        LocalDate date = LocalDate.now().plusDays(2);
+        LocalTime startTime = LocalTime.of(10, 0);
         serviceItem.setBusiness(anotherBusiness);
         when(businessDataRepo.findByIdForUpdate(10L)).thenReturn(Optional.of(business));
         when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(serviceItem));
 
         assertThatThrownBy(() -> service.createReservation(
-                customer, business, serviceItem, LocalDate.now().plusDays(2), LocalTime.of(10, 0),
+                customer, business, serviceItem, date, startTime,
                 ReservationSource.LINE, null, null, null, null
         ))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -142,12 +145,14 @@ class ReservationCommandServiceTest {
 
     @Test
     void rejectsInactiveService() {
+        LocalDate date = LocalDate.now().plusDays(2);
+        LocalTime startTime = LocalTime.of(10, 0);
         serviceItem.setActive(false);
         when(businessDataRepo.findByIdForUpdate(10L)).thenReturn(Optional.of(business));
         when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(serviceItem));
 
         assertThatThrownBy(() -> service.createReservation(
-                customer, business, serviceItem, LocalDate.now().plusDays(2), LocalTime.of(10, 0),
+                customer, business, serviceItem, date, startTime,
                 ReservationSource.LINE, null, null, null, null
         ))
                 .isInstanceOf(IllegalStateException.class)
@@ -158,8 +163,10 @@ class ReservationCommandServiceTest {
 
     @Test
     void rejectsPastDate() {
+        LocalDate date = LocalDate.now().minusDays(1);
+        LocalTime startTime = LocalTime.of(10, 0);
         assertThatThrownBy(() -> service.createReservation(
-                customer, business, serviceItem, LocalDate.now().minusDays(1), LocalTime.of(10, 0),
+                customer, business, serviceItem, date, startTime,
                 ReservationSource.LINE, null, null, null, null
         ))
                 .isInstanceOf(IllegalArgumentException.class)

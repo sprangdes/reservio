@@ -101,8 +101,9 @@ class LineWebhookIngestionServiceTest {
     @Test
     void rejectsInvalidSignature() {
         when(channelRepo.findByWebhookKeyAndEnabledTrue("webhook-key")).thenReturn(Optional.of(channel));
+        String body = webhookBody();
 
-        assertThatThrownBy(() -> service.ingest("webhook-key", "invalid", webhookBody()))
+        assertThatThrownBy(() -> service.ingest("webhook-key", "invalid", body))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(exception -> assertThat(((ResponseStatusException) exception).getStatusCode().value())
                         .isEqualTo(401));

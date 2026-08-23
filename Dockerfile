@@ -16,6 +16,12 @@ RUN apt-get update \
 
 COPY --from=build /app/target/*.jar /app/app.jar
 
+RUN groupadd --system reservio \
+    && useradd --system --gid reservio --home-dir /app reservio \
+    && chown reservio:reservio /app/app.jar
+
+USER reservio
+
 ENV PORT=8080
 EXPOSE 8080
 
