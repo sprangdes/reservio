@@ -15,12 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Base64;
 
 @Service
 public class LineChannelSettingsService {
 
     private static final int WEBHOOK_KEY_BYTES = 32;
+    private static final ZoneId TAIPEI_ZONE_ID = ZoneId.of("Asia/Taipei");
 
     private final BusinessLineChannelRepo channelRepo;
     private final UserDataService userDataService;
@@ -75,7 +77,7 @@ public class LineChannelSettingsService {
                 "Channel Access Token"
         ));
         channel.setEnabled(request.enabled());
-        channel.setUpdatedAt(LocalDateTime.now());
+        channel.setUpdatedAt(LocalDateTime.now(TAIPEI_ZONE_ID));
         if (credentialsChanged) {
             channel.setTokenValidatedAt(null);
             channel.setWebhookVerifiedAt(null);
@@ -92,7 +94,7 @@ public class LineChannelSettingsService {
     public LineChannelSettingsResponse disable() {
         BusinessLineChannel channel = currentChannel();
         channel.setEnabled(false);
-        channel.setUpdatedAt(LocalDateTime.now());
+        channel.setUpdatedAt(LocalDateTime.now(TAIPEI_ZONE_ID));
         return toResponse(channelRepo.save(channel));
     }
 
@@ -101,7 +103,7 @@ public class LineChannelSettingsService {
         BusinessLineChannel channel = currentChannel();
         channel.setWebhookKey(newWebhookKey());
         channel.setWebhookVerifiedAt(null);
-        channel.setUpdatedAt(LocalDateTime.now());
+        channel.setUpdatedAt(LocalDateTime.now(TAIPEI_ZONE_ID));
         return toResponse(channelRepo.save(channel));
     }
 
@@ -110,7 +112,7 @@ public class LineChannelSettingsService {
                 .business(business)
                 .webhookKey(newWebhookKey())
                 .enabled(false)
-                .createdAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now(TAIPEI_ZONE_ID))
                 .build();
     }
 
@@ -173,7 +175,12 @@ public class LineChannelSettingsService {
 
     private String webhookUrl(String webhookKey) {
         String baseUrl = required(properties.webhookBaseUrl(), "Webhook Base URL");
-        return baseUrl.replaceAll("/+$", "")
+
+        while (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+
+        return baseUrl
                 + "/api/integrations/line/webhook/"
                 + webhookKey;
     }

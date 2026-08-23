@@ -12,5 +12,7 @@ public class AppMailProperties {
     private String from = "noreply@reserv-io.com";
     private String senderName = "Reservio";
     private String replyTo = "support@reserv-io.com";
+    // This is an email subject, not a credential.
+    @SuppressWarnings("java:S2068")
     private String passwordResetSubject = "Reservio 密碼重設驗證碼";
 }

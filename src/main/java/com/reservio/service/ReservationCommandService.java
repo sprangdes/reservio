@@ -16,11 +16,14 @@ import org.springframework.transaction.annotation.Propagation;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 
 import static com.reservio.enums.ReservationStatus.PENDING;
 
 @Service
 public class ReservationCommandService {
+
+    private static final ZoneId TAIPEI_ZONE_ID = ZoneId.of("Asia/Taipei");
 
     private final BusinessDataRepo businessDataRepo;
     private final ServiceItemRepo serviceItemRepo;
@@ -42,6 +45,7 @@ public class ReservationCommandService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @SuppressWarnings("java:S107")
     public Reservation createReservation(
             UserData customer,
             BusinessData requestedBusiness,
@@ -76,7 +80,7 @@ public class ReservationCommandService {
                 .customerName(customerName)
                 .customerPhone(customerPhone)
                 .source(source)
-                .createdAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now(TAIPEI_ZONE_ID))
                 .createdBy(source.name())
                 .deletedFlag(false)
                 .build();
@@ -105,13 +109,14 @@ public class ReservationCommandService {
         if (reservationDate == null) {
             throw new IllegalArgumentException("預約日期不可為空");
         }
-        if (reservationDate.isBefore(LocalDate.now())) {
+        if (reservationDate.isBefore(LocalDate.now(TAIPEI_ZONE_ID))) {
             throw new IllegalArgumentException("預約日期不可早於今天");
         }
         if (startTime == null) {
             throw new IllegalArgumentException("預約時間不可為空");
         }
-        if (reservationDate.equals(LocalDate.now()) && !startTime.isAfter(LocalTime.now())) {
+        if (reservationDate.equals(LocalDate.now(TAIPEI_ZONE_ID))
+                && !startTime.isAfter(LocalTime.now(TAIPEI_ZONE_ID))) {
             throw new IllegalArgumentException("預約時間必須晚於目前時間");
         }
         if (source == null) {

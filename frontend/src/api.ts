@@ -1,4 +1,4 @@
-import { UnauthorizedError, emitSessionActivity, emitSessionExpired } from './sessionEvents';
+import { UnauthorizedError, emitSessionExpired } from './sessionEvents';
 import type { LineApiResponse, LineCredentialUpdateRequest } from './features/line/lineDomain';
 
 export const API_BASE = '';
@@ -69,7 +69,6 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
   });
 
   if (response.status === 204) {
-    emitSessionActivity();
     return null;
   }
 
@@ -83,7 +82,6 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
     const message = data?.message || 'Request failed';
     throw new ApiError(response.status, message);
   }
-  emitSessionActivity();
   return data as T;
 }
 

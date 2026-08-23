@@ -21,6 +21,7 @@ import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -105,7 +106,8 @@ class PersistentOAuth2AuthorizationRequestRepositoryTest {
                     OAuth2AuthorizationRequestStateRepo.class,
                     () -> stateRepo
             );
-            context.registerBean(ObjectMapper.class, () -> new ObjectMapper());
+            Supplier<ObjectMapper> objectMapperSupplier = ObjectMapper::new;
+            context.registerBean(ObjectMapper.class, objectMapperSupplier);
             context.register(PersistentOAuth2AuthorizationRequestRepository.class);
 
             context.refresh();

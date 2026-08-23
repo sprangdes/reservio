@@ -55,6 +55,20 @@ public class LineReservationConversation {
     private static final String CONFIRM_BUTTON_COLOR = "#557A5C";
     private static final String RESTART_BUTTON_COLOR = "#5F7185";
     private static final String CANCEL_BUTTON_COLOR = "#9A5F5F";
+    private static final String PRIMARY_TEXT_COLOR = "#222222";
+    private static final String SECONDARY_TEXT_COLOR = "#444444";
+    private static final String REGULAR_WEIGHT = "regular";
+    private static final String CONTENTS_KEY = "contents";
+    private static final String SPACING_KEY = "spacing";
+    private static final String BUBBLE_TYPE = "bubble";
+    private static final String COLOR_KEY = "color";
+    private static final String ACTION_KEY = "action";
+    private static final String DISPLAY_TEXT_KEY = "displayText";
+    private static final String POSTBACK_TYPE = "postback";
+    private static final String CANCEL_ACTION = "reservio.action=cancel";
+    private static final String LABEL_KEY = "label";
+    private static final String VERTICAL_LAYOUT = "vertical";
+    private static final String LAYOUT_KEY = "layout";
     private static final int CALENDAR_COLUMNS = 7;
     private static final int CALENDAR_WEEK_ROWS = 6;
     private static final DateTimeFormatter RESERVATION_TIME_FORMAT =
@@ -123,6 +137,10 @@ public class LineReservationConversation {
 
     @Transactional
     public LineReplyMessage handle(BusinessLineChannel channel, String lineUserId, String input) {
+        return handleMessage(channel, lineUserId, input);
+    }
+
+    private LineReplyMessage handleMessage(BusinessLineChannel channel, String lineUserId, String input) {
         BusinessData business = channel.getBusiness();
         LineConversation conversation = conversationRepo
                 .findByBusinessIdAndLineUserId(business.getId(), lineUserId)
@@ -145,7 +163,7 @@ public class LineReservationConversation {
 
         LineReplyMessage reply = switch (conversation.getState()) {
             case SELECTING_SERVICE -> selectService(conversation, normalized);
-            case ENTERING_DATE -> enterDate(conversation, normalized);
+            case ENTERING_DATE -> enterDate(conversation);
             case SELECTING_TIME -> selectTime(conversation, normalized);
             case ENTERING_NAME -> enterName(conversation, normalized);
             case ENTERING_PHONE -> enterPhone(conversation, normalized);
@@ -162,13 +180,13 @@ public class LineReservationConversation {
         LinePostbackData postback = LinePostbackData.parse(data);
         String action = postback.action();
         if ("book".equals(action)) {
-            return handle(channel, lineUserId, START);
+            return handleMessage(channel, lineUserId, START);
         }
         if ("cancel".equals(action)) {
-            return handle(channel, lineUserId, CANCEL);
+            return handleMessage(channel, lineUserId, CANCEL);
         }
         if ("restart".equals(action)) {
-            return handle(channel, lineUserId, RESTART);
+            return handleMessage(channel, lineUserId, RESTART);
         }
         BusinessData business = channel.getBusiness();
         LineConversation conversation = conversationRepo
@@ -265,22 +283,22 @@ public class LineReservationConversation {
 
     private LineReplyMessage serviceSelectionFlex(List<ServiceItem> services) {
         List<Map<String, Object>> contents = new ArrayList<>();
-        contents.add(text("想預約什麼項目？", "lg", "bold", "#222222"));
-        contents.add(text("請點選下方服務項目。", "sm", "regular", "#666666"));
+        contents.add(text("想預約什麼項目？", "lg", "bold", PRIMARY_TEXT_COLOR));
+        contents.add(text("請點選下方服務項目。", "sm", REGULAR_WEIGHT, "#666666"));
         services.stream()
                 .limit(12)
                 .forEach(service -> contents.add(button(
                         service.getName(),
                         "reservio.action=select_service&serviceItemId=" + service.getId()
                 )));
-        contents.add(controlButton(CANCEL, "reservio.action=cancel", CANCEL_BUTTON_COLOR));
+        contents.add(controlButton(CANCEL, CANCEL_ACTION, CANCEL_BUTTON_COLOR));
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("type", "box");
-        body.put("layout", "vertical");
-        body.put("spacing", "md");
-        body.put("contents", contents);
+        body.put(LAYOUT_KEY, VERTICAL_LAYOUT);
+        body.put(SPACING_KEY, "md");
+        body.put(CONTENTS_KEY, contents);
         return messageFactory.flex("想預約什麼項目？", Map.of(
-                "type", "bubble",
+                "type", BUBBLE_TYPE,
                 "body", body
         ));
     }
@@ -298,7 +316,7 @@ public class LineReservationConversation {
         return dateCalendarFlex(conversation, "想預約哪一天？");
     }
 
-    private LineReplyMessage enterDate(LineConversation conversation, String input) {
+    private LineReplyMessage enterDate(LineConversation conversation) {
         return dateCalendarFlex(conversation, "請從月曆點選日期。");
     }
 
@@ -321,7 +339,7 @@ public class LineReservationConversation {
         }
         return messageFactory.flex(altText, Map.of(
                 "type", "carousel",
-                "contents", bubbles
+                CONTENTS_KEY, bubbles
         ));
     }
 
@@ -333,7 +351,7 @@ public class LineReservationConversation {
             Long businessId) {
         List<Map<String, Object>> contents = new ArrayList<>();
         contents.add(text(month.getYear() + "年" + month.getMonthValue() + "月",
-                "lg", "bold", "#222222"));
+                "lg", "bold", PRIMARY_TEXT_COLOR));
         contents.add(weekdayRow());
         LocalDate first = month.atDay(1);
         int leadingBlanks = first.getDayOfWeek().getValue() % 7;
@@ -366,12 +384,12 @@ public class LineReservationConversation {
         }
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("type", "box");
-        body.put("layout", "vertical");
-        body.put("spacing", "xs");
+        body.put(LAYOUT_KEY, VERTICAL_LAYOUT);
+        body.put(SPACING_KEY, "xs");
         body.put("paddingAll", "12px");
-        body.put("contents", contents);
+        body.put(CONTENTS_KEY, contents);
         return Map.of(
-                "type", "bubble",
+                "type", BUBBLE_TYPE,
                 "size", "giga",
                 "body", body
         );
@@ -391,9 +409,9 @@ public class LineReservationConversation {
     private Map<String, Object> row(List<Map<String, Object>> cells) {
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("type", "box");
-        row.put("layout", "horizontal");
-        row.put("spacing", "2px");
-        row.put("contents", cells);
+        row.put(LAYOUT_KEY, "horizontal");
+        row.put(SPACING_KEY, "2px");
+        row.put(CONTENTS_KEY, cells);
         return row;
     }
 
@@ -408,10 +426,10 @@ public class LineReservationConversation {
     private Map<String, Object> calendarCell(Map<String, Object> label) {
         Map<String, Object> cell = new LinkedHashMap<>();
         cell.put("type", "box");
-        cell.put("layout", "vertical");
+        cell.put(LAYOUT_KEY, VERTICAL_LAYOUT);
         cell.put("paddingAll", "8px");
         cell.put("flex", 1);
-        cell.put("contents", List.of(label));
+        cell.put(CONTENTS_KEY, List.of(label));
         return cell;
     }
 
@@ -424,11 +442,11 @@ public class LineReservationConversation {
         label.put("type", "text");
         label.put("text", value);
         label.put("size", size);
-        if (!"regular".equals(weight)) {
+        if (!REGULAR_WEIGHT.equals(weight)) {
             label.put("weight", weight);
         }
         label.put("align", "center");
-        label.put("color", color);
+        label.put(COLOR_KEY, color);
         label.put("scaling", true);
         label.put("adjustMode", "shrink-to-fit");
         return label;
@@ -447,15 +465,15 @@ public class LineReservationConversation {
         Map<String, Object> cell = calendarCell(calendarText(
                 String.valueOf(date.getDayOfMonth()),
                 "md",
-                "regular",
+                REGULAR_WEIGHT,
                 selectable ? "#1DB446" : "#C8C8C8"
         ));
         if (selectable) {
-            cell.put("action", Map.of(
-                    "type", "postback",
-                    "label", String.valueOf(date.getDayOfMonth()),
+            cell.put(ACTION_KEY, Map.of(
+                    "type", POSTBACK_TYPE,
+                    LABEL_KEY, String.valueOf(date.getDayOfMonth()),
                     "data", "reservio.action=select_date&date=" + date,
-                    "displayText", date.toString()
+                    DISPLAY_TEXT_KEY, date.toString()
             ));
         }
         return cell;
@@ -489,7 +507,7 @@ public class LineReservationConversation {
 
     private LineReplyMessage timeSelectionFlex(List<String> availableTimes) {
         List<Map<String, Object>> contents = new ArrayList<>();
-        contents.add(text("請選擇可預約時段。", "lg", "bold", "#222222"));
+        contents.add(text("請選擇可預約時段。", "lg", "bold", PRIMARY_TEXT_COLOR));
         availableTimes.stream()
                 .limit(24)
                 .forEach(time -> contents.add(button(
@@ -497,34 +515,34 @@ public class LineReservationConversation {
                         "reservio.action=select_time&time=" + time
                 )));
         contents.add(controlButton(RESTART, "reservio.action=restart", RESTART_BUTTON_COLOR));
-        contents.add(controlButton(CANCEL, "reservio.action=cancel", CANCEL_BUTTON_COLOR));
+        contents.add(controlButton(CANCEL, CANCEL_ACTION, CANCEL_BUTTON_COLOR));
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("type", "box");
-        body.put("layout", "vertical");
-        body.put("spacing", "md");
-        body.put("contents", contents);
+        body.put(LAYOUT_KEY, VERTICAL_LAYOUT);
+        body.put(SPACING_KEY, "md");
+        body.put(CONTENTS_KEY, contents);
         return messageFactory.flex("請選擇可預約時段。", Map.of(
-                "type", "bubble",
+                "type", BUBBLE_TYPE,
                 "body", body
         ));
     }
 
     private LineReplyMessage confirmationFlex(String summary) {
         List<Map<String, Object>> contents = new ArrayList<>();
-        contents.add(text("確認預約", "lg", "bold", "#222222"));
-        for (String line : summary.split("\\R")) {
-            contents.add(text(line, "sm", "regular", "#444444"));
+        contents.add(text("確認預約", "lg", "bold", PRIMARY_TEXT_COLOR));
+        for (String line : summary.lines().toList()) {
+            contents.add(text(line, "sm", REGULAR_WEIGHT, SECONDARY_TEXT_COLOR));
         }
         contents.add(controlButton(CONFIRM, "reservio.action=confirm_reservation", CONFIRM_BUTTON_COLOR));
         contents.add(controlButton(RESTART, "reservio.action=restart", RESTART_BUTTON_COLOR));
-        contents.add(controlButton(CANCEL, "reservio.action=cancel", CANCEL_BUTTON_COLOR));
+        contents.add(controlButton(CANCEL, CANCEL_ACTION, CANCEL_BUTTON_COLOR));
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("type", "box");
-        body.put("layout", "vertical");
-        body.put("spacing", "md");
-        body.put("contents", contents);
+        body.put(LAYOUT_KEY, VERTICAL_LAYOUT);
+        body.put(SPACING_KEY, "md");
+        body.put(CONTENTS_KEY, contents);
         return messageFactory.flex("確認預約", Map.of(
-                "type", "bubble",
+                "type", BUBBLE_TYPE,
                 "body", body
         ));
     }
@@ -563,7 +581,7 @@ public class LineReservationConversation {
         }
         try {
             String requestToken = accountLinkService.create(channel, customer.customer());
-            String baseUrl = properties.webhookBaseUrl().replaceAll("/+$", "");
+            String baseUrl = withoutTrailingSlashes(properties.webhookBaseUrl());
             return messageFactory.uriButton(
                     "請先綁定 LINE 帳號，再查詢 Reservio 預約。",
                     "使用 LINE 登入並綁定",
@@ -590,19 +608,19 @@ public class LineReservationConversation {
                 .toList();
         return messageFactory.flex("我的預約", Map.of(
                 "type", "carousel",
-                "contents", bubbles
+                CONTENTS_KEY, bubbles
         ));
     }
 
     private Map<String, Object> reservationBubble(Reservation reservation) {
         List<Map<String, Object>> contents = new ArrayList<>();
-        contents.add(text(reservationTitle(reservation), "lg", "bold", "#222222"));
+        contents.add(text(reservationTitle(reservation), "lg", "bold", PRIMARY_TEXT_COLOR));
         contents.add(text("日期：" + reservation.getReservationDate(),
-                "sm", "regular", "#444444"));
+                "sm", REGULAR_WEIGHT, SECONDARY_TEXT_COLOR));
         contents.add(text("時間：" + reservation.getStartTime().format(RESERVATION_TIME_FORMAT),
-                "sm", "regular", "#444444"));
+                "sm", REGULAR_WEIGHT, SECONDARY_TEXT_COLOR));
         contents.add(text("狀態：" + reservationStatusLabel(reservation.getStatus()),
-                "sm", "regular", "#444444"));
+                "sm", REGULAR_WEIGHT, SECONDARY_TEXT_COLOR));
         contents.add(controlButton(
                 "取消預約",
                 "reservio.action=cancel_reservation&reservationId=" + reservation.getId(),
@@ -610,10 +628,10 @@ public class LineReservationConversation {
         ));
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("type", "box");
-        body.put("layout", "vertical");
-        body.put("spacing", "md");
-        body.put("contents", contents);
-        return Map.of("type", "bubble", "body", body);
+        body.put(LAYOUT_KEY, VERTICAL_LAYOUT);
+        body.put(SPACING_KEY, "md");
+        body.put(CONTENTS_KEY, contents);
+        return Map.of("type", BUBBLE_TYPE, "body", body);
     }
 
     private String reservationTitle(Reservation reservation) {
@@ -728,7 +746,7 @@ public class LineReservationConversation {
     }
 
     private LineReplyMessage enterPhone(LineConversation conversation, String input) {
-        if (!input.matches("[0-9+()\\-\\s]{8,20}")) {
+        if (!isValidPhone(input)) {
             return messageFactory.text("電話格式錯誤，請輸入 8 至 20 位數字或常用符號。");
         }
         conversation.setPhone(input);
@@ -755,6 +773,34 @@ public class LineReservationConversation {
                 conversation.getPhone()
         ).trim();
         return confirmationFlex(summary);
+    }
+
+    private boolean isValidPhone(String input) {
+        if (input.length() < 8 || input.length() > 20) {
+            return false;
+        }
+        for (int index = 0; index < input.length(); index++) {
+            char character = input.charAt(index);
+            boolean asciiDigit = character >= '0' && character <= '9';
+            if (!asciiDigit
+                    && character != '+'
+                    && character != '('
+                    && character != ')'
+                    && character != '-'
+                    && !isAsciiRegexWhitespace(character)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isAsciiRegexWhitespace(char character) {
+        return character == ' '
+                || character == '\t'
+                || character == '\n'
+                || character == '\u000B'
+                || character == '\f'
+                || character == '\r';
     }
 
     private LineReplyMessage confirm(
@@ -786,36 +832,20 @@ public class LineReservationConversation {
                     conversation.getPhone()
             );
             conversation.setState(LineConversationState.COMPLETED);
-            log.info(
-                    "line_reservation_completed business_id={} event_id={} conversation_state={}",
-                    conversation.getBusiness().getId(),
-                    eventId(),
-                    conversation.getState()
-            );
+            if (log.isInfoEnabled()) {
+                log.info(
+                        "line_reservation_completed business_id={} event_id={} conversation_state={}",
+                        conversation.getBusiness().getId(),
+                        eventId(),
+                        conversation.getState()
+                );
+            }
             String successMessage = "預約已送出。";
             if (customerResolution.linked()) {
                 return messageFactory.text(successMessage);
             }
-            try {
-                String requestToken = accountLinkService.create(
-                        channel,
-                        customerResolution.customer()
-                );
-                String baseUrl = properties.webhookBaseUrl().replaceAll("/+$", "");
-                return messageFactory.uriButton(
-                        successMessage,
-                        "綁定 Reservio 帳號",
-                        baseUrl + "/line/account-link?request=" + requestToken
-                );
-            } catch (RuntimeException exception) {
-                log.warn(
-                        "line_account_link_prompt_failed business_id={} event_id={} error_type={}",
-                        conversation.getBusiness().getId(),
-                        eventId(),
-                        exception.getClass().getSimpleName()
-                );
-                return messageFactory.text(successMessage);
-            }
+            return accountLinkButtonAfterReservation(
+                    channel, conversation, customerResolution, successMessage);
         } catch (IllegalStateException exception) {
             conversation.setState(LineConversationState.ENTERING_DATE);
             conversation.setReservationDate(null);
@@ -831,6 +861,41 @@ public class LineReservationConversation {
         }
     }
 
+    private LineReplyMessage accountLinkButtonAfterReservation(
+            BusinessLineChannel channel,
+            LineConversation conversation,
+            LineCustomerResolution customerResolution,
+            String successMessage) {
+        try {
+            String requestToken = accountLinkService.create(
+                    channel,
+                    customerResolution.customer()
+            );
+            String baseUrl = withoutTrailingSlashes(properties.webhookBaseUrl());
+            return messageFactory.uriButton(
+                    successMessage,
+                    "綁定 Reservio 帳號",
+                    baseUrl + "/line/account-link?request=" + requestToken
+            );
+        } catch (RuntimeException exception) {
+            log.warn(
+                    "line_account_link_prompt_failed business_id={} event_id={} error_type={}",
+                    conversation.getBusiness().getId(),
+                    eventId(),
+                    exception.getClass().getSimpleName()
+            );
+            return messageFactory.text(successMessage);
+        }
+    }
+
+    private String withoutTrailingSlashes(String value) {
+        int end = value.length();
+        while (end > 0 && value.charAt(end - 1) == '/') {
+            end--;
+        }
+        return value.substring(0, end);
+    }
+
     private List<String> availableTimes(LocalDate date, ServiceItem service, Long businessId) {
         return reservationTimeService.getTimeSlotsForDate(date, service.getDuration(), businessId)
                 .stream()
@@ -839,20 +904,13 @@ public class LineReservationConversation {
                 .toList();
     }
 
-    private List<String> withActions(List<String> options) {
-        List<String> result = new ArrayList<>(options.stream().limit(11).toList());
-        result.add(RESTART);
-        result.add(CANCEL);
-        return result;
-    }
-
     private Map<String, Object> text(String text, String size, String weight, String color) {
         Map<String, Object> node = new LinkedHashMap<>();
         node.put("type", "text");
         node.put("text", text);
         node.put("size", size);
         node.put("weight", weight);
-        node.put("color", color);
+        node.put(COLOR_KEY, color);
         node.put("wrap", true);
         return node;
     }
@@ -862,11 +920,11 @@ public class LineReservationConversation {
                 "type", "button",
                 "style", "secondary",
                 "height", "sm",
-                "action", Map.of(
-                        "type", "postback",
-                        "label", label,
+                ACTION_KEY, Map.of(
+                        "type", POSTBACK_TYPE,
+                        LABEL_KEY, label,
                         "data", data,
-                        "displayText", label
+                        DISPLAY_TEXT_KEY, label
                 )
         );
     }
@@ -876,12 +934,12 @@ public class LineReservationConversation {
                 "type", "button",
                 "style", "primary",
                 "height", "sm",
-                "color", color,
-                "action", Map.of(
-                        "type", "postback",
-                        "label", label,
+                COLOR_KEY, color,
+                ACTION_KEY, Map.of(
+                        "type", POSTBACK_TYPE,
+                        LABEL_KEY, label,
                         "data", data,
-                        "displayText", label
+                        DISPLAY_TEXT_KEY, label
                 )
         );
     }
@@ -925,12 +983,14 @@ public class LineReservationConversation {
         conversation.setUpdatedAt(now);
         conversation.setExpiresAt(now.plusMinutes(30));
         conversationRepo.save(conversation);
-        log.info(
-                "line_conversation_saved business_id={} event_id={} conversation_state={}",
-                conversation.getBusiness().getId(),
-                eventId(),
-                conversation.getState()
-        );
+        if (log.isInfoEnabled()) {
+            log.info(
+                    "line_conversation_saved business_id={} event_id={} conversation_state={}",
+                    conversation.getBusiness().getId(),
+                    eventId(),
+                    conversation.getState()
+            );
+        }
     }
 
     private String eventId() {

@@ -39,6 +39,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.Month;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
@@ -138,8 +139,9 @@ class LineReservationConversationTest {
 
         LineReplyMessage reply = conversationService.handle(channel, "line-user", "立即預約");
 
-        assertThat(reply.flexContents().toString()).contains("服務12", "取消");
-        assertThat(reply.flexContents().toString()).doesNotContain("服務13");
+        assertThat(reply.flexContents().toString())
+                .contains("服務12", "取消")
+                .doesNotContain("服務13");
     }
 
     @Test
@@ -177,7 +179,7 @@ class LineReservationConversationTest {
     @Test
     void servicePostbackReturnsThreeMonthDateCalendar() {
         LineConversation existing = conversation(LineConversationState.SELECTING_SERVICE);
-        LocalDate selectable = LocalDate.of(2026, 6, 26);
+        LocalDate selectable = LocalDate.of(2026, Month.JUNE, 26);
         when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user")).thenReturn(Optional.of(existing));
         when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
         when(reservationTimeService.isBusinessOpen(any(LocalDate.class), eq(8L))).thenReturn(false);
@@ -205,8 +207,7 @@ class LineReservationConversationTest {
         LineReplyMessage reply = calendarReply(Instant.parse("2026-01-31T16:00:00Z"));
 
         List<Map<String, Object>> bubbles = calendarBubbles(reply);
-        assertThat(bubbles).hasSize(4);
-        assertThat(bubbles).allSatisfy(bubble -> {
+        assertThat(bubbles).hasSize(4).allSatisfy(bubble -> {
             List<Map<String, Object>> contents = bodyContents(bubble);
             assertThat(contents).hasSize(8);
             assertThat(contents.subList(1, 8)).allSatisfy(row ->
@@ -214,12 +215,12 @@ class LineReservationConversationTest {
         });
 
         List<Map<String, Object>> februaryContents = bodyContents(bubbles.get(0));
-        assertThat(cellLabel(rowCells(februaryContents.get(2)).get(0)).get("text"))
-                .isEqualTo("1");
-        assertThat(cellLabel(rowCells(februaryContents.get(5)).get(6)).get("text"))
-                .isEqualTo("28");
-        assertThat(cellLabel(rowCells(februaryContents.get(6)).get(0)).get("text"))
-                .isEqualTo(" ");
+        assertThat(cellLabel(rowCells(februaryContents.get(2)).get(0)))
+                .containsEntry("text", "1");
+        assertThat(cellLabel(rowCells(februaryContents.get(5)).get(6)))
+                .containsEntry("text", "28");
+        assertThat(cellLabel(rowCells(februaryContents.get(6)).get(0)))
+                .containsEntry("text", " ");
     }
 
     @Test
@@ -277,8 +278,8 @@ class LineReservationConversationTest {
                 .containsEntry("label", "10")
                 .containsEntry("data", "reservio.action=select_date&date=2026-02-10")
                 .containsEntry("displayText", "2026-02-10");
-        assertThat(objectMapper.writeValueAsBytes(reply.flexContents()).length)
-                .isLessThan(50 * 1024);
+        assertThat(objectMapper.writeValueAsBytes(reply.flexContents()))
+                .hasSizeLessThan(50 * 1024);
         Files.createDirectories(Path.of("target"));
         Files.writeString(
                 Path.of("target/mac-6-calendar-flex.json"),
@@ -319,7 +320,7 @@ class LineReservationConversationTest {
     void datePostbackStoresDateAndReturnsTimeFlex() {
         LineConversation existing = conversation(LineConversationState.ENTERING_DATE);
         existing.setServiceItemId(20L);
-        LocalDate date = LocalDate.of(2026, 6, 29);
+        LocalDate date = LocalDate.of(2026, Month.JUNE, 29);
         when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user")).thenReturn(Optional.of(existing));
         when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
         when(reservationTimeService.isBusinessOpen(date, 8L)).thenReturn(true);
@@ -347,7 +348,7 @@ class LineReservationConversationTest {
     void timePostbackStoresTimeAndAsksForName() {
         LineConversation existing = conversation(LineConversationState.SELECTING_TIME);
         existing.setServiceItemId(20L);
-        existing.setReservationDate(LocalDate.of(2026, 6, 29));
+        existing.setReservationDate(LocalDate.of(2026, Month.JUNE, 29));
         when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user")).thenReturn(Optional.of(existing));
         when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
         when(reservationTimeService.getTimeSlotsForDate(existing.getReservationDate(), 60, 8L))
@@ -368,7 +369,7 @@ class LineReservationConversationTest {
     void timeFlexShowsRestartAndCancelActions() {
         LineConversation existing = conversation(LineConversationState.ENTERING_DATE);
         existing.setServiceItemId(20L);
-        LocalDate date = LocalDate.of(2026, 6, 29);
+        LocalDate date = LocalDate.of(2026, Month.JUNE, 29);
         List<TimeSlotResponse> slots = IntStream.range(0, 15)
                 .mapToObj(index -> new TimeSlotResponse(
                         LocalTime.of(9, 0).plusMinutes(index * 30L).toString(),
@@ -401,14 +402,21 @@ class LineReservationConversationTest {
     void openDateWithoutAvailableTimesStaysInDateState() {
         LineConversation existing = conversation(LineConversationState.ENTERING_DATE);
         existing.setServiceItemId(20L);
-        LocalDate date = LocalDate.of(2026, 6, 29);
+        LocalDate date = LocalDate.of(2026, Month.JUNE, 29);
         when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user")).thenReturn(Optional.of(existing));
         when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
+        when(reservationTimeService.isBusinessOpen(date, 8L)).thenReturn(true);
+        when(reservationTimeService.getTimeSlotsForDate(date, 60, 8L)).thenReturn(List.of());
 
-        LineReplyMessage reply = conversationService.handle(channel, "line-user", "6/29");
+        LineReplyMessage reply = conversationService.handlePostback(
+                channel,
+                "line-user",
+                "reservio.action=select_date&date=2026-06-29"
+        );
 
         assertThat(existing.getState()).isEqualTo(LineConversationState.ENTERING_DATE);
-        assertThat(reply.text()).isEqualTo("請從月曆點選日期。");
+        assertThat(existing.getReservationDate()).isNull();
+        assertThat(reply.text()).isEqualTo("當日已無可預約時段，請選擇其他日期。");
         assertThat(reply.flexContents()).isNotNull();
     }
 
@@ -416,7 +424,7 @@ class LineReservationConversationTest {
     void timeNameAndPhoneProgressToConfirmation() {
         LineConversation existing = conversation(LineConversationState.SELECTING_TIME);
         existing.setServiceItemId(20L);
-        existing.setReservationDate(LocalDate.of(2026, 6, 29));
+        existing.setReservationDate(LocalDate.of(2026, Month.JUNE, 29));
         when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user")).thenReturn(Optional.of(existing));
         when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));
         when(reservationTimeService.getTimeSlotsForDate(existing.getReservationDate(), 60, 8L))
@@ -592,7 +600,7 @@ class LineReservationConversationTest {
                 .business(business)
                 .user(customer)
                 .title("剪髮")
-                .reservationDate(LocalDate.of(2026, 6, 29))
+                .reservationDate(LocalDate.of(2026, Month.JUNE, 29))
                 .startTime(LocalTime.of(10, 0))
                 .status(ReservationStatus.PENDING)
                 .build();
@@ -601,7 +609,7 @@ class LineReservationConversationTest {
                 .business(business)
                 .user(customer)
                 .title("染髮")
-                .reservationDate(LocalDate.of(2026, 6, 30))
+                .reservationDate(LocalDate.of(2026, Month.JUNE, 30))
                 .startTime(LocalTime.of(14, 5, 30))
                 .status(ReservationStatus.CONFIRMED)
                 .build();
@@ -610,7 +618,7 @@ class LineReservationConversationTest {
         when(lineCustomerService.findExistingCustomer(business, "line-user"))
                 .thenReturn(Optional.of(new LineCustomerResolution(lineCustomer, customer, true)));
         when(reservationRepo.findAllByBusinessAndUserAndReservationDateGreaterThanEqualAndStatusInOrderByReservationDateAscStartTimeAsc(
-                eq(business), eq(customer), eq(LocalDate.of(2026, 6, 25)), any()
+                eq(business), eq(customer), eq(LocalDate.of(2026, Month.JUNE, 25)), any()
         )).thenReturn(List.of(reservation, confirmed));
 
         LineReplyMessage reply = conversationService.handlePostback(
@@ -862,7 +870,7 @@ class LineReservationConversationTest {
     void invalidPhoneDoesNotAdvanceState() {
         LineConversation existing = conversation(LineConversationState.ENTERING_PHONE);
         existing.setServiceItemId(20L);
-        existing.setReservationDate(LocalDate.of(2026, 6, 29));
+        existing.setReservationDate(LocalDate.of(2026, Month.JUNE, 29));
         existing.setStartTime(LocalTime.of(10, 0));
         existing.setCustomerName("王小明");
         when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user")).thenReturn(Optional.of(existing));
@@ -1021,7 +1029,7 @@ class LineReservationConversationTest {
                 .business(business)
                 .user(customer)
                 .title("剪髮")
-                .reservationDate(LocalDate.of(2026, 6, 29))
+                .reservationDate(LocalDate.of(2026, Month.JUNE, 29))
                 .startTime(LocalTime.of(10, 0))
                 .status(status)
                 .build();
@@ -1043,7 +1051,7 @@ class LineReservationConversationTest {
     private LineConversation completedInputConversation() {
         LineConversation existing = conversation(LineConversationState.CONFIRMING);
         existing.setServiceItemId(20L);
-        existing.setReservationDate(LocalDate.of(2026, 6, 29));
+        existing.setReservationDate(LocalDate.of(2026, Month.JUNE, 29));
         existing.setStartTime(LocalTime.of(10, 0));
         existing.setCustomerName("王小明");
         existing.setPhone("0912-345-678");
@@ -1053,7 +1061,7 @@ class LineReservationConversationTest {
     private LineConversation selectableTimeConversation() {
         LineConversation existing = conversation(LineConversationState.SELECTING_TIME);
         existing.setServiceItemId(20L);
-        existing.setReservationDate(LocalDate.of(2026, 6, 29));
+        existing.setReservationDate(LocalDate.of(2026, Month.JUNE, 29));
         when(conversationRepo.findByBusinessIdAndLineUserId(8L, "line-user"))
                 .thenReturn(Optional.of(existing));
         when(serviceItemRepo.findById(20L)).thenReturn(Optional.of(haircut));

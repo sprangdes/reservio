@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../state/AuthContext';
 import { useToast } from '../state/ToastContext';
-import { SESSION_ACTIVITY_EVENT, SESSION_EXPIRED_EVENT, isUnauthorizedError } from '../sessionEvents';
+import { SESSION_EXPIRED_EVENT, isUnauthorizedError } from '../sessionEvents';
 import { buildLoginPath } from '../features/auth/authDestination';
 import { clearMerchantRegistrationDraft } from '../features/auth/merchantRegistrationDraft';
 import { clearPasswordResetState } from '../features/auth/passwordResetState';
@@ -59,6 +59,16 @@ export default function SessionTimeoutManager() {
     }
   }, [clearTimers, location.pathname, location.search, navigate, setErrorMessage, setMe]);
 
+  const expireIdleSession = useCallback(async () => {
+    try {
+      await api.logout();
+    } catch {
+      // Local expiry must still complete when the logout request cannot reach the server.
+    } finally {
+      expireSession();
+    }
+  }, [expireSession]);
+
   const scheduleTimers = useCallback(() => {
     clearTimers();
     if (!me) return;
@@ -74,9 +84,9 @@ export default function SessionTimeoutManager() {
     }, warningDelay);
 
     expireTimerRef.current = globalThis.setTimeout(() => {
-      expireSession();
+      void expireIdleSession();
     }, expireDelay);
-  }, [clearTimers, config.timeoutSeconds, config.warningSeconds, expireSession, me]);
+  }, [clearTimers, config.timeoutSeconds, config.warningSeconds, expireIdleSession, me]);
 
   const recordActivity = useCallback(() => {
     if (!me) return;
@@ -116,20 +126,29 @@ export default function SessionTimeoutManager() {
   }, [config, me, scheduleTimers]);
 
   useEffect(() => {
-    const handleActivity = () => recordActivity();
     const handleExpired = () => {
       if (me) {
         expireSession();
       }
     };
 
-    globalThis.addEventListener(SESSION_ACTIVITY_EVENT, handleActivity);
     globalThis.addEventListener(SESSION_EXPIRED_EVENT, handleExpired);
     return () => {
-      globalThis.removeEventListener(SESSION_ACTIVITY_EVENT, handleActivity);
       globalThis.removeEventListener(SESSION_EXPIRED_EVENT, handleExpired);
     };
-  }, [expireSession, me, recordActivity]);
+  }, [expireSession, me]);
+
+  useEffect(() => {
+    if (!me) return;
+    const handleUserActivity = () => {
+      if (!showWarning) recordActivity();
+    };
+    const activityEvents: Array<keyof WindowEventMap> = ['pointerdown', 'keydown', 'wheel', 'focus'];
+    activityEvents.forEach((eventName) => globalThis.addEventListener(eventName, handleUserActivity, { passive: true }));
+    return () => {
+      activityEvents.forEach((eventName) => globalThis.removeEventListener(eventName, handleUserActivity));
+    };
+  }, [me, recordActivity, showWarning]);
 
   useEffect(() => clearTimers, [clearTimers]);
 

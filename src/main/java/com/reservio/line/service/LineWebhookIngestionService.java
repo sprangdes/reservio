@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Service
 public class LineWebhookIngestionService {
@@ -76,7 +77,7 @@ public class LineWebhookIngestionService {
             );
             return;
         }
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Taipei"));
         eventRepo.save(LineWebhookEvent.builder()
                 .channel(channel)
                 .webhookEventId(webhookEventId)

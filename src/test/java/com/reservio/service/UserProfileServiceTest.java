@@ -67,10 +67,10 @@ class UserProfileServiceTest {
     @Test
     void rejectsBusinessAccount() {
         user.setRole("ROLE_BUSINESS");
+        UpdateProfileRequest request = new UpdateProfileRequest(
+                "business", "business@example.com");
 
-        assertThatThrownBy(() -> service.update(
-                user,
-                new UpdateProfileRequest("business", "business@example.com")))
+        assertThatThrownBy(() -> service.update(user, request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("客戶");
 
@@ -79,34 +79,35 @@ class UserProfileServiceTest {
 
     @Test
     void rejectsInvalidUsernameAndEmail() {
-        assertThatThrownBy(() -> service.update(
-                user,
-                new UpdateProfileRequest(" ", "valid@example.com")))
+        UpdateProfileRequest invalidUsername = new UpdateProfileRequest(
+                " ", "valid@example.com");
+        UpdateProfileRequest invalidEmail = new UpdateProfileRequest(
+                "valid-name", "not-an-email");
+
+        assertThatThrownBy(() -> service.update(user, invalidUsername))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("使用者名稱");
-        assertThatThrownBy(() -> service.update(
-                user,
-                new UpdateProfileRequest("valid-name", "not-an-email")))
+        assertThatThrownBy(() -> service.update(user, invalidEmail))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Email");
     }
 
     @Test
     void rejectsDuplicateUsernameAndEmail() {
+        UpdateProfileRequest duplicateUsername = new UpdateProfileRequest(
+                "taken", "valid@example.com");
+        UpdateProfileRequest duplicateEmail = new UpdateProfileRequest(
+                "available", "taken@example.com");
         when(userRepo.existsByUsernameAndIdNot("taken", 40L)).thenReturn(true);
 
-        assertThatThrownBy(() -> service.update(
-                user,
-                new UpdateProfileRequest("taken", "valid@example.com")))
+        assertThatThrownBy(() -> service.update(user, duplicateUsername))
                 .isInstanceOf(UserAlreadyExistsException.class)
                 .hasMessageContaining("使用者名稱");
 
         when(userRepo.existsByUsernameAndIdNot("available", 40L)).thenReturn(false);
         when(userRepo.existsByEmailAndIdNot("taken@example.com", 40L)).thenReturn(true);
 
-        assertThatThrownBy(() -> service.update(
-                user,
-                new UpdateProfileRequest("available", "taken@example.com")))
+        assertThatThrownBy(() -> service.update(user, duplicateEmail))
                 .isInstanceOf(UserAlreadyExistsException.class)
                 .hasMessageContaining("電子郵件");
     }
