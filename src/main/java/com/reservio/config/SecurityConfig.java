@@ -48,12 +48,15 @@ public class SecurityConfig {
     }
 
     @Bean
+    @SuppressWarnings({"java:S4502", "java:S3330"})
     public SecurityFilterChain filterChain(
             HttpSecurity http,
             LineOAuth2AuthenticationSuccessHandler lineOAuth2AuthenticationSuccessHandler,
             PersistentOAuth2AuthorizationRequestRepository authorizationRequestRepository,
             LineOAuth2Properties lineOAuth2Properties) throws Exception {
         http
+            // Authentication endpoints establish a session without a prior token. The LINE webhook
+            // is protected by its provider signature. The SPA must read the CSRF cookie to echo it.
             .csrf(csrf -> csrf
                 .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                 .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())

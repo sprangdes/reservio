@@ -20,6 +20,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,9 @@ public class LineRichMenuService {
     private static final int HEIGHT = 843;
     private static final int FONT_SIZE = 100;
     private static final int ICON_SIZE = 170;
+    private static final String WIDTH_KEY = "width";
+    private static final String HEIGHT_KEY = "height";
+    private static final ZoneId TAIPEI_ZONE_ID = ZoneId.of("Asia/Taipei");
     private static final List<String> UNLINKED_DISPLAY_LABELS = List.of(
             "立即預約",
             "我的預約",
@@ -85,12 +89,12 @@ public class LineRichMenuService {
         BusinessLineChannel channel = currentChannel();
         try {
             String displayName = messagingClient.getBotDisplayName(channel);
-            channel.setTokenValidatedAt(LocalDateTime.now());
+            channel.setTokenValidatedAt(LocalDateTime.now(TAIPEI_ZONE_ID));
 
             LineWebhookEndpoint webhook = messagingClient.getWebhookEndpoint(channel);
             String expectedWebhook = webhookUrl(channel);
             boolean webhookReady = webhook.active() && expectedWebhook.equals(webhook.endpoint());
-            channel.setWebhookVerifiedAt(webhookReady ? LocalDateTime.now() : null);
+            channel.setWebhookVerifiedAt(webhookReady ? LocalDateTime.now(TAIPEI_ZONE_ID) : null);
             channelRepo.save(channel);
 
             String webhookMessage;
@@ -148,7 +152,7 @@ public class LineRichMenuService {
             }
             channel.setRichMenuId(newUnlinkedRichMenuId);
             channel.setLinkedRichMenuId(newLinkedRichMenuId);
-            channel.setRichMenuUpdatedAt(LocalDateTime.now());
+            channel.setRichMenuUpdatedAt(LocalDateTime.now(TAIPEI_ZONE_ID));
             channelRepo.save(channel);
             cleanupOldMenu(channel, oldUnlinkedRichMenuId, newUnlinkedRichMenuId);
             cleanupOldMenu(channel, oldLinkedRichMenuId, newLinkedRichMenuId);
@@ -182,7 +186,7 @@ public class LineRichMenuService {
     public static Map<String, Object> unlinkedRichMenuDefinition() {
         int third = WIDTH / 3;
         return Map.of(
-                "size", Map.of("width", WIDTH, "height", HEIGHT),
+                "size", Map.of(WIDTH_KEY, WIDTH, HEIGHT_KEY, HEIGHT),
                 "selected", true,
                 "name", "Reservio 預約選單（未綁定）",
                 "chatBarText", "預約服務",
@@ -197,7 +201,7 @@ public class LineRichMenuService {
     public static Map<String, Object> linkedRichMenuDefinition(String profileUrl) {
         int third = WIDTH / 3;
         return Map.of(
-                "size", Map.of("width", WIDTH, "height", HEIGHT),
+                "size", Map.of(WIDTH_KEY, WIDTH, HEIGHT_KEY, HEIGHT),
                 "selected", true,
                 "name", "Reservio 預約選單（已綁定）",
                 "chatBarText", "預約服務",
@@ -220,7 +224,7 @@ public class LineRichMenuService {
             String label,
             String data) {
         return Map.of(
-                "bounds", Map.of("x", x, "y", 0, "width", width, "height", HEIGHT),
+                "bounds", Map.of("x", x, "y", 0, WIDTH_KEY, width, HEIGHT_KEY, HEIGHT),
                 "action", Map.of(
                         "type", "postback",
                         "label", label,
@@ -236,7 +240,7 @@ public class LineRichMenuService {
             String label,
             String uri) {
         return Map.of(
-                "bounds", Map.of("x", x, "y", 0, "width", width, "height", HEIGHT),
+                "bounds", Map.of("x", x, "y", 0, WIDTH_KEY, width, HEIGHT_KEY, HEIGHT),
                 "action", Map.of(
                         "type", "uri",
                         "label", label,
@@ -337,7 +341,7 @@ public class LineRichMenuService {
             case 2 -> drawSearchClockIcon(graphics, centerX, iconTop);
             default -> throw new IllegalArgumentException("Unknown rich menu icon index: " + iconIndex);
         }
-        graphics.setFont(graphics.getFont().deriveFont(Font.BOLD, (float) FONT_SIZE));
+        graphics.setFont(graphics.getFont().deriveFont(Font.BOLD, FONT_SIZE));
         FontMetrics metrics = graphics.getFontMetrics();
         int textX = x + (width - metrics.stringWidth(label)) / 2;
         int textY = 570 + metrics.getAscent() / 2;
@@ -395,17 +399,21 @@ public class LineRichMenuService {
                 channel.getWebhookVerifiedAt(),
                 channel.getRichMenuUpdatedAt()
         );
+        String resolvedWebhookMessage = webhookMessage;
+        if (resolvedWebhookMessage == null) {
+            resolvedWebhookMessage = webhookReady ? "Webhook URL 已驗證" : "尚未驗證 Webhook URL";
+        }
+        String resolvedTokenMessage = tokenMessage;
+        if (resolvedTokenMessage == null) {
+            resolvedTokenMessage = tokenValid ? "Channel Access Token 已驗證" : "尚未驗證 Token";
+        }
         return new LineIntegrationStatusResponse(
                 true,
                 channel.isEnabled(),
                 webhookReady,
-                webhookMessage != null
-                        ? webhookMessage
-                        : webhookReady ? "Webhook URL 已驗證" : "尚未驗證 Webhook URL",
+                resolvedWebhookMessage,
                 tokenValid,
-                tokenMessage != null
-                        ? tokenMessage
-                        : tokenValid ? "Channel Access Token 已驗證" : "尚未驗證 Token",
+                resolvedTokenMessage,
                 richMenuReady,
                 richMenuReady ? "Rich Menu 已建立" : "尚未建立 Rich Menu",
                 channel.getRichMenuId(),
@@ -447,13 +455,21 @@ public class LineRichMenuService {
     }
 
     private String webhookUrl(BusinessLineChannel channel) {
-        return properties.webhookBaseUrl().replaceAll("/+$", "")
+        return withoutTrailingSlashes(properties.webhookBaseUrl())
                 + "/api/integrations/line/webhook/"
                 + channel.getWebhookKey();
     }
 
     private String profileUrl() {
-        return properties.webhookBaseUrl().replaceAll("/+$", "") + "/profile";
+        return withoutTrailingSlashes(properties.webhookBaseUrl()) + "/profile";
+    }
+
+    private String withoutTrailingSlashes(String value) {
+        int end = value.length();
+        while (end > 0 && value.charAt(end - 1) == '/') {
+            end--;
+        }
+        return value.substring(0, end);
     }
 
     private void cleanupOldMenu(

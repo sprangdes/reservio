@@ -16,12 +16,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Service
 public class LineWebhookWorker {
 
     private static final Logger log = LoggerFactory.getLogger(LineWebhookWorker.class);
     private static final int MAX_ATTEMPTS = 3;
+    private static final String SOURCE = "source";
+    private static final String USER_ID = "userId";
+    private static final String MESSAGE = "message";
     private final LineWebhookEventRepo eventRepo;
     private final LineMessagingClient messagingClient;
     private final LineReservationConversation reservationConversation;
@@ -50,7 +54,7 @@ public class LineWebhookWorker {
     @Scheduled(fixedDelayString = "${app.line.messaging.worker-delay-ms:1000}")
     @Transactional
     public void processPendingEvents() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Taipei"));
         for (LineWebhookEvent event : eventRepo.findTop50ByStatusAndNextAttemptAtBeforeOrderById(
                 LineWebhookEventStatus.PENDING, now)) {
             processOne(event, now);
@@ -77,8 +81,8 @@ public class LineWebhookWorker {
                 return;
             }
             if (isTextMessage(payload)) {
-                String lineUserId = payload.path("source").path("userId").asText(null);
-                String text = payload.path("message").path("text").asText();
+                String lineUserId = payload.path(SOURCE).path(USER_ID).asText(null);
+                String text = payload.path(MESSAGE).path("text").asText();
                 if (lineUserId != null && event.getReplyToken() != null) {
                     LineReplyMessage reply = reservationConversation.handle(
                             event.getChannel(), lineUserId, text);
@@ -116,8 +120,8 @@ public class LineWebhookWorker {
     }
 
     private boolean isTextMessage(JsonNode payload) {
-        return "message".equals(payload.path("type").asText())
-                && "text".equals(payload.path("message").path("type").asText());
+        return MESSAGE.equals(payload.path("type").asText())
+                && "text".equals(payload.path(MESSAGE).path("type").asText());
     }
 
     private boolean isPostback(JsonNode payload) {
@@ -133,7 +137,7 @@ public class LineWebhookWorker {
     }
 
     private boolean acquireRateLimit(LineWebhookEvent event, JsonNode payload) {
-        String lineUserId = payload.path("source").path("userId").asText(null);
+        String lineUserId = payload.path(SOURCE).path(USER_ID).asText(null);
         Long businessId = event.getChannel().getBusiness().getId();
         if (rateLimiter.tryAcquire(businessId, lineUserId)) {
             return true;
@@ -154,7 +158,7 @@ public class LineWebhookWorker {
     }
 
     private void processPostback(LineWebhookEvent event, JsonNode payload) {
-        String lineUserId = payload.path("source").path("userId").asText(null);
+        String lineUserId = payload.path(SOURCE).path(USER_ID).asText(null);
         String data = payload.path("postback").path("data").asText();
         if (lineUserId == null || event.getReplyToken() == null) {
             return;
@@ -170,7 +174,7 @@ public class LineWebhookWorker {
     }
 
     private void processAccountLink(LineWebhookEvent event, JsonNode payload) {
-        String lineUserId = payload.path("source").path("userId").asText(null);
+        String lineUserId = payload.path(SOURCE).path(USER_ID).asText(null);
         String result = payload.path("link").path("result").asText(null);
         String nonce = payload.path("link").path("nonce").asText(null);
         if (lineUserId == null || result == null || nonce == null) {

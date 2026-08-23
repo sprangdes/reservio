@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,11 +40,19 @@ public class LineCustomerService {
             String lineUserId,
             String displayName,
             String phone) {
-        return resolveCustomer(business, lineUserId, displayName, phone).reservationUser();
+        return resolveCustomerInternal(business, lineUserId, displayName, phone).reservationUser();
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public LineCustomerResolution resolveCustomer(
+            BusinessData business,
+            String lineUserId,
+            String displayName,
+            String phone) {
+        return resolveCustomerInternal(business, lineUserId, displayName, phone);
+    }
+
+    private LineCustomerResolution resolveCustomerInternal(
             BusinessData business,
             String lineUserId,
             String displayName,
@@ -98,7 +107,7 @@ public class LineCustomerService {
             String phone) {
         customer.setDisplayName(displayName);
         customer.setPhone(phone);
-        customer.setUpdatedAt(LocalDateTime.now());
+        customer.setUpdatedAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")));
         lineCustomerRepo.save(customer);
         return customer;
     }
@@ -122,7 +131,7 @@ public class LineCustomerService {
                 .lineUserId(lineUserId)
                 .displayName(displayName)
                 .phone(phone)
-                .createdAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")))
                 .build();
         return lineCustomerRepo.save(customer);
     }

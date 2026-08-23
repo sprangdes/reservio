@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Service
 public class EmailVerificationService {
@@ -45,7 +46,7 @@ public class EmailVerificationService {
         String otp = String.valueOf(RANDOM.nextInt(900_000) + 100_000);
         tokenRepo.save(EmailVerificationToken.builder().user(user).targetEmail(email)
                 .otpHash(passwordEncoder.encode(otp))
-                .expiresAt(LocalDateTime.now().plusMinutes(otpProperties.getExpireMinute())).build());
+                .expiresAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")).plusMinutes(otpProperties.getExpireMinute())).build());
         mailService.sendEmailVerificationOtp(email, otp, otpProperties.getExpireMinute());
     }
 
@@ -54,7 +55,7 @@ public class EmailVerificationService {
         UserData user = userDataService.getCurrentUser();
         EmailVerificationToken token = tokenRepo.findTopByUserIdOrderByCreatedAtDesc(user.getId())
                 .orElseThrow(() -> new OtpVerificationException("Email 驗證失敗"));
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Taipei"));
         if (token.getUsedAt() != null || now.isAfter(token.getExpiresAt()) || token.getAttemptCount() >= otpProperties.getMaxAttempts()
                 || request.getOtp() == null || !passwordEncoder.matches(request.getOtp().trim(), token.getOtpHash())) {
             token.setAttemptCount(token.getAttemptCount() + 1);

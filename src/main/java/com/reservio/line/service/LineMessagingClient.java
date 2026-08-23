@@ -30,6 +30,7 @@ public class LineMessagingClient {
     private static final String WEBHOOK_ENDPOINT_URL =
             "https://api.line.me/v2/bot/channel/webhook/endpoint";
     private static final String RICH_MENU_URL = "https://api.line.me/v2/bot/richmenu";
+    public static final String BEARER = "Bearer ";
 
     private final RestClient restClient;
     private final LineCredentialCipher cipher;
@@ -97,7 +98,7 @@ public class LineMessagingClient {
         execute(channel, "reply", () -> {
             restClient.post()
                     .uri(REPLY_URL)
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .header(HttpHeaders.AUTHORIZATION, BEARER + accessToken)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(requestBody)
                     .retrieve()
@@ -114,7 +115,7 @@ public class LineMessagingClient {
     public String issueLinkToken(BusinessLineChannel channel, String lineUserId) {
         String response = execute(channel, "issue_link_token", () -> restClient.post()
                 .uri("https://api.line.me/v2/bot/user/{userId}/linkToken", lineUserId)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken(channel))
+                .header(HttpHeaders.AUTHORIZATION, BEARER + accessToken(channel))
                 .retrieve()
                 .body(String.class));
         String linkToken = parse(response).path("linkToken").asText();
@@ -136,7 +137,7 @@ public class LineMessagingClient {
         String accessToken = accessToken(channel);
         String response = execute(channel, "create_rich_menu", () -> restClient.post()
                 .uri(RICH_MENU_URL)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .header(HttpHeaders.AUTHORIZATION, BEARER + accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(serialize(definition))
                 .retrieve()
@@ -155,7 +156,7 @@ public class LineMessagingClient {
         execute(channel, "upload_rich_menu_image", () -> {
             restClient.post()
                     .uri("https://api-data.line.me/v2/bot/richmenu/{richMenuId}/content", richMenuId)
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken(channel))
+                    .header(HttpHeaders.AUTHORIZATION, BEARER + accessToken(channel))
                     .contentType(MediaType.IMAGE_PNG)
                     .body(image)
                     .retrieve()
@@ -168,7 +169,7 @@ public class LineMessagingClient {
         execute(channel, "set_default_rich_menu", () -> {
             restClient.post()
                     .uri("https://api.line.me/v2/bot/user/all/richmenu/{richMenuId}", richMenuId)
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken(channel))
+                    .header(HttpHeaders.AUTHORIZATION, BEARER + accessToken(channel))
                     .retrieve()
                     .toBodilessEntity();
             return null;
@@ -186,7 +187,7 @@ public class LineMessagingClient {
                             lineUserId,
                             richMenuId
                     )
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken(channel))
+                    .header(HttpHeaders.AUTHORIZATION, BEARER + accessToken(channel))
                     .retrieve()
                     .toBodilessEntity();
             return null;
@@ -197,7 +198,7 @@ public class LineMessagingClient {
         execute(channel, "unlink_rich_menu_from_user", () -> {
             restClient.delete()
                     .uri("https://api.line.me/v2/bot/user/{userId}/richmenu", lineUserId)
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken(channel))
+                    .header(HttpHeaders.AUTHORIZATION, BEARER + accessToken(channel))
                     .retrieve()
                     .toBodilessEntity();
             return null;
@@ -208,7 +209,7 @@ public class LineMessagingClient {
         execute(channel, "delete_rich_menu", () -> {
             restClient.delete()
                     .uri("https://api.line.me/v2/bot/richmenu/{richMenuId}", richMenuId)
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken(channel))
+                    .header(HttpHeaders.AUTHORIZATION, BEARER + accessToken(channel))
                     .retrieve()
                     .toBodilessEntity();
             return null;
@@ -218,7 +219,7 @@ public class LineMessagingClient {
     private String authorizedGet(BusinessLineChannel channel, String url) {
         return execute(channel, operationName(url), () -> restClient.get()
                 .uri(url)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken(channel))
+                .header(HttpHeaders.AUTHORIZATION, BEARER + accessToken(channel))
                 .retrieve()
                 .body(String.class));
     }

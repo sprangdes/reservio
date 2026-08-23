@@ -64,7 +64,7 @@ public class PersistentOAuth2AuthorizationRequestRepository
             HttpServletRequest request,
             HttpServletResponse response) {
         if (authorizationRequest == null) {
-            removeAuthorizationRequest(request, response);
+            removeAuthorizationRequestInternal(request);
             return;
         }
         String state = authorizationRequest.getState();
@@ -85,6 +85,10 @@ public class PersistentOAuth2AuthorizationRequestRepository
     public OAuth2AuthorizationRequest removeAuthorizationRequest(
             HttpServletRequest request,
             HttpServletResponse response) {
+        return removeAuthorizationRequestInternal(request);
+    }
+
+    private OAuth2AuthorizationRequest removeAuthorizationRequestInternal(HttpServletRequest request) {
         String state = request.getParameter("state");
         if (state == null || state.isBlank()) {
             return null;

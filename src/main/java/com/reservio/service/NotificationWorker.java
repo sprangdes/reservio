@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Service
 public class NotificationWorker {
@@ -26,7 +27,7 @@ public class NotificationWorker {
     @Scheduled(cron = "30 * * * * *")
     @Transactional
     public void deliverPendingEmail() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Taipei"));
         for (NotificationDelivery delivery : deliveryRepo.findTop50ByStatusAndNextAttemptAtBeforeOrderById(
                 NotificationDeliveryStatus.PENDING, now)) {
             try {

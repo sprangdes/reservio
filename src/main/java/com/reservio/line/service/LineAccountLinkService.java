@@ -33,6 +33,8 @@ public class LineAccountLinkService {
     private static final Logger log = LoggerFactory.getLogger(LineAccountLinkService.class);
     private static final int EXPIRY_MINUTES = 10;
 
+    public static final String CAN_NOT_FIND_LINE_ACCOUNT_BINDING_REQUEST = "找不到 LINE 帳號綁定請求";
+
     private final LineAccountLinkRepo linkRepo;
     private final LineCustomerRepo customerRepo;
     private final ReservationRepo reservationRepo;
@@ -133,7 +135,7 @@ public class LineAccountLinkService {
     @Transactional
     public LineAccountLinkStatusResponse status(String requestToken) {
         LineAccountLink link = linkRepo.findByRequestTokenHash(tokenService.hash(requestToken))
-                .orElseThrow(() -> new IllegalArgumentException("找不到 LINE 帳號綁定請求"));
+                .orElseThrow(() -> new IllegalArgumentException(CAN_NOT_FIND_LINE_ACCOUNT_BINDING_REQUEST));
         if (link.getStatus() == LineAccountLinkStatus.CREATED
                 && link.getExpiresAt().isBefore(now())) {
             link.setStatus(LineAccountLinkStatus.EXPIRED);
@@ -159,13 +161,9 @@ public class LineAccountLinkService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public int complete(
-            BusinessLineChannel channel,
-            String lineUserId,
-            String result,
-            String nonce) {
+    public int complete(BusinessLineChannel channel, String lineUserId, String result, String nonce) {
         LineAccountLink link = linkRepo.findByNonceHash(tokenService.hash(nonce))
-                .orElseThrow(() -> new IllegalArgumentException("找不到 LINE 帳號綁定請求"));
+                .orElseThrow(() -> new IllegalArgumentException(CAN_NOT_FIND_LINE_ACCOUNT_BINDING_REQUEST));
         if (link.getStatus() == LineAccountLinkStatus.COMPLETED) {
             return 0;
         }
@@ -191,8 +189,7 @@ public class LineAccountLinkService {
                 link.getBusiness().getId(),
                 targetUser,
                 customer.getId())) {
-            throw new IllegalStateException(
-                    "此 LINE Login 帳號已在同一商家綁定其他 LINE 使用者，請先解除原綁定");
+            throw new IllegalStateException("此 LINE Login 帳號已在同一商家綁定其他 LINE 使用者，請先解除原綁定");
         }
         customer.setLinkedUser(targetUser);
         customer.setLinkedAt(now());
@@ -250,7 +247,7 @@ public class LineAccountLinkService {
 
     private LineAccountLink requireActiveRequest(String requestToken) {
         LineAccountLink link = linkRepo.findByRequestTokenHash(tokenService.hash(requestToken))
-                .orElseThrow(() -> new IllegalArgumentException("找不到 LINE 帳號綁定請求"));
+                .orElseThrow(() -> new IllegalArgumentException(CAN_NOT_FIND_LINE_ACCOUNT_BINDING_REQUEST));
         if (link.getExpiresAt().isBefore(now())) {
             link.setStatus(LineAccountLinkStatus.EXPIRED);
             linkRepo.save(link);
@@ -262,10 +259,7 @@ public class LineAccountLinkService {
         return link;
     }
 
-    private void validateCallback(
-            LineAccountLink link,
-            BusinessLineChannel channel,
-            String lineUserId) {
+    private void validateCallback(LineAccountLink link, BusinessLineChannel channel, String lineUserId) {
         if (link.getStatus() != LineAccountLinkStatus.AWAITING_LINE) {
             throw new IllegalStateException("LINE 帳號綁定狀態不正確");
         }

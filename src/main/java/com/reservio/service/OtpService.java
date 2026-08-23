@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Service
 public class OtpService {
@@ -61,7 +62,7 @@ public class OtpService {
         Otp otp = Otp.builder()
                 .user(user)
                 .otpHash(passwordEncoder.encode(otpPlain))
-                .expiresAt(LocalDateTime.now().plusMinutes(otpProperties.getExpireMinute()))
+                .expiresAt(LocalDateTime.now(ZoneId.of("Asia/Taipei")).plusMinutes(otpProperties.getExpireMinute()))
                 .build();
         otpRepo.save(otp);
 
@@ -89,7 +90,7 @@ public class OtpService {
         Otp otp = otpRepo.findTopByUserIdOrderByCreatedAtDesc(user.getId())
                 .orElseThrow(() -> new OtpVerificationException("OTP 驗證失敗"));
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Taipei"));
         if (otp.getUsedAt() != null || now.isAfter(otp.getExpiresAt())) {
             throw new OtpVerificationException("OTP 驗證失敗");
         }
