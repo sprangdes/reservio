@@ -7,18 +7,24 @@ export default function ToastContainer() {
   const errorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (successMessage && successRef.current && (globalThis as any).bootstrap) {
-      const toast = (globalThis as any).bootstrap.Toast.getOrCreateInstance(successRef.current);
-      toast.show();
-    }
-  }, [successMessage]);
+    const element = successRef.current;
+    if (!successMessage || !element || !(globalThis as any).bootstrap) return;
+    const clearMessage = () => setSuccessMessage('');
+    element.addEventListener('hidden.bs.toast', clearMessage, { once: true });
+    const toast = (globalThis as any).bootstrap.Toast.getOrCreateInstance(element);
+    toast.show();
+    return () => element.removeEventListener('hidden.bs.toast', clearMessage);
+  }, [setSuccessMessage, successMessage]);
 
   useEffect(() => {
-    if (errorMessage && errorRef.current && (globalThis as any).bootstrap) {
-      const toast = (globalThis as any).bootstrap.Toast.getOrCreateInstance(errorRef.current);
-      toast.show();
-    }
-  }, [errorMessage]);
+    const element = errorRef.current;
+    if (!errorMessage || !element || !(globalThis as any).bootstrap) return;
+    const clearMessage = () => setErrorMessage('');
+    element.addEventListener('hidden.bs.toast', clearMessage, { once: true });
+    const toast = (globalThis as any).bootstrap.Toast.getOrCreateInstance(element);
+    toast.show();
+    return () => element.removeEventListener('hidden.bs.toast', clearMessage);
+  }, [errorMessage, setErrorMessage]);
 
   return (
     <div className="toast-container position-fixed bottom-0 end-0 p-3">

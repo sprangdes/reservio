@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
-import ToastContainer from './ToastContainer';
 
 interface LayoutProps {
   children: ReactNode;
@@ -15,7 +14,6 @@ export default function Layout({ children, hideNavigation = false, hideFooter = 
       {hideNavigation ? null : <Navbar />}
       {children}
       {hideFooter ? null : <Footer />}
-      <ToastContainer />
     </div>
   );
 }
