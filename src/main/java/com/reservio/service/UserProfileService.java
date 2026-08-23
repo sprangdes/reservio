@@ -8,14 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
-import java.util.regex.Pattern;
 
 @Service
 public class UserProfileService {
-
-    private static final Pattern EMAIL_PATTERN = Pattern.compile(
-            "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
-    );
 
     private final UserDataRepo userRepo;
 
@@ -58,9 +53,28 @@ public class UserProfileService {
 
     private String normalizeEmail(String value) {
         String email = value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
-        if (email.length() > 255 || !EMAIL_PATTERN.matcher(email).matches()) {
+        if (email.length() > 255 || !isValidEmail(email)) {
             throw new IllegalArgumentException("Email 格式不正確");
         }
         return email;
+    }
+
+    private boolean isValidEmail(String email) {
+        int at = email.indexOf('@');
+        int dot = email.lastIndexOf('.');
+        return at > 0
+                && at == email.lastIndexOf('@')
+                && dot > at + 1
+                && dot < email.length() - 1
+                && email.chars().noneMatch(this::isAsciiRegexWhitespace);
+    }
+
+    private boolean isAsciiRegexWhitespace(int character) {
+        return character == ' '
+                || character == '\t'
+                || character == '\n'
+                || character == '\u000B'
+                || character == '\f'
+                || character == '\r';
     }
 }

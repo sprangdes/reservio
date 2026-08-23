@@ -321,7 +321,8 @@ class LineRichMenuServiceTest {
 
     @Test
     void rejectsRuntimeWithoutSupportedChineseFont() {
-        assertThatThrownBy(() -> LineRichMenuService.preferredFontFamily(Set.of("Dialog")))
+        Set<String> availableFamilies = Set.of("Dialog");
+        assertThatThrownBy(() -> LineRichMenuService.preferredFontFamily(availableFamilies))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("中文字型");
     }

@@ -119,8 +119,9 @@ class ReservationServiceTest {
     @Test
     void confirmedCustomerCancellationRejectsBlankReason() {
         Reservation reservation = cancellableReservation(ReservationStatus.CONFIRMED);
+        ReservationService reservationService = service();
 
-        assertThatThrownBy(() -> service().customerCancel(reservation, "  ", "LINE"))
+        assertThatThrownBy(() -> reservationService.customerCancel(reservation, "  ", "LINE"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("已確認預約必須提供取消原因");
 

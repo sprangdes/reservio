@@ -40,11 +40,19 @@ public class LineCustomerService {
             String lineUserId,
             String displayName,
             String phone) {
-        return resolveCustomer(business, lineUserId, displayName, phone).reservationUser();
+        return resolveCustomerInternal(business, lineUserId, displayName, phone).reservationUser();
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public LineCustomerResolution resolveCustomer(
+            BusinessData business,
+            String lineUserId,
+            String displayName,
+            String phone) {
+        return resolveCustomerInternal(business, lineUserId, displayName, phone);
+    }
+
+    private LineCustomerResolution resolveCustomerInternal(
             BusinessData business,
             String lineUserId,
             String displayName,

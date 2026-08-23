@@ -22,6 +22,8 @@ import static com.reservio.enums.ReservationStatus.CANCELLED;
 @Service
 public class ReservationTimeService {
 
+    private static final ZoneId TAIPEI_ZONE_ID = ZoneId.of("Asia/Taipei");
+
     private final DateAvailableHoursRepo dateAvailableHoursRepo;
     private final DefaultAvailableHoursRepo defaultAvailableHoursRepo;
     private final ReservationRepo reservationRepo;
@@ -71,8 +73,8 @@ public class ReservationTimeService {
         // 2. 獲取當天所有有效的預約
         List<Reservation> existingReservations = reservationRepo
                 .findAllByBusinessIdAndReservationDateAndStatusNot(resolvedBusinessId, date, CANCELLED);
-        LocalTime now = LocalTime.now(ZoneId.of("Asia/Taipei"));
-        boolean isToday = date.equals(LocalDate.now(ZoneId.of("Asia/Taipei")));
+        LocalTime now = LocalTime.now(TAIPEI_ZONE_ID);
+        boolean isToday = date.equals(LocalDate.now(TAIPEI_ZONE_ID));
 
         // 3. 檢查每個時段是否能容納該時長的服務
         return allSlots.stream()
@@ -109,7 +111,7 @@ public class ReservationTimeService {
 
     public List<String> getDisabledDates(Long businessId) {
         Long resolvedBusinessId = businessId != null ? businessId : 1L;
-        LocalDate today = LocalDate.now(ZoneId.of("Asia/Taipei"));
+        LocalDate today = LocalDate.now(TAIPEI_ZONE_ID);
         LocalDate threeMonthLater = today.plusMonths(3);
 
         List<String> disableDates = new ArrayList<>(dateAvailableHoursRepo
