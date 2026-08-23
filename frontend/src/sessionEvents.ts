@@ -1,4 +1,3 @@
-export const SESSION_ACTIVITY_EVENT = 'reservio:session-activity';
 export const SESSION_EXPIRED_EVENT = 'reservio:session-expired';
 
 export class UnauthorizedError extends Error {
@@ -6,10 +5,6 @@ export class UnauthorizedError extends Error {
     super(message);
     this.name = 'UnauthorizedError';
   }
-}
-
-export function emitSessionActivity() {
-  globalThis.dispatchEvent(new Event(SESSION_ACTIVITY_EVENT));
 }
 
 export function emitSessionExpired() {
