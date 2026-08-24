@@ -22,6 +22,13 @@ test('production hosts deny framing of authenticated UI', () => {
   );
 });
 
+test('production frontend image can create the nginx PID file as its non-root user', () => {
+  const dockerfile = source('Dockerfile');
+
+  assert.match(dockerfile, /chown -R nginx:nginx \/var\/cache\/nginx \/run \/etc\/nginx\/conf\.d/);
+  assert.match(dockerfile, /USER nginx/);
+});
+
 test('automatic API responses cannot renew the inactivity deadline', () => {
   const api = source('src/api.ts');
   const navbar = source('src/components/Navbar.tsx');
