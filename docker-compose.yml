@@ -61,13 +61,15 @@ services:
       - "80"
 
   cloudflared:
-    image: cloudflare/cloudflared:latest
+    image: cloudflare/cloudflared:2026.10.3
+    pull_policy: always
     container_name: reservio-cloudflared
     restart: unless-stopped
+    stop_grace_period: 40s
     depends_on:
       - frontend
       - backend
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    command: tunnel --no-autoupdate --grace-period 30s run --token ${CLOUDFLARE_TUNNEL_TOKEN}
 
 volumes:
   postgres-data:
