@@ -59,7 +59,7 @@ CLOUDFLARE_TUNNEL_TOKEN='<cloudflare_tunnel_token>' \
 docker compose up -d --build
 ```
 
-On Windows, prefer creating a `.env` file next to `docker-compose.yml`:
+On the production MacBook Air, create a `.env` file next to `docker-compose.yml`:
 
 ```env
 POSTGRES_DB=reservio
@@ -105,6 +105,14 @@ Stop and remove the PostgreSQL data volume only when you intentionally want to d
 ```bash
 docker compose down -v
 ```
+
+## Cloudflare Tunnel security update
+
+Docker Compose pins `cloudflare/cloudflared:2026.10.3`, pulls the image on deployment,
+and allows 40 seconds for the connector's 30-second graceful shutdown.
+For an existing production instance, follow the
+[Cloudflare Tunnel upgrade runbook](docs/cloudflared-upgrade.md).
+Changing the Compose file does not update an already-running container.
 
 ## Notes
 
