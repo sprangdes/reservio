@@ -4,6 +4,15 @@ on:
   push:
     tags:
       - 'release-v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release-v tag to deploy
+        required: true
+        type: string
+
+permissions:
+  contents: read
 
 concurrency:
   group: production-deploy
@@ -11,30 +20,47 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy on Windows Runner
-    runs-on: [self-hosted, windows, reservio-deploy]
+    name: Deploy on MacBook Air
+    runs-on: [self-hosted, macOS, reservio-air-deploy]
+    timeout-minutes: 30
+    env:
+      DEPLOY_PATH: /Users/machi/reservio-prod
+      DEPLOY_TAG: ${{ inputs.release_tag || github.ref_name }}
+
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Deploy in local repo path (uses local .env)
-        shell: powershell
         run: |
-          $repoPath = 'C:\Users\dist6\reservio'
-          if (!(Test-Path $repoPath)) {
-            throw "Deploy path not found: $repoPath"
+          set -euo pipefail
+          export PATH="/Applications/Docker.app/Contents/Resources/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+          [[ "$DEPLOY_TAG" =~ ^release-v[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo 'Expected a release-vMAJOR.MINOR.PATCH tag.' >&2
+            exit 1
           }
+          test -d "$DEPLOY_PATH/.git"
+          test -f "$DEPLOY_PATH/.env"
+          cd "$DEPLOY_PATH"
+          git diff --quiet
+          git diff --cached --quiet
+          docker info > /dev/null
+          docker compose version
 
-          Set-Location $repoPath
-          Write-Host "Deploying in: $(Get-Location)"
-
-          git fetch --all --tags
-          git checkout $env:GITHUB_REF_NAME
-          git pull --ff-only origin $env:GITHUB_REF_NAME
-
-          docker compose up -d --build --remove-orphans
+          # Fetch only the requested tag; preserve existing local release tags.
+          git fetch --no-tags origin "refs/tags/$DEPLOY_TAG"
+          revision="$(git rev-parse 'FETCH_HEAD^{commit}')"
+          git checkout --detach "$revision"
+          docker compose config --quiet
+          docker compose pull cloudflared
+          docker compose up -d --build --remove-orphans --wait --wait-timeout 180
           docker compose ps
+          docker compose exec -T cloudflared cloudflared --version
 
       - name: Show recent backend/cloudflared logs
-        shell: powershell
+        if: always()
         run: |
-          Set-Location 'C:\Users\dist6\reservio'
+          export PATH="/Applications/Docker.app/Contents/Resources/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+          cd "$DEPLOY_PATH"
           docker compose logs --tail=120 backend cloudflared
