@@ -97,10 +97,33 @@ brew services list
 
 ## 部署自動化現況
 
-正式部署主機已改為 MacBook Air；repository 中的
-`.github/workflows/deploy-on-release-tag.yml` 與 `scripts/windows/deploy.ps1`
-仍指向舊 Windows 主機，不能作為目前 Mac 的更新命令。
-在確認 Mac 的實際部署目錄、runner 標籤與服務啟動方式前，不應直接觸發舊流程。
+正式部署主機為 `machi@JMac.local`，Compose 部署目錄為
+`/Users/machi/reservio-prod`。`.github/workflows/deploy-on-release-tag.yml`
+使用 `self-hosted`、`macOS`、`reservio-air-deploy` 三個標籤選取 Air 的 runner。
+此 runner 必須先在 Air 註冊並啟動；單純修改 workflow 不會自動安裝 runner。
+
+在 GitHub repository 的 Settings → Actions → Runners → New self-hosted runner，
+選擇 macOS 與 Air 的實際架構，於 Air 執行畫面上的下載與設定命令。
+設定 runner 時新增自訂標籤 `reservio-air-deploy`。
+runner 目錄必須與 `/Users/machi/reservio-prod` 分開，例如 `~/actions-runner-reservio`。
+在 runner 目錄執行 `./svc.sh install` 與 `./svc.sh start`，並確認 GitHub 顯示 Online。
+runner 使用 `machi` 帳號執行，須能在部署目錄執行 `git fetch origin`，且 Docker Desktop 正在運作。
+Air 需要保持開機、登入與連網，並避免閒置睡眠，runner 才能持續接收部署工作。
+
+新推送的 `release-vMAJOR.MINOR.PATCH` tag 會自動部署。
+更新 workflow 前已存在的 tag 不會因為重跑舊工作而改用新 workflow；
+應改用目前 main 的手動入口，例如：
+
+```bash
+gh workflow run deploy-on-release-tag.yml --repo sprangdes/reservio \
+  --ref main -f release_tag=release-v2.0.6
+```
+
+部署會讀取原本的 `.env`，切換到指定 tag，拉取 cloudflared 映像並更新 Compose 服務。
+部署前會檢查 Docker、`.env` 與已追蹤檔案是否有未提交修改，失敗即停止。
+自動部署尚未使用暫時 replica，cloudflared 重建時長連線可能中斷。
+需保持新流量持續服務時，仍應依前述 replica 步驟執行。
+`scripts/windows/deploy.ps1` 僅保留為舊 Windows 部署腳本，不再由 CI/CD 呼叫。
 
 ## 其他主機與安裝方式
 
