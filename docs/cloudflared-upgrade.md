@@ -100,6 +100,8 @@ brew services list
 正式部署主機為 `machi@JMac.local`，Compose 部署目錄為
 `/Users/machi/reservio-prod`。`.github/workflows/deploy-on-release-tag.yml`
 使用 `self-hosted`、`macOS`、`reservio-air-deploy` 三個標籤選取 Air 的 runner。
+Air 的 `.env` 使用 `CLOUDFLARE_TUNNEL_PROTOCOL=http2`，保留原本的 HTTP/2 連線設定。
+其他主機未設定此變數時預設使用 `auto`。
 此 runner 必須先在 Air 註冊並啟動；單純修改 workflow 不會自動安裝 runner。
 
 在 GitHub repository 的 Settings → Actions → Runners → New self-hosted runner，

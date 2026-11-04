@@ -69,7 +69,7 @@ services:
     depends_on:
       - frontend
       - backend
-    command: tunnel --no-autoupdate --grace-period 30s run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    command: tunnel --no-autoupdate --grace-period 30s --protocol ${CLOUDFLARE_TUNNEL_PROTOCOL:-auto} run --token ${CLOUDFLARE_TUNNEL_TOKEN}
 
 volumes:
   postgres-data:

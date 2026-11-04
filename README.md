@@ -86,6 +86,8 @@ APP_MAIL_FROM=noreply@reserv-io.com
 APP_MAIL_REPLY_TO=support@reserv-io.com
 
 CLOUDFLARE_TUNNEL_TOKEN=<cloudflare_tunnel_token>
+# Optional: use http2 on hosts where QUIC is unavailable (the Air uses http2).
+CLOUDFLARE_TUNNEL_PROTOCOL=auto
 ```
 
 The backend connects to the Docker Compose PostgreSQL service through:
